@@ -1,0 +1,7 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+/.quarto/
+docs/.jekyll-cache/
+.DS_Store

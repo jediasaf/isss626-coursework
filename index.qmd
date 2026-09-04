@@ -1,0 +1,11 @@
+---
+title: "ISSS626 Coursework Website"
+---
+
+Welcome to my coursework website for **ISSS626: Geospatial Analytics and Applications**, Singapore Management University.
+
+This site collects the hands-on and take-home exercises completed over the course of the term.
+
+## Exercises
+
+- [Hands-on Exercise 1: Geospatial Data Wrangling with R](Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd)

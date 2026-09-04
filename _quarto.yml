@@ -1,0 +1,20 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "ISSS626 Coursework"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd
+        text: Hands-on Exercise 1
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    code-fold: show
+    number-sections: false

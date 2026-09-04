@@ -1,0 +1,176 @@
+---
+title: "Hands-on Exercise 1: Geospatial Data Wrangling with R"
+date: last-modified
+format:
+  html:
+    code-fold: false
+execute:
+  warning: false
+  message: false
+---
+
+## 1. Overview
+
+This exercise works through the core geospatial data science workflow in R: importing
+geospatial and aspatial data, checking and setting coordinate reference systems,
+converting aspatial data to spatial data, and performing basic geoprocessing with the
+`sf` package.
+
+## 2. Getting Started
+
+```{r}
+pacman::p_load(sf, tidyverse)
+```
+
+## 3. Data Acquisition
+
+Three datasets are used:
+
+| Dataset | Source | Format used |
+|---|---|---|
+| Master Plan 2014 Subzone Boundary (No Sea) | [data.gov.sg](https://data.gov.sg/datasets/d_226cacceceff94f0c8b814962a5307c9/view) | GeoJSON |
+| Pre-Schools Location | [data.gov.sg](https://data.gov.sg/datasets/d_61eefab99958fd70e6aab17320a71f1c/view) | GeoJSON |
+| Singapore Airbnb listings | [Inside Airbnb](https://insideairbnb.com/singapore/) | CSV |
+
+**Note on format:** the original exercise reference uses the Master Plan boundary and
+pre-school location layers in Shapefile/KML format. Both have since been retired on the
+data.gov.sg portal in favour of GeoJSON-only downloads, so this write-up imports the
+GeoJSON versions directly with `st_read()` instead. The underlying `sf` workflow is
+identical regardless of source format.
+
+The Cycling Path dataset from LTA DataMall (used in the reference chapter's buffer
+geoprocessing example) requires a DataMall API account to download, which I did not have
+set up in time for this submission. That section is noted but not run below; I'll revisit
+it once I have API access.
+
+## 4. Importing Geospatial Data
+
+### 4.1 Master Plan 2014 Subzone Boundary
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
+```
+
+### 4.2 Pre-Schools Location
+
+```{r}
+preschool <- st_read("data/geospatial/PreSchoolsLocation.geojson")
+```
+
+## 5. Checking the Content of a Simple Feature Data Frame
+
+```{r}
+st_geometry(mpsz)
+```
+
+```{r}
+glimpse(mpsz)
+```
+
+```{r}
+head(mpsz, n = 5)
+```
+
+## 6. Plotting the Geospatial Data
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+```{r}
+plot(mpsz["PLN_AREA_N"])
+```
+
+## 7. Working with Projection
+
+Checking the coordinate reference system of each layer:
+
+```{r}
+st_crs(mpsz)
+```
+
+```{r}
+st_crs(preschool)
+```
+
+Both layers come in as WGS84 (EPSG:4326 / CRS84), Singapore's projected coordinate
+system is SVY21 (EPSG:3414), which is needed for any accurate area or distance
+calculation. Transforming both layers:
+
+```{r}
+mpsz3414 <- st_transform(mpsz, crs = 3414)
+preschool3414 <- st_transform(preschool, crs = 3414)
+```
+
+```{r}
+st_crs(mpsz3414)
+```
+
+## 8. Importing and Converting an Aspatial Data Set
+
+The Airbnb listings CSV has `latitude`/`longitude` columns but no spatial geometry —
+it needs to be converted into an `sf` object before it can be used alongside the other
+two layers.
+
+```{r}
+listings <- read_csv("data/aspatial/listings.csv")
+```
+
+```{r}
+listings_sf <- st_as_sf(listings,
+                         coords = c("longitude", "latitude"),
+                         crs = 4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+listings_sf
+```
+
+## 9. Geoprocessing with sf Package
+
+### 9.1 Point-in-polygon count: pre-schools per subzone
+
+```{r}
+mpsz3414$`PreSch Count` <- lengths(st_intersects(mpsz3414, preschool3414))
+```
+
+```{r}
+summary(mpsz3414$`PreSch Count`)
+```
+
+### 9.2 Subzone area and pre-school density
+
+```{r}
+mpsz3414$Area <- mpsz3414 %>%
+  st_area()
+
+mpsz3414 <- mpsz3414 %>%
+  mutate(`PreSch Density` = as.numeric(`PreSch Count`) / (as.numeric(Area) / 1000000))
+```
+
+```{r}
+ggplot(data = mpsz3414, aes(x = `PreSch Density`)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  labs(title = "Distribution of pre-school density by subzone",
+       x = "Pre-school density (per sq km)",
+       y = "Number of subzones")
+```
+
+```{r}
+ggplot(data = mpsz3414, aes(y = `PreSch Count`, x = `PreSch Density`)) +
+  geom_point(color = "black", fill = "light blue") +
+  labs(title = "Pre-school count vs. density by subzone",
+       x = "Pre-school density (per sq km)",
+       y = "Pre-school count")
+```
+
+## 10. Reflections
+
+The main friction point in this exercise wasn't the `sf` workflow itself, it was that
+the reference chapter's data sources have moved on: data.gov.sg no longer serves the
+Master Plan boundary or pre-school layers as Shapefile/KML, only GeoJSON, and the LTA
+DataMall cycling path layer sits behind an API key I hadn't set up yet. `st_read()`
+handles GeoJSON exactly the same way it handles a Shapefile or KML, so the substitution
+didn't change anything downstream — the point-in-polygon and density workflow ran the
+same way once both layers were reprojected to EPSG:3414.
