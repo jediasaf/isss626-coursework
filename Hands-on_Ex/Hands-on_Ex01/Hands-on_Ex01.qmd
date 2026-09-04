@@ -16,7 +16,7 @@ under Lesson 1 of the course outline: [Geospatial Data Wrangling with
 R](https://r4gdsa.netlify.app/chap01.html) and [Choropleth Mapping with
 R](https://r4gdsa.netlify.app/chap02.html).
 
-# Part 1: Geospatial Data Wrangling with R
+# Part 1: Geospatial Data Wrangling with R {#part1}
 
 ## 1. Overview
 
@@ -203,7 +203,7 @@ this is what coordinate system it actually arrives in — all three geospatial l
 here came in as WGS84, whereas the reference chapter has some of them (the cycling
 path, in particular) already in SVY21.
 
-# Part 2: Choropleth Mapping with R
+# Part 2: Choropleth Mapping with R {#part2}
 
 ## 1. Overview
 

@@ -8,4 +8,6 @@ This site collects the hands-on and take-home exercises completed over the cours
 
 ## Exercises
 
-- [Hands-on Exercise 1: Geospatial Data Wrangling with R](Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd)
+- Hands-on Exercise 1
+  - [Part 1: Geospatial Data Wrangling with R](Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part1)
+  - [Part 2: Choropleth Mapping with R](Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part2)

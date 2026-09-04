@@ -8,8 +8,12 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd
-        text: Hands-on Exercise 1
+      - text: "Hands-on Exercise 1"
+        menu:
+          - text: "Part 1: Geospatial Data Wrangling with R"
+            href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part1
+          - text: "Part 2: Choropleth Mapping with R"
+            href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part2
 
 format:
   html:
