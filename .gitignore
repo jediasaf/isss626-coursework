@@ -3,5 +3,10 @@
 .RData
 .Ruserdata
 /.quarto/
-docs/.jekyll-cache/
+_site/
 .DS_Store
+.vercel
+.vercel/
+data/
+
+**/*.quarto_ipynb
