@@ -1,4 +1,621 @@
-/* ISSS626 coursework website */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+/* ============================================================
+   ISSS626 Coursework — design system
+   CSS variables are defined per-theme in theme-light.scss /
+   theme-dark.scss (scss:rules block). Everything else lives here.
+   ============================================================ */
+
+html {
+  scroll-behavior: auto;
 }
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+#quarto-content > * {
+  background-color: var(--bg);
+}
+
+/* ---------- Navbar ---------- */
+
+.navbar {
+  min-height: var(--nav-height);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none !important;
+}
+
+.navbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.navbar .nav-link {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-secondary) !important;
+  transition: color 150ms ease;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: var(--text-primary) !important;
+}
+
+/* ---------- Sidebar (left nav) ---------- */
+
+#quarto-sidebar {
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-navigation .sidebar-section .sidebar-item-container,
+.sidebar-navigation > .sidebar-item .sidebar-item-container {
+  font-size: 0.88rem;
+}
+
+.sidebar-navigation .sidebar-item .sidebar-item-text {
+  color: var(--text-secondary);
+  transition: color 150ms ease;
+}
+
+.sidebar-navigation .sidebar-item .sidebar-item-text:hover {
+  color: var(--text-primary);
+}
+
+.sidebar-navigation .sidebar-item.active > .sidebar-item-container .sidebar-item-text,
+.sidebar-navigation .sidebar-item-container.active .sidebar-item-text {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sidebar-section .sidebar-item-container {
+  padding-top: 0.15rem;
+  padding-bottom: 0.15rem;
+}
+
+/* ---------- Right TOC ---------- */
+
+#quarto-margin-sidebar .toc-actions,
+nav#TOC {
+  font-size: 0.82rem;
+}
+
+nav#TOC ul li a {
+  color: var(--text-secondary);
+  border-left: 2px solid transparent;
+  padding-left: 0.6rem;
+  transition: color 150ms ease, border-color 150ms ease;
+}
+
+nav#TOC ul li a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+
+nav#TOC > h2, nav#TOC > .toc-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ---------- Main article width & headings ---------- */
+
+#quarto-document-content {
+  max-width: var(--max-content-width);
+}
+
+h1.title {
+  font-size: clamp(1.8rem, 1.6rem + 1vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 0.2rem;
+}
+
+/* Kicker: repurpose the YAML `subtitle` field to sit ABOVE the title */
+#title-block-header.quarto-title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+#title-block-header .subtitle {
+  order: -1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+#title-block-header .quarto-title-meta {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  margin-top: 0.35rem;
+}
+
+#title-block-header .quarto-title-meta-heading {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: none;
+  font-size: 0.78rem;
+}
+
+.quarto-title-affiliation, .quarto-title-author-affiliation {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+h2 {
+  font-size: 1.4rem;
+  font-weight: 650;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+h1.title + p + h2:first-of-type,
+#title-block-header + h2 {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 2rem;
+}
+
+h3 {
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2rem;
+}
+
+p {
+  color: var(--text-primary);
+}
+
+/* ---------- Breadcrumb ---------- */
+
+p.breadcrumb, .breadcrumb {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.breadcrumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ---------- Pills / tags ---------- */
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.75rem;
+}
+
+.pill {
+  display: inline-block;
+  font-family: var(--bs-font-monospace, "JetBrains Mono", monospace);
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  background-color: var(--surface);
+}
+
+/* ---------- Links ---------- */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+#quarto-document-content a:not(.pill):not(.sidebar-item-text):not(.nav-link):not(.btn) {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-underline-offset: 2px;
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+#quarto-document-content a:not(.pill):not(.sidebar-item-text):not(.nav-link):not(.btn):hover {
+  color: var(--accent-hover);
+  text-decoration-color: var(--accent-hover);
+}
+
+/* ---------- Page prev/next ---------- */
+
+.page-nav-next, .page-nav-prev {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.page-nav-next { text-align: right; }
+
+/* ---------- Code blocks ---------- */
+
+div.sourceCode {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--code-bg);
+  overflow-x: auto;
+}
+
+div.sourceCode pre {
+  margin: 0;
+  padding: 0.85rem 1rem;
+}
+
+pre code, code {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, Menlo, monospace;
+  font-size: 0.84rem;
+}
+
+pre.sourceCode {
+  white-space: pre;
+}
+
+.code-copy-button {
+  opacity: 0.55;
+}
+
+.code-copy-button:hover {
+  opacity: 1;
+}
+
+/* ---------- R console output ---------- */
+
+.cell-output,
+.cell-output-stdout {
+  position: relative;
+  margin-top: -0.35rem;
+}
+
+.cell-output pre,
+.cell-output-stdout pre {
+  background-color: var(--output-bg);
+  border: none;
+  border-left: 3px solid var(--border);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 0.7rem 1rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.cell-output-stdout pre code {
+  color: var(--text-secondary);
+}
+
+/* ---------- Figures ---------- */
+
+.cell {
+  margin-top: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.cell-output-display {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.cell-output-display img,
+.cell-output-display svg {
+  max-width: 100%;
+}
+
+figcaption, .figure-caption {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 0.6rem;
+}
+
+/* leaflet / htmlwidget frames get a bit of breathing room */
+.cell-output-display .leaflet,
+.cell-output-display iframe {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Tables ---------- */
+
+.table {
+  font-size: 0.86rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table thead th {
+  border-bottom: 2px solid var(--border);
+  border-top: none;
+  font-weight: 600;
+  text-align: left;
+  color: var(--text-primary);
+  background-color: transparent;
+}
+
+.table td, .table th {
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+}
+
+.table tbody tr:hover {
+  background-color: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.table-responsive, div.cell-output table {
+  overflow-x: auto;
+  display: block;
+}
+
+/* ---------- Callouts ---------- */
+
+.callout.callout-style-default {
+  border: none !important;
+  border-left: 3px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+  background-color: var(--surface) !important;
+  padding: 0.9rem 1.1rem !important;
+  box-shadow: none !important;
+}
+
+.callout.callout-style-default > div.callout-body-container,
+.callout.callout-style-default > .callout-header {
+  background-color: transparent !important;
+  padding: 0 !important;
+}
+
+.callout.callout-style-default.callout-note { border-left-color: var(--accent) !important; background-color: color-mix(in srgb, var(--accent) 6%, var(--surface)) !important; }
+.callout.callout-style-default.callout-tip { border-left-color: #2E8B57 !important; background-color: color-mix(in srgb, #2E8B57 6%, var(--surface)) !important; }
+.callout.callout-style-default.callout-important { border-left-color: #B45309 !important; background-color: color-mix(in srgb, #B45309 6%, var(--surface)) !important; }
+.callout.callout-style-default.callout-warning { border-left-color: #B42318 !important; background-color: color-mix(in srgb, #B42318 6%, var(--surface)) !important; }
+
+.callout-icon::before {
+  display: none !important;
+}
+
+.callout-title-container {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+/* ---------- Homepage hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 2.5rem;
+  align-items: center;
+  padding: 2.5rem 0 3rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+}
+
+.hero-kicker {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 0.9rem;
+}
+
+.hero h1 {
+  font-size: clamp(2rem, 1.6rem + 2vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  margin-bottom: 1.1rem;
+}
+
+.hero p.hero-lede {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  max-width: 46ch;
+  margin-bottom: 1.5rem;
+}
+
+.hero-byline {
+  font-size: 0.92rem;
+  margin-bottom: 1.75rem;
+}
+
+.hero-byline .name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hero-byline .affiliation {
+  color: var(--text-secondary);
+  display: block;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--accent);
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none !important;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.hero-cta:hover {
+  background-color: var(--accent-hover);
+  transform: translateX(2px);
+}
+
+.hero-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-visual svg {
+  width: 100%;
+  height: auto;
+  max-width: 420px;
+}
+
+.hero-coords {
+  position: relative;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding-top: 1.5rem;
+  }
+  .hero-visual {
+    order: -1;
+    max-width: 280px;
+    margin: 0 auto 1rem auto;
+  }
+}
+
+/* ---------- Coursework index rows ---------- */
+
+.coursework-group {
+  margin-bottom: 2.5rem;
+}
+
+.coursework-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.coursework-number {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.coursework-group-title {
+  font-size: 1.15rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.coursework-group-desc {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0.15rem 0 1rem 0;
+}
+
+.exercise-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0.25rem;
+  border-top: 1px solid var(--border);
+  text-decoration: none !important;
+  color: inherit;
+  transition: background-color 150ms ease, padding-left 150ms ease;
+}
+
+.coursework-group:last-child .exercise-row:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.exercise-row:hover {
+  background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+  padding-left: 0.6rem;
+}
+
+.exercise-row-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  min-width: 4.5rem;
+}
+
+.exercise-row-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.exercise-row-arrow {
+  color: var(--text-secondary);
+  transition: transform 150ms ease;
+}
+
+.exercise-row:hover .exercise-row-arrow {
+  transform: translateX(3px);
+  color: var(--accent);
+}
+
+/* ---------- Footer ---------- */
+
+.page-footer {
+  border-top: 1px solid var(--border) !important;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.page-footer strong {
+  color: var(--text-primary);
+}
+
+/* ---------- Misc ---------- */
+
+::selection {
+  background-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 767px) {
+  #quarto-document-content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* ---------- Hero geospatial SVG ---------- */
+
+.geo-grid-line { stroke: var(--border); stroke-width: 1; }
+.geo-region { fill: var(--accent); opacity: 0.14; }
+.geo-region-outline { fill: none; stroke: var(--accent); stroke-width: 1.25; opacity: 0.55; }
+.geo-node { fill: var(--accent); }
+.geo-node-muted { fill: var(--text-secondary); opacity: 0.5; }
+.geo-line { stroke: var(--text-secondary); stroke-width: 1; opacity: 0.4; stroke-dasharray: 2 3; }

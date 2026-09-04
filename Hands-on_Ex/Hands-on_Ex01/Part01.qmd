@@ -1,0 +1,213 @@
+---
+title: "Geospatial Data Wrangling with R"
+subtitle: "HANDS-ON EXERCISE 1 · PART 01"
+author:
+  - name: Jedidiah Asaf Tallulembang
+    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+date: last-modified
+format:
+  html:
+    code-fold: false
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+::: {.pill-row}
+[R]{.pill} [sf]{.pill} [tidyverse]{.pill} [Geospatial Analysis]{.pill}
+:::
+
+This exercise follows the first of two Hands-on Exercise 1 readings listed under
+Lesson 1 of the course outline: [Geospatial Data Wrangling with
+R](https://r4gdsa.netlify.app/chap01.html). The companion reading, Choropleth
+Mapping with R, is written up separately in [Part 02](Part02.qmd).
+
+## 1. Overview
+
+This part works through the core geospatial data science workflow in R: importing
+geospatial and aspatial data, checking and setting coordinate reference systems,
+converting aspatial data to spatial data, and performing basic geoprocessing with the
+`sf` package.
+
+## 2. Getting Started
+
+```{r}
+pacman::p_load(sf, tidyverse)
+```
+
+## 3. Data Acquisition
+
+Three datasets are used:
+
+| Dataset | Source | Format used |
+|---|---|---|
+| Master Plan 2014 Subzone Boundary (No Sea) | [data.gov.sg](https://data.gov.sg/datasets/d_226cacceceff94f0c8b814962a5307c9/view) | GeoJSON |
+| Pre-Schools Location | [data.gov.sg](https://data.gov.sg/datasets/d_61eefab99958fd70e6aab17320a71f1c/view) | GeoJSON |
+| Cycling Path Network | [data.gov.sg](https://data.gov.sg/datasets/d_8f468b25193f64be8a16fa7d8f60f553/view) | GeoJSON |
+| Singapore Airbnb listings | [Inside Airbnb](https://insideairbnb.com/singapore/) | CSV |
+
+**Note on format:** the original exercise reference uses the Master Plan boundary,
+pre-school location, and cycling path layers in Shapefile/KML format. All three have
+since been retired on the data.gov.sg portal in favour of GeoJSON-only downloads, so
+this write-up imports the GeoJSON versions directly with `st_read()` instead. The
+underlying `sf` workflow is identical regardless of source format — only the CRS each
+layer arrives in differs (all three come in as WGS84 here, rather than the mix of
+WGS84/SVY21 the reference chapter describes).
+
+## 4. Importing Geospatial Data
+
+### 4.1 Master Plan 2014 Subzone Boundary
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial/MasterPlan2014SubzoneBoundaryNoSea.geojson")
+```
+
+### 4.2 Pre-Schools Location
+
+```{r}
+preschool <- st_read("data/geospatial/PreSchoolsLocation.geojson")
+```
+
+### 4.3 Cycling Path Network
+
+```{r}
+cyclingpath <- st_read("data/geospatial/CyclingPathNetwork.geojson")
+```
+
+## 5. Checking the Content of a Simple Feature Data Frame
+
+```{r}
+st_geometry(mpsz)
+```
+
+```{r}
+glimpse(mpsz)
+```
+
+```{r}
+head(mpsz, n = 5)
+```
+
+## 6. Plotting the Geospatial Data
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+```{r}
+plot(mpsz["PLN_AREA_N"])
+```
+
+## 7. Working with Projection
+
+Checking the coordinate reference system of each layer:
+
+```{r}
+st_crs(mpsz)
+```
+
+```{r}
+st_crs(preschool)
+```
+
+Both layers come in as WGS84 (EPSG:4326 / CRS84), Singapore's projected coordinate
+system is SVY21 (EPSG:3414), which is needed for any accurate area or distance
+calculation. Transforming both layers:
+
+```{r}
+mpsz3414 <- st_transform(mpsz, crs = 3414)
+preschool3414 <- st_transform(preschool, crs = 3414)
+cyclingpath3414 <- st_transform(cyclingpath, crs = 3414)
+```
+
+```{r}
+st_crs(mpsz3414)
+```
+
+## 8. Importing and Converting an Aspatial Data Set
+
+The Airbnb listings CSV has `latitude`/`longitude` columns but no spatial geometry —
+it needs to be converted into an `sf` object before it can be used alongside the other
+two layers.
+
+```{r}
+listings <- read_csv("data/aspatial/listings.csv")
+```
+
+```{r}
+listings_sf <- st_as_sf(listings,
+                         coords = c("longitude", "latitude"),
+                         crs = 4326) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+listings_sf
+```
+
+## 9. Geoprocessing with sf Package
+
+### 9.1 Buffer analysis: land needed to widen cycling paths
+
+Scenario: the land authority wants to widen every cycling path by 5m on each side, and
+needs to know how much total land will need to be acquired.
+
+```{r}
+buffer_cycling <- st_buffer(cyclingpath3414, dist = 5, nQuadSegs = 30)
+buffer_cycling$AREA <- st_area(buffer_cycling)
+sum(buffer_cycling$AREA)
+```
+
+### 9.2 Point-in-polygon count: pre-schools per subzone
+
+```{r}
+mpsz3414$`PreSch Count` <- lengths(st_intersects(mpsz3414, preschool3414))
+```
+
+```{r}
+summary(mpsz3414$`PreSch Count`)
+```
+
+### 9.3 Subzone area and pre-school density
+
+```{r}
+mpsz3414$Area <- mpsz3414 %>%
+  st_area()
+
+mpsz3414 <- mpsz3414 %>%
+  mutate(`PreSch Density` = as.numeric(`PreSch Count`) / (as.numeric(Area) / 1000000))
+```
+
+```{r}
+ggplot(data = mpsz3414, aes(x = `PreSch Density`)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  labs(title = "Distribution of pre-school density by subzone",
+       x = "Pre-school density (per sq km)",
+       y = "Number of subzones")
+```
+
+```{r}
+ggplot(data = mpsz3414, aes(y = `PreSch Count`, x = `PreSch Density`)) +
+  geom_point(color = "black", fill = "light blue") +
+  labs(title = "Pre-school count vs. density by subzone",
+       x = "Pre-school density (per sq km)",
+       y = "Pre-school count")
+```
+
+## 10. Reflections
+
+The main friction point in this exercise wasn't the `sf` workflow itself, it was that
+the reference chapter's data sources have moved on: data.gov.sg no longer serves the
+Master Plan boundary, pre-school, or cycling path layers as Shapefile/KML, only
+GeoJSON. `st_read()` handles GeoJSON exactly the same way it handles a Shapefile or
+KML, so the substitution didn't change anything downstream — the buffer, point-in-
+polygon, and density workflows all ran the same way once every layer was reprojected
+to EPSG:3414. The one thing worth double-checking whenever a dataset gets swapped like
+this is what coordinate system it actually arrives in — all three geospatial layers
+here came in as WGS84, whereas the reference chapter has some of them (the cycling
+path, in particular) already in SVY21.
+
+::: {.page-nav-next}
+[Part 02: Choropleth Mapping with R →](Part02.qmd)
+:::

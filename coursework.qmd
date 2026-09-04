@@ -1,0 +1,24 @@
+---
+title: "Coursework"
+toc: false
+---
+
+A collection of hands-on exercises exploring geospatial data, analysis, and
+visualisation in R, completed for **ISSS626: Geospatial Analytics and Applications**
+at Singapore Management University.
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">01</span>
+<span class="coursework-group-title">Hands-on Exercise 1</span>
+:::
+
+<p class="coursework-group-desc">Geospatial data fundamentals — importing,
+wrangling, and mapping spatial data with <code>sf</code> and <code>tmap</code>.</p>
+
+[<span class="exercise-row-label">Part 01</span><span class="exercise-row-title">Geospatial Data Wrangling with R</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex01/Part01.qmd){.exercise-row}
+
+[<span class="exercise-row-label">Part 02</span><span class="exercise-row-title">Choropleth Mapping with R</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex01/Part02.qmd){.exercise-row}
+
+:::

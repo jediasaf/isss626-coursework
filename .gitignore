@@ -3,6 +3,7 @@
 .RData
 .Ruserdata
 /.quarto/
+_freeze/
 .DS_Store
 .vercel
 .vercel/

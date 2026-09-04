@@ -3,22 +3,67 @@ project:
   output-dir: _site
 
 website:
-  title: "ISSS626 Coursework"
+  title: "ISSS626"
+  site-url: "https://isss626-coursework.vercel.app"
+  page-navigation: true
+  back-to-top-navigation: false
   navbar:
+    logo: false
     left:
       - href: index.qmd
         text: Home
-      - text: "Hands-on Exercise 1"
-        menu:
-          - text: "Part 1: Geospatial Data Wrangling with R"
-            href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part1
-          - text: "Part 2: Choropleth Mapping with R"
-            href: Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.qmd#part2
+      - href: coursework.qmd
+        text: Exercises
+      - href: about.qmd
+        text: About
+    right:
+      - icon: github
+        href: https://github.com/jediasaf/isss626-coursework
+        aria-label: GitHub repository
+  sidebar:
+    style: docked
+    collapse-level: 1
+    contents:
+      - coursework.qmd
+      - section: "Hands-on Exercise 1"
+        contents:
+          - text: "Part 01 — Geospatial Data Wrangling"
+            href: Hands-on_Ex/Hands-on_Ex01/Part01.qmd
+          - text: "Part 02 — Choropleth Mapping"
+            href: Hands-on_Ex/Hands-on_Ex01/Part02.qmd
+  page-footer:
+    border: true
+    left: |
+      **ISSS626**  \
+      Geospatial Analytics and Applications
+    center: |
+      By Jedidiah Asaf Tallulembang  \
+      Singapore Management University
+    right: |
+      Coursework Portfolio · 2026
 
 format:
   html:
-    theme: cosmo
+    theme:
+      light: [cosmo, theme-light.scss]
+      dark: [cosmo, theme-dark.scss]
     css: styles.css
     toc: true
-    code-fold: show
+    toc-title: "On this page"
+    code-fold: false
+    code-copy: true
+    code-tools: false
     number-sections: false
+    smooth-scroll: false
+    grid:
+      sidebar-width: 260px
+      body-width: 780px
+      margin-width: 220px
+    include-in-header:
+      text: |
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+execute:
+  freeze: auto

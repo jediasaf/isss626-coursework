@@ -1,0 +1,26 @@
+---
+title: "About"
+toc: false
+---
+
+This site collects the hands-on and take-home exercises completed for **ISSS626:
+Geospatial Analytics and Applications**, part of the Master of IT in Business
+programme at Singapore Management University.
+
+Each exercise is written up as a reproducible R notebook — the code, its output, and
+a short reflection on what the data actually showed, including the places where
+real-world datasets didn't match the reference material exactly and had to be worked
+around.
+
+## Author
+
+**Jedidiah Asaf Tallulembang**
+Singapore Management University
+
+## Built with
+
+- [Quarto](https://quarto.org) for the site and notebook rendering
+- [sf](https://r-spatial.github.io/sf/), [tmap](https://r-tmap.github.io/tmap/), and
+  the [tidyverse](https://www.tidyverse.org/) for the analysis itself
+- Deployed on [Vercel](https://vercel.com), source on
+  [GitHub](https://github.com/jediasaf/isss626-coursework)
