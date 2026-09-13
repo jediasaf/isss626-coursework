@@ -4,7 +4,7 @@
     "href": "coursework.html",
     "title": "Coursework",
     "section": "",
-    "text": "A collection of hands-on exercises exploring geospatial data, analysis, and visualisation in R, completed for ISSS626: Geospatial Analytics and Applications at Singapore Management University.\n\n\n01 Hands-on Exercise 1\n\n\nGeospatial data fundamentals — importing, wrangling, and mapping spatial data with sf and tmap.\n\nPart 01Geospatial Data Wrangling with R→\nPart 02Choropleth Mapping with R→",
+    "text": "A collection of hands-on exercises exploring geospatial data, analysis, and visualisation in R, completed for ISSS626: Geospatial Analytics and Applications at Singapore Management University.\n\n\n01 Hands-on Exercise 1\n\n\nGeospatial data fundamentals — importing, wrangling, and mapping spatial data with sf and tmap.\n\nPart 01Geospatial Data Wrangling with R→\nPart 02Choropleth Mapping with R→\n\n\n\n02 Hands-on Exercise 2\n\n\nSpatial point patterns analysis of Singapore’s childcare centres — kernel density estimation and distance-based tests against complete spatial randomness with spatstat.\n\nPart 01First-order Spatial Point Patterns Analysis→\nPart 02Second-order Spatial Point Patterns Analysis→\n\n\n\n03 Hands-on Exercise 3\n\n\nPoint patterns confined to a road network — network kernel density estimation and network-constrained K-functions over Punggol with spNetwork.\n\nExerciseNetwork Constrained Spatial Point Patterns Analysis→",
     "crumbs": [
       "Home",
       "Coursework"
@@ -123,6 +123,402 @@
       "Home",
       "Hands-on Exercise 1",
       "Part 02 — Choropleth Mapping"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "",
+    "text": "R spatstat G / F / K / L Monte Carlo\nThis is the second of the two Spatial Point Patterns Analysis readings for Hands-on Exercise 2: 2nd Order Spatial Point Patterns Analysis Methods. The first-order methods are in Part 01.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#overview",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "1. Overview",
+    "text": "1. Overview\nFirst-order analysis asked how intensity varies across space. Second-order analysis asks a different question: do the events interact? Given the number of points present, are they closer together than chance would produce (attraction / clustering), further apart (inhibition / regularity), or indistinguishable from random?\nFour distance-based functions answer this at a range of scales:\n\n\n\n\n\n\n\n\nFunction\nMeasures\nClustered when\n\n\n\n\nG\ndistance from each event to its nearest event\ncurve rises above the CSR envelope\n\n\nF\ndistance from random locations to the nearest event\ncurve falls below the CSR envelope\n\n\nK\ncumulative count of events within distance r\ncurve rises above the envelope\n\n\nL\nK, variance-stabilised to a flat zero line\ncurve rises above zero\n\n\n\nEach is tested against a Monte Carlo envelope built from simulated CSR patterns. That envelope is the whole point: a raw G or K curve on its own tells me nothing, because almost every real pattern deviates somewhat from the theoretical CSR line.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#the-data",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "2. The Data",
+    "text": "2. The Data\nThe same two layers as Part 01 — Child Care Services and the Master Plan 2019 Subzone Boundary (No Sea), both GeoJSON from data.gov.sg, both projected to SVY21 (EPSG:3414).",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#getting-started",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "3. Getting Started",
+    "text": "3. Getting Started\n\npacman::p_load(sf, spatstat, tmap, tidyverse)",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#data-import-and-preparation",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#data-import-and-preparation",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "4. Data Import and Preparation",
+    "text": "4. Data Import and Preparation\nRepeating the Part 01 preparation so this page stands on its own — each Quarto page is its own R session.\n\nmpsz_sf &lt;- st_read(\"data/geospatial/MasterPlan2019SubzoneBoundaryNoSea.geojson\",\n                   quiet = TRUE) %&gt;%\n  st_transform(crs = 3414)\n\nchildcare_sf &lt;- st_read(\"data/geospatial/ChildCareServices.geojson\",\n                        quiet = TRUE) %&gt;%\n  st_transform(crs = 3414)\n\n\nset.seed(1234)\nchildcare_ppp &lt;- as.ppp(childcare_sf)\nchildcare_ppp_jit &lt;- rjitter(childcare_ppp, retry = TRUE, nsim = 1, drop = TRUE)\nany(duplicated(childcare_ppp_jit))\n\n[1] FALSE\n\n\nThe seed is fixed because every envelope on this page is built from simulated CSR patterns. Without it the exact distance at which each observed curve crosses its envelope shifts by a few tens of metres on every rebuild, which makes any number I quote in the text wrong the next time the site is deployed.\nTwo planning areas are used as study areas, as in the reference chapter: Choa Chu Kang and Tampines.\n\ncck &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"CHOA CHU KANG\")\ntm  &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"TAMPINES\")\n\ncck_owin &lt;- as.owin(st_union(cck))\ntm_owin  &lt;- as.owin(st_union(tm))\n\nchildcare_cck_ppp &lt;- childcare_ppp_jit[cck_owin]\nchildcare_tm_ppp  &lt;- childcare_ppp_jit[tm_owin]\n\nchildcare_cck_ppp.km &lt;- rescale.ppp(childcare_cck_ppp, 1000, \"km\")\nchildcare_tm_ppp.km  &lt;- rescale.ppp(childcare_tm_ppp,  1000, \"km\")\n\n\ndata.frame(\n  area   = c(\"Choa Chu Kang\", \"Tampines\"),\n  points = c(npoints(childcare_cck_ppp), npoints(childcare_tm_ppp)),\n  area_km2 = round(c(area(cck_owin), area(tm_owin)) / 1e6, 2)\n)\n\n           area points area_km2\n1 Choa Chu Kang     74     6.12\n2      Tampines    117    20.80\n\n\n\npar(mfrow = c(1, 2))\nplot(childcare_cck_ppp, main = \"Choa Chu Kang\", cex = 0.7, pch = 19)\nplot(childcare_tm_ppp,  main = \"Tampines\",      cex = 0.7, pch = 19)\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#a-note-on-the-hypotheses-and-the-number-of-simulations",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#a-note-on-the-hypotheses-and-the-number-of-simulations",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "5. A Note on the Hypotheses and the Number of Simulations",
+    "text": "5. A Note on the Hypotheses and the Number of Simulations\nFor every test below:\n\\(H_0\\): the distribution of childcare centres in the study area is randomly distributed. \\(H_1\\): the distribution is not randomly distributed.\n\\(H_0\\) is rejected at the 95% level if the observed curve leaves the envelope built from the simulated CSR patterns.\nOn nsim. The reference chapter uses nsim = 999. I use nsim = 99 throughout this page. With 99 simulations the envelope is the pointwise minimum and maximum of the simulations, which corresponds to a two-sided significance level of 2/(99+1) = 0.02 — comfortably inside the 0.05 I am testing at, and it keeps this page rendering in seconds rather than minutes, which matters because the site is rebuilt on every deploy. Where the observed curve leaves the envelope below it does so by a wide margin rather than grazing the edge, so the extra simulations would not change the reading. A marginal result would be a reason to raise nsim, and I would.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#g-function-nearest-neighbour-distances",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#g-function-nearest-neighbour-distances",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "6. G-Function: Nearest Neighbour Distances",
+    "text": "6. G-Function: Nearest Neighbour Distances\nThe G-function is the cumulative distribution of the distance from each event to its nearest neighbouring event. Clustering pushes those distances down, so G rises faster than under CSR.\n\n6.1 Choa Chu Kang\n\nG_CK &lt;- Gest(childcare_cck_ppp, correction = \"border\")\nplot(G_CK, xlim = c(0, 500), main = \"G function — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\nG_CK.csr &lt;- envelope(childcare_cck_ppp, Gest, nsim = 99)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, \n[27:04 remaining, estimate finish 2026-09-13 12:10:08]\n33, \n[25:50 remaining, estimate finish 2026-09-13 12:08:54]\n34, \n[24:40 remaining, estimate finish 2026-09-13 12:07:44]\n35, \n[23:34 remaining, estimate finish 2026-09-13 12:06:39]\n36, \n[22:32 remaining, estimate finish 2026-09-13 12:05:37]\n37, \n[21:34 remaining, estimate finish 2026-09-13 12:04:39]\n38, \n[20:39 remaining, estimate finish 2026-09-13 12:03:43]\n39, \n[19:46 remaining, estimate finish 2026-09-13 12:02:51]\n40, \n[18:57 remaining, estimate finish 2026-09-13 12:02:01]\n41, \n[18:09 remaining, estimate finish 2026-09-13 12:01:14]\n42, \n[17:25 remaining, estimate finish 2026-09-13 12:00:29]\n43, \n[16:42 remaining, estimate finish 2026-09-13 11:59:47]\n44, \n[16:01 remaining, estimate finish 2026-09-13 11:59:06]\n45, \n[15:22 remaining, estimate finish 2026-09-13 11:58:27]\n46, \n[14:45 remaining, estimate finish 2026-09-13 11:57:50]\n47, \n[14:09 remaining, estimate finish 2026-09-13 11:57:14]\n48, \n[13:35 remaining, estimate finish 2026-09-13 11:56:40]\n49, \n[13:03 remaining, estimate finish 2026-09-13 11:56:07]\n50, \n[12:31 remaining, estimate finish 2026-09-13 11:55:36]\n51, \n[12:01 remaining, estimate finish 2026-09-13 11:55:06]\n52, \n[11:33 remaining, estimate finish 2026-09-13 11:54:37]\n53, \n[11:05 remaining, estimate finish 2026-09-13 11:54:10]\n54, \n[10:38 remaining, estimate finish 2026-09-13 11:53:43]\n55, \n[10:12 remaining, estimate finish 2026-09-13 11:53:17]\n56,  [9:48 remaining] 57,  [9:24 remaining] 58,  [9:01 remaining] 59,  [8:38 remaining] 60,  [8:17 remaining] 61,  [7:56 remaining] 62,  [7:36 remaining] 63,  [7:16 remaining] 64,  [6:58 remaining] 65,  [6:39 remaining] 66,  [6:22 remaining] 67,  [6:04 remaining] 68,  [5:48 remaining] 69,  [5:32 remaining] 70,  [5:16 remaining] 71,  [5:01 remaining] 72,  [4:46 remaining] 73,  [4:31 remaining] 74,  [4:17 remaining] 75,\n [4:04 remaining] 76,  [3:51 remaining] 77,  [3:38 remaining] 78,  [3:25 remaining] 79,  [3:13 remaining] 80,  [3:01 remaining] 81,  [2:49 remaining] 82,  [2:38 remaining] 83,  [2:27 remaining] 84,  [2:16 remaining] 85,  [2:05 remaining] 86,  [1:55 remaining] 87,  [1:45 remaining] 88,  [1:35 remaining] 89,  [1:25 remaining] 90,  [1:16 remaining] 91,  [1:07 remaining] 92,  [58 sec remaining] 93,  [49 sec remaining] 94,  [40 sec remaining] 95,\n [32 sec remaining] 96,  [24 sec remaining] 97,  [16 sec remaining] 98,  [8 sec remaining] \n99.\n\nDone.\n\nplot(G_CK.csr, main = \"G function with CSR envelope — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\n\n6.2 Tampines\n\nG_tm &lt;- Gest(childcare_tm_ppp, correction = \"best\")\nplot(G_tm, xlim = c(0, 500), main = \"G function — Tampines\")\n\n\n\n\n\n\n\n\n\nG_tm.csr &lt;- envelope(childcare_tm_ppp, Gest, correction = \"all\", nsim = 99)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(G_tm.csr, main = \"G function with CSR envelope — Tampines\")\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNoteReading the G plots\n\n\n\nIn both areas the observed G rises above the grey envelope, meaning nearest neighbours are closer together than CSR would produce — clustering. The range over which it does so differs sharply between the two areas, and that turned out to be the more interesting result. Rather than eyeball it off the plots, I compute the exact crossing ranges for all four functions in section 10 below.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#f-function-empty-space-distances",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#f-function-empty-space-distances",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "7. F-Function: Empty Space Distances",
+    "text": "7. F-Function: Empty Space Distances\nThe F-function measures the distance from an arbitrary location to the nearest event. Clustering leaves large empty gaps between clusters, so F rises more slowly than under CSR — the mirror image of the G result.\n\n7.1 Choa Chu Kang\n\nF_CK &lt;- Fest(childcare_cck_ppp)\nplot(F_CK, main = \"F function — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\nF_CK.csr &lt;- envelope(childcare_cck_ppp, Fest, nsim = 99)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(F_CK.csr, main = \"F function with CSR envelope — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\n\n7.2 Tampines\n\nF_tm &lt;- Fest(childcare_tm_ppp, correction = \"best\")\nplot(F_tm, main = \"F function — Tampines\")\n\n\n\n\n\n\n\n\n\nF_tm.csr &lt;- envelope(childcare_tm_ppp, Fest, correction = \"all\", nsim = 99)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(F_tm.csr, main = \"F function with CSR envelope — Tampines\")\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nImportantF and G point in opposite directions, and that is correct\n\n\n\nG above the envelope and F below the envelope look like contradictory results but are the same finding stated twice: G is measured from events, F from empty space. A clustered pattern has short event-to-event distances (G up) and large voids between clusters (F down). If both pointed the same way, one of them would be wrong.\nThe computed table in section 10 confirms this holds in both study areas: G leaves its envelope upward, F leaves its envelope downward, and K and L leave theirs upward. Four statistics built on different distance definitions all reject CSR, consistently.\nOne caveat I want on the record. An earlier run of this page, before I fixed the seed, produced an F-function for Choa Chu Kang that never left its envelope at all — the opposite significance verdict from the one shown here. With only 74 points and 99 simulations, F in Choa Chu Kang is marginal enough that the answer moved with the simulation draw. G, K and L did not move. That is the concrete reason the seed is now fixed at the top of this page, and a warning against quoting a borderline Monte Carlo result as though it were stable. If this were assessed work with consequences I would raise nsim for F specifically rather than rely on a single draw.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#k-function-cumulative-counts",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#k-function-cumulative-counts",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "8. K-Function: Cumulative Counts",
+    "text": "8. K-Function: Cumulative Counts\nThe K-function counts, for each event, how many other events fall within a distance r, averaged and scaled by intensity. Unlike G and F it uses all neighbour distances, not just the nearest, so it describes the pattern across a range of scales at once.\n\n8.1 Choa Chu Kang\n\nK_ck &lt;- Kest(childcare_cck_ppp, correction = \"Ripley\")\nplot(K_ck, . - r ~ r, ylab = \"K(d) - r\", xlab = \"d (m)\",\n     main = \"K function — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\nK_ck.csr &lt;- envelope(childcare_cck_ppp, Kest, nsim = 99, rank = 1, glocal = TRUE)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(K_ck.csr, . - r ~ r, xlab = \"d (m)\", ylab = \"K(d) - r\",\n     main = \"K function with CSR envelope — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\n\n8.2 Tampines\n\nK_tm &lt;- Kest(childcare_tm_ppp, correction = \"Ripley\")\nplot(K_tm, . - r ~ r,\n     ylab = \"K(d) - r\", xlab = \"d (m)\", xlim = c(0, 1000),\n     main = \"K function — Tampines\")\n\n\n\n\n\n\n\n\n\nK_tm.csr &lt;- envelope(childcare_tm_ppp, Kest, nsim = 99, rank = 1, glocal = TRUE)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(K_tm.csr, . - r ~ r, xlab = \"d (m)\", ylab = \"K(d) - r\", xlim = c(0, 500),\n     main = \"K function with CSR envelope — Tampines\")",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#l-function",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#l-function",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "9. L-Function",
+    "text": "9. L-Function\nL is K transformed so that CSR is a flat line at zero, which makes deviations far easier to read off a plot than K’s rising curve.\n\n9.1 Choa Chu Kang\n\nL_ck &lt;- Lest(childcare_cck_ppp, correction = \"Ripley\")\nplot(L_ck, . - r ~ r, ylab = \"L(d) - r\", xlab = \"d (m)\",\n     main = \"L function — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\nL_ck.csr &lt;- envelope(childcare_cck_ppp, Lest, nsim = 99, rank = 1, glocal = TRUE)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, \n[1:31:56 remaining, estimate finish 2026-09-13 13:50:47]\n18, \n[1:25:32 remaining, estimate finish 2026-09-13 13:44:23]\n19, \n[1:19:50 remaining, estimate finish 2026-09-13 13:38:42]\n20, \n[1:14:46 remaining, estimate finish 2026-09-13 13:33:40]\n21, \n[1:10:08 remaining, estimate finish 2026-09-13 13:29:02]\n22, \n[1:05:57 remaining, estimate finish 2026-09-13 13:24:51]\n23, \n[1:02:09 remaining, estimate finish 2026-09-13 13:21:03]\n24, \n[58:40 remaining, estimate finish 2026-09-13 13:17:34]\n25, \n[55:29 remaining, estimate finish 2026-09-13 13:14:23]\n26, \n[52:33 remaining, estimate finish 2026-09-13 13:11:27]\n27, \n[49:50 remaining, estimate finish 2026-09-13 13:08:44]\n28, \n[47:19 remaining, estimate finish 2026-09-13 13:06:13]\n29, \n[45:00 remaining, estimate finish 2026-09-13 13:03:54]\n30, \n[42:49 remaining, estimate finish 2026-09-13 13:01:44]\n31, \n[40:48 remaining, estimate finish 2026-09-13 12:59:42]\n32, \n[38:54 remaining, estimate finish 2026-09-13 12:57:48]\n33, \n[37:08 remaining, estimate finish 2026-09-13 12:56:02]\n34, \n[35:27 remaining, estimate finish 2026-09-13 12:54:22]\n35, \n[33:53 remaining, estimate finish 2026-09-13 12:52:48]\n36, \n[32:24 remaining, estimate finish 2026-09-13 12:51:19]\n37, \n[31:00 remaining, estimate finish 2026-09-13 12:49:55]\n38, \n[29:42 remaining, estimate finish 2026-09-13 12:48:37]\n39, \n[28:27 remaining, estimate finish 2026-09-13 12:47:22]\n40, \n[27:15 remaining, estimate finish 2026-09-13 12:46:11]\n41, \n[49:32 remaining, estimate finish 2026-09-13 13:24:36]\n42, \n[47:30 remaining, estimate finish 2026-09-13 13:22:35]\n43, \n[45:35 remaining, estimate finish 2026-09-13 13:20:40]\n44, \n[43:44 remaining, estimate finish 2026-09-13 13:18:50]\n45, \n[41:59 remaining, estimate finish 2026-09-13 13:17:06]\n46, \n[40:18 remaining, estimate finish 2026-09-13 13:15:25]\n47, \n[38:41 remaining, estimate finish 2026-09-13 13:13:48]\n48, \n[37:08 remaining, estimate finish 2026-09-13 13:12:15]\n49, \n[35:39 remaining, estimate finish 2026-09-13 13:10:46]\n50, \n[34:13 remaining, estimate finish 2026-09-13 13:09:21]\n51, \n[32:51 remaining, estimate finish 2026-09-13 13:07:59]\n52, \n[31:32 remaining, estimate finish 2026-09-13 13:06:40]\n53, \n[30:16 remaining, estimate finish 2026-09-13 13:05:24]\n54, \n[29:03 remaining, estimate finish 2026-09-13 13:04:11]\n55, \n[27:53 remaining, estimate finish 2026-09-13 13:03:01]\n56, \n[26:46 remaining, estimate finish 2026-09-13 13:01:53]\n57, \n[25:40 remaining, estimate finish 2026-09-13 13:00:48]\n58, \n[24:37 remaining, estimate finish 2026-09-13 12:59:45]\n59, \n[23:36 remaining, estimate finish 2026-09-13 12:58:44]\n60, \n[22:38 remaining, estimate finish 2026-09-13 12:57:46]\n61, \n[21:41 remaining, estimate finish 2026-09-13 12:56:49]\n62, \n[20:46 remaining, estimate finish 2026-09-13 12:55:54]\n63, \n[25:03 remaining, estimate finish 2026-09-13 13:09:06]\n64, \n[23:59 remaining, estimate finish 2026-09-13 13:08:03]\n65, \n[22:56 remaining, estimate finish 2026-09-13 13:07:01]\n66, \n[21:55 remaining, estimate finish 2026-09-13 13:06:00]\n67, \n[20:56 remaining, estimate finish 2026-09-13 13:05:01]\n68, \n[19:59 remaining, estimate finish 2026-09-13 13:04:03]\n69, \n[19:03 remaining, estimate finish 2026-09-13 13:03:08]\n70, \n[18:09 remaining, estimate finish 2026-09-13 13:02:14]\n71, \n[17:16 remaining, estimate finish 2026-09-13 13:01:21]\n72, \n[16:25 remaining, estimate finish 2026-09-13 13:00:30]\n73, \n[15:36 remaining, estimate finish 2026-09-13 12:59:41]\n74, \n[14:47 remaining, estimate finish 2026-09-13 12:58:52]\n75, \n[14:00 remaining, estimate finish 2026-09-13 12:58:06]\n76, \n[13:15 remaining, estimate finish 2026-09-13 12:57:20]\n77, \n[12:30 remaining, estimate finish 2026-09-13 12:56:35]\n78, \n[11:47 remaining, estimate finish 2026-09-13 12:55:52]\n79, \n[11:04 remaining, estimate finish 2026-09-13 12:55:10]\n80, \n[10:23 remaining, estimate finish 2026-09-13 12:54:29]\n81,  [9:43 remaining] 82,  [9:04 remaining] 83,  [8:26 remaining] 84,  [7:48 remaining] 85,  [7:12 remaining] 86,  [6:36 remaining] 87,  [6:02 remaining] 88,  [5:28 remaining] 89,  [4:55 remaining] 90,  [4:22 remaining] 91,  [3:50 remaining] 92,  [3:19 remaining] 93,  [2:49 remaining] 94,  [2:19 remaining] 95,  [1:50 remaining] 96,  [1:22 remaining] 97,  [54 sec remaining] 98,  [27 sec remaining] \n99.\n\nDone.\n\nplot(L_ck.csr, . - r ~ r, xlab = \"d (m)\", ylab = \"L(d) - r\",\n     main = \"L function with CSR envelope — Choa Chu Kang\")\n\n\n\n\n\n\n\n\n\n\n9.2 Tampines\n\nL_tm &lt;- Lest(childcare_tm_ppp, correction = \"Ripley\")\nplot(L_tm, . - r ~ r, ylab = \"L(d) - r\", xlab = \"d (m)\", xlim = c(0, 1000),\n     main = \"L function — Tampines\")\n\n\n\n\n\n\n\n\n\nL_tm.csr &lt;- envelope(childcare_tm_ppp, Lest, nsim = 99, rank = 1, glocal = TRUE)\n\nGenerating 99 simulated realisations of CSR  ...\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,\n21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,\n41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,\n61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,\n81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, \n99.\n\nDone.\n\nplot(L_tm.csr, . - r ~ r, xlab = \"d (m)\", ylab = \"L(d) - r\", xlim = c(0, 500),\n     main = \"L function with CSR envelope — Tampines\")",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#sec-crossings",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#sec-crossings",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "10. Where Each Curve Leaves Its Envelope",
+    "text": "10. Where Each Curve Leaves Its Envelope\nReading significance off eight plots by eye is unreliable, so I compute it directly. For G, K and L a departure above the upper envelope indicates clustering; for F a departure below the lower envelope does.\n\ncrossing &lt;- function(env, side) {\n  d &lt;- if (side == \"above\") env$r[env$obs &gt; env$hi] else env$r[env$obs &lt; env$lo]\n  d &lt;- d[!is.na(d)]\n  if (length(d) == 0) \"never leaves envelope\"\n  else paste0(round(min(d)), \"-\", round(max(d)), \" m\")\n}\n\ndata.frame(\n  Function = c(\"G\", \"F\", \"K\", \"L\"),\n  Direction = c(\"above\", \"below\", \"above\", \"above\"),\n  `Choa Chu Kang` = c(crossing(G_CK.csr, \"above\"), crossing(F_CK.csr, \"below\"),\n                      crossing(K_ck.csr, \"above\"), crossing(L_ck.csr, \"above\")),\n  Tampines = c(crossing(G_tm.csr, \"above\"), crossing(F_tm.csr, \"below\"),\n               crossing(K_tm.csr, \"above\"), crossing(L_tm.csr, \"above\")),\n  check.names = FALSE\n)\n\n  Function Direction Choa Chu Kang  Tampines\n1        G     above      46-101 m   8-340 m\n2        F     below     279-484 m 273-819 m\n3        K     above      45-795 m 10-1665 m\n4        L     above      47-795 m 10-1665 m",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part02.html#what-i-take-from-this-exercise",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part02.html#what-i-take-from-this-exercise",
+    "title": "Second-order Spatial Point Patterns Analysis",
+    "section": "11. What I Take From This Exercise",
+    "text": "11. What I Take From This Exercise\nAll four functions agree. In both Choa Chu Kang and Tampines, G, K and L rise above their envelopes and F falls below its own — four different statistics, built on different distance definitions, all rejecting complete spatial randomness in the same direction. Childcare centres in both towns are clustered.\nThe agreement is firmer in Tampines than in Choa Chu Kang. Tampines has 117 points to Choa Chu Kang’s 74, its curves leave the envelopes earlier and stay outside them longer, and its F result was stable across simulation draws where Choa Chu Kang’s was not.\nScale is the real finding. What matters is not that the curves leave the envelope but over what range, and the table in section 10 makes two things obvious. First, K departs over a far wider range than G in both areas — unsurprising, since K counts all neighbours rather than only the nearest, so it detects clustering that nearest-neighbour distances alone miss. Second, the two towns cluster at genuinely different scales: Tampines stays outside its K envelope well past a kilometre, while Choa Chu Kang returns inside it several hundred metres earlier. Those are two different spatial processes, and calling both simply “clustered” would throw the distinction away. A first-order KDE could not have told me any of this, because KDE has no notion of scale-dependent interaction.\nWhat I got wrong, twice. First I read the F-function plot as contradicting the G-function plot and assumed I had mis-specified the edge correction. The two functions are supposed to point in opposite directions for a clustered pattern; writing out what each one measures from — events for G, empty space for F — fixed that.\nThe second mistake was the instructive one. I wrote up the significance verdicts from reading the plots, then built the table in section 10 to compute them properly, and the F result for Choa Chu Kang came out differently from what I had written. Chasing it down, the cause was not a coding error but an unfixed random seed: F in that area is close enough to its envelope that the verdict moved between simulation runs. Two lessons out of one bug — compute the crossing points rather than eyeballing them, and fix the seed before writing any sentence that depends on a Monte Carlo result.\nLimitation, again. Every test here compares the observed pattern to complete spatial randomness within the planning area polygon. But a childcare centre cannot be sited in a canal, a cemetery, a reservoir or an expressway interchange, and a meaningful share of both study areas is exactly that. The CSR null is therefore slightly too generous, and some of the measured “clustering” is really just “buildings are where buildings can be”. The honest fix is an inhomogeneous null (Kinhom, Linhom) fitted to a population or land-use covariate rather than a homogeneous CSR, which is where I would take this next.\nThis is not a hypothetical worry. In Hands-on Exercise 3 I run the network-constrained equivalent of the K-function on Punggol, where the null only scatters simulated points along roads rather than anywhere inside the polygon — and the result flips from clustering to regularity. Some of what this page measures as clustering is the shape of the study area, not the behaviour of childcare operators.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 02 — Second-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "",
+    "text": "R spNetwork NKDE Network K-function\nThis exercise follows Network Constrained Spatial Point Patterns Analysis, the reading listed under Lesson 3, Advanced Spatial Point Patterns Analysis.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#overview",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "1. Overview",
+    "text": "1. Overview\nEverything in Hands-on Exercise 2 assumed events could fall anywhere on a two-dimensional plane, and measured distance as the straight line between them. For childcare centres that assumption is wrong in a specific way: a centre sits on a street, a parent walks along streets, and two centres on opposite banks of Punggol Waterway are 80 metres apart in Euclidean terms and roughly a kilometre apart in walking terms.\nNetwork constrained SPPA fixes that by confining both the events and the distance metric to the network itself. This exercise uses spNetwork to:\n\nderive a network kernel density estimate (NKDE), and\nperform network-constrained G- and K-function analysis.\n\nThe study area is Punggol.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#the-data",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "2. The Data",
+    "text": "2. The Data\n\n\n\nDataset\nDescription\nFormat\n\n\n\n\nPunggol_St\nPunggol road network\nESRI Shapefile (line)\n\n\nPunggol_CC\nChildcare centres in Punggol\nESRI Shapefile (point)\n\n\n\nBoth were supplied with the course under Lesson 3 and are already in SVY21 (EPSG:3414), so no reprojection is needed — a first for these exercises.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#getting-started",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "3. Getting Started",
+    "text": "3. Getting Started\n\npacman::p_load(sf, spNetwork, tmap, tidyverse)",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#data-import-and-preparation",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#data-import-and-preparation",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "4. Data Import and Preparation",
+    "text": "4. Data Import and Preparation\n\nnetwork &lt;- st_read(dsn = \"data/geospatial\",\n                   layer = \"Punggol_St\",\n                   quiet = TRUE)\n\nchildcare &lt;- st_read(dsn = \"data/geospatial\",\n                     layer = \"Punggol_CC\",\n                     quiet = TRUE) %&gt;%\n  st_zm(drop = TRUE, what = \"ZM\")\n\n\nnetwork\n\nSimple feature collection with 2642 features and 2 fields\nGeometry type: LINESTRING\nDimension:     XY\nBounding box:  xmin: 34038.56 ymin: 40941.11 xmax: 38882.85 ymax: 44801.27\nProjected CRS: SVY21 / Singapore TM\nFirst 10 features:\n     LINK_ID                   ST_NAME                       geometry\n1  116130894                PUNGGOL RD LINESTRING (36546.89 44574....\n2  116130897 PONGGOL TWENTY-FOURTH AVE LINESTRING (36546.89 44574....\n3  116130901   PONGGOL SEVENTEENTH AVE LINESTRING (36012.73 44154....\n4  116130902   PONGGOL SEVENTEENTH AVE LINESTRING (36062.81 44197....\n5  116130907           PUNGGOL CENTRAL LINESTRING (36131.85 42755....\n6  116130908                PUNGGOL RD LINESTRING (36112.93 42752....\n7  116130909           PUNGGOL CENTRAL LINESTRING (36127.4 42744.5...\n8  116130910               PUNGGOL FLD LINESTRING (35994.98 42428....\n9  116130911               PUNGGOL FLD LINESTRING (35984.97 42407....\n10 116130912            EDGEFIELD PLNS LINESTRING (36200.87 42219....\n\n\n\nchildcare\n\nSimple feature collection with 61 features and 1 field\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 34423.98 ymin: 41503.6 xmax: 37619.47 ymax: 44685.77\nProjected CRS: SVY21 / Singapore TM\nFirst 10 features:\n      Name                  geometry\n1   kml_10 POINT (36173.81 42550.33)\n2   kml_99 POINT (36479.56 42405.21)\n3  kml_100 POINT (36618.72 41989.13)\n4  kml_101 POINT (36285.37 42261.42)\n5  kml_122  POINT (35414.54 42625.1)\n6  kml_161 POINT (36545.16 42580.09)\n7  kml_172 POINT (35289.44 44083.57)\n8  kml_188 POINT (36520.56 42844.74)\n9  kml_205  POINT (36924.01 41503.6)\n10 kml_222 POINT (37141.76 42326.36)\n\n\nThe st_zm() call on the childcare layer drops the Z (and M) dimension. The shapefile stores points as XYZ with a zero elevation, and spNetwork will refuse to snap 3D points onto a 2D network, so this is not cosmetic — leaving it out is an error later.\n\nst_crs(network)$epsg\n\n[1] 3414\n\nst_geometry_type(network) %&gt;% unique()\n\n[1] LINESTRING\n18 Levels: GEOMETRY POINT LINESTRING POLYGON MULTIPOINT ... TRIANGLE\n\nnrow(network)\n\n[1] 2642\n\nnrow(childcare)\n\n[1] 61\n\n\n2,642 road segments and 61 childcare centres.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#visualising-the-geospatial-data",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#visualising-the-geospatial-data",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "5. Visualising the Geospatial Data",
+    "text": "5. Visualising the Geospatial Data\n\nplot(st_geometry(network), col = \"grey60\", lwd = 0.6)\nplot(childcare, add = TRUE, col = \"#c0392b\", pch = 19, cex = 0.8)\n\n\n\n\n\n\n\n\nThe reference chapter renders this interactively. I have kept the static version: with 2,645 network segments the self-contained interactive page ran to several megabytes, which is too heavy to publish for the amount it adds here.\n\ntm_shape(network) +\n  tm_lines(col = \"grey55\", lwd = 0.8) +\n  tm_shape(childcare) +\n  tm_dots(fill = \"#c0392b\", size = 0.35) +\n  tm_layout(frame = FALSE)",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#network-kde-analysis",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#network-kde-analysis",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "6. Network KDE Analysis",
+    "text": "6. Network KDE Analysis\n\n6.1 Preparing the Lixels\nA kernel density estimate on a network is evaluated along the network, not over a grid. The first step is to cut the network into lixels — line pixels — of roughly equal length.\n\nlixels &lt;- lixelize_lines(network,\n                         700,\n                         mindist = 375)\nnrow(lixels)\n\n[1] 2645\n\n\nThe 700m target length with a 375m minimum means any leftover segment shorter than 375m is merged into the previous lixel rather than left as a stub. The count barely changes from the original 2,642 segments, which tells me most Punggol road segments were already shorter than 700m — this is a dense residential network, not a highway corridor.\n\n\n6.2 Generating Line Centre Points\n\nsamples &lt;- lines_center(lixels)\nnrow(samples)\n\n[1] 2645\n\n\nThese centre points are where the density will actually be evaluated. Note they are the centre of each lixel by line length, not the geometric centroid, so they always fall on the line even where it bends.\n\n\n6.3 Performing NKDE\n\ndensities &lt;- nkde(network,\n                  events = childcare,\n                  w = rep(1, nrow(childcare)),\n                  samples = samples,\n                  kernel_name = \"quartic\",\n                  bw = 300,\n                  div = \"bw\",\n                  method = \"simple\",\n                  digits = 1,\n                  tol = 1,\n                  grid_shape = c(1, 1),\n                  max_depth = 8,\n                  agg = 5,\n                  sparse = TRUE,\n                  verbose = FALSE)\n\nA note on the arguments that actually change the answer:\n\nkernel_name = \"quartic\" — the kernel shape. spNetwork also offers triangle, gaussian, tricube, cosine, epanechnikov and uniform.\nbw = 300 — the bandwidth, in metres along the network. This is the single most consequential choice here.\nmethod = \"simple\" — the simplest of the three NKDE variants. It treats network distance as a straight replacement for Euclidean distance in the kernel. It is fast and intuitive, but it is not a true density: the values do not integrate to the number of events, because mass is duplicated at every intersection. \"discontinuous\" and \"continuous\" correct that at increasing computational cost.\n\nAttaching the computed densities and rescaling from events-per-metre to events-per-kilometre so the legend is readable:\n\nsamples$density &lt;- densities\nlixels$density  &lt;- densities\n\nsamples$density &lt;- samples$density * 1000\nlixels$density  &lt;- lixels$density * 1000\n\n\nsummary(lixels$density)\n\n    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. \n0.000000 0.000000 0.001424 0.003787 0.007430 0.024046 \n\n\n\n\n6.4 Visualising the NKDE\n\ntm_shape(lixels) +\n  tm_lines(col = \"density\",\n           col.scale = tm_scale_intervals(style = \"quantile\", values = \"viridis\"),\n           col.legend = tm_legend(title = \"Density (events/km)\"),\n           lwd = 1.5) +\n  tm_layout(frame = FALSE)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNoteWhat the NKDE map shows that a planar KDE would not\n\n\n\nThe high-density road segments are not a blob in the middle of Punggol. They are specific stretches — the roads threading the HDB precincts either side of Punggol Field and Punggol Central — while the roads along the waterway and the LRT viaduct run cold despite being geometrically close to plenty of centres. A planar KDE would smear density straight across the waterway and report a hotspot in the middle of the water, which is exactly the artefact this method exists to avoid.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#network-constrained-g--and-k-function-analysis",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#network-constrained-g--and-k-function-analysis",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "7. Network Constrained G- and K-Function Analysis",
+    "text": "7. Network Constrained G- and K-Function Analysis\nThe same complete spatial randomness question as Hands-on Exercise 2 Part 02, but with randomness defined on the network: the simulated points are scattered along the road network rather than across the plane.\n\\(H_0\\): the observed spatial point events are uniformly distributed over the street network in Punggol. \\(H_1\\): the observed spatial point events are not uniformly distributed over the street network.\nThe test is at the 95% confidence interval, with the null rejected if the observed curve leaves the simulated envelope.\n\nset.seed(1234)\nkfun_childcare &lt;- kfunctions(network,\n                             childcare,\n                             start = 0,\n                             end = 1000,\n                             step = 50,\n                             width = 50,\n                             nsim = 50,\n                             resolution = 50,\n                             verbose = FALSE,\n                             conf_int = 0.05)\n\n\n7.1 The K-Function Result\n\nkfun_childcare$plotk\n\n\n\n\n\n\n\n\n\n\n7.2 The G-Function Result\n\nkfun_childcare$plotg\n\n\n\n\n\n\n\n\nReading the direction off the plots by eye is unreliable, so I compute where the observed curve actually leaves the simulated envelope:\n\nv &lt;- kfun_childcare$values\n\nrng &lt;- function(d) {\n  if (length(d) == 0) {\n    \"never leaves envelope\"\n  } else {\n    paste0(min(d), \"-\", max(d), \" m\")\n  }\n}\n\ndata.frame(\n  Function = c(\"Network K\", \"Network K\", \"Network G\", \"Network G\"),\n  Side = c(\"above upper (clustered)\", \"below lower (regular)\",\n           \"above upper (clustered)\", \"below lower (regular)\"),\n  Range = c(rng(v$distances[v$obs_k &gt; v$upper_k & v$distances &gt; 0]),\n            rng(v$distances[v$obs_k &lt; v$lower_k]),\n            rng(v$distances[v$obs_g &gt; v$upper_g & v$distances &gt; 0]),\n            rng(v$distances[v$obs_g &lt; v$lower_g]))\n)\n\n   Function                    Side                 Range\n1 Network K above upper (clustered) never leaves envelope\n2 Network K   below lower (regular)             150-550 m\n3 Network G above upper (clustered) never leaves envelope\n4 Network G   below lower (regular)             150-500 m\n\n\n\n\n\n\n\n\nImportantConclusion of the test — and it is not what I expected\n\n\n\nThe observed curves leave the envelope on the lower side, not the upper one. Fewer centres fall within a few hundred network metres of each other than complete spatial randomness along the network would produce.\nI reject the null hypothesis — the centres are not uniformly distributed along the network — but in the opposite direction to clustering. This is regularity (dispersion, inhibition). At longer distances the observed curve returns inside the envelope, so beyond that range the pattern is indistinguishable from random.\nThe seed is fixed above so these ranges are reproducible; without it the exact crossing distances shift on every rebuild.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#what-i-take-from-this-exercise",
+    "href": "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html#what-i-take-from-this-exercise",
+    "title": "Network Constrained Spatial Point Patterns Analysis",
+    "section": "8. What I Take From This Exercise",
+    "text": "8. What I Take From This Exercise\nThe result contradicts Exercise 2, and the contradiction is the whole lesson. Exercise 2 Part 02 concluded that childcare centres cluster at short range. Measured along the road network, the same kind of test on Punggol says the opposite: over the mid-range distances in the table above, centres are further apart than chance.\nI do not think either result is wrong. They are answering different questions:\n\nThe planar K-function asks “are centres closer together than random points scattered over this polygon?” A large share of that polygon is water, park and reserve where nothing can be built, so the random comparison points are spread over space that real centres can never occupy. Against that null, anything confined to buildable land looks clustered.\nThe network K-function asks “are centres closer together than random points scattered over this road network?” That null already excludes the unbuildable space. What is left is the actual siting decision — and the actual siting decision turns out to space centres out, roughly one per residential precinct, which is exactly what a planner allocating childcare places by catchment would do.\n\nSo the planar “clustering” in Exercise 2 was substantially an artefact of the null, not a finding about childcare policy. That is an uncomfortable thing to discover about work I had already written up, and it is the strongest argument I have seen for why the network-constrained method exists.\nWhere the method is fragile. Three things would change the answer and none of them are statistical:\n\nBandwidth. 300m is a defensible walking distance, but it is a choice, and the hotspots move if I halve or double it. There is no bw.diggle equivalent here that picks it for me.\nNetwork completeness. Punggol_St is a road network. Parents in Punggol walk through void decks, park connectors and the waterway bridges, none of which are in this layer. The network I am measuring distance on is not the network people use.\nmethod = \"simple\". It duplicates kernel mass at intersections, and Punggol is full of intersections. The continuous method exists precisely to fix this and I would want to re-run with it before quoting any of these density values as real.\n\nOn nsim = 50. The chapter uses 50 simulations and I have kept that, but 50 is thin for a 95% envelope — it puts the pointwise significance level at 2/51, close enough to 0.04 that a marginal result would not survive scrutiny. Here the observed curve sits clearly outside the envelope across a contiguous band of distances rather than grazing it at a single point, so the conclusion holds. A single-band excursion would have been a reason to raise nsim rather than report it.\nConnecting back. Reading Exercise 2 and this one together is the actual lesson. First-order KDE says where events are dense. Second-order G/F/K/L say whether events interact. Network-constrained versions say whether either conclusion survives once you stop pretending people travel in straight lines and stop pretending reservoirs are candidate sites. Each layer removed an assumption the previous one was quietly making — and unlike the first two steps, this one did not confirm the earlier answer. It reversed it. The thing I will carry forward is that in spatial statistics the null hypothesis is a modelling choice as consequential as the estimator, and a result is only as meaningful as the randomness it was compared against.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 3",
+      "Network Constrained SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "",
+    "text": "R sf spatstat KDE Point Patterns\nThis is the first of the two Spatial Point Patterns Analysis readings for Hands-on Exercise 2: First-order Spatial Point Patterns Analysis Methods. The second-order methods are written up separately in Part 02.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#overview",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "1. Overview",
+    "text": "1. Overview\nFirst-order SPPA is about intensity — how many events fall per unit area, and how that density varies across space. It answers “where are childcare centres concentrated?” without yet asking “do centres attract or repel each other?” That second question is what Part 02 handles.\nThe two questions I am trying to answer here:\n\nAre childcare centres in Singapore randomly distributed across the country?\nIf not, where are the areas with a higher concentration of them?",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#the-data",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "2. The Data",
+    "text": "2. The Data\n\n\n\nDataset\nSource\nFormat used\n\n\n\n\nChild Care Services\ndata.gov.sg\nGeoJSON\n\n\nMaster Plan 2019 Subzone Boundary (No Sea)\ndata.gov.sg\nGeoJSON\n\n\n\nNote on the data. The reference chapter offers both KML and GeoJSON and uses rvest to scrape the attribute table out of the KML Description field. I downloaded the GeoJSON versions, which already expose SUBZONE_N, PLN_AREA_N and the childcare attributes as proper columns, so no scraping step is needed and rvest is not loaded.\nNote also that this exercise uses the 2019 Master Plan boundary, not the 2014 boundary I used in Hands-on Exercise 1. The subzone names and codes differ slightly between the two vintages, so the two exercises are not directly comparable at subzone level.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#getting-started",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "3. Getting Started",
+    "text": "3. Getting Started\n\npacman::p_load(sf, spatstat, terra, tmap, tidyverse)",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#importing-and-wrangling-the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#importing-and-wrangling-the-data",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "4. Importing and Wrangling the Data",
+    "text": "4. Importing and Wrangling the Data\nBoth layers arrive in WGS84 and are projected to SVY21 (EPSG:3414) on import, because every density and distance calculation that follows is measured in metres.\n\nmpsz_sf &lt;- st_read(\"data/geospatial/MasterPlan2019SubzoneBoundaryNoSea.geojson\",\n                   quiet = TRUE) %&gt;%\n  st_transform(crs = 3414)\n\nchildcare_sf &lt;- st_read(\"data/geospatial/ChildCareServices.geojson\",\n                        quiet = TRUE) %&gt;%\n  st_transform(crs = 3414)\n\n\nglimpse(childcare_sf)\n\nRows: 1,925\nColumns: 17\n$ OBJECTID                &lt;int&gt; 24744, 24745, 24746, 24747, 24748, 24749, 2475~\n$ ADDRESSBLOCKHOUSENUMBER &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ ADDRESSBUILDINGNAME     &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ ADDRESSPOSTALCODE       &lt;chr&gt; \"467903\", \"768019\", \"650165\", \"103104\", \"44929~\n$ ADDRESSSTREETNAME       &lt;chr&gt; \"44, LIMAU GARDEN, BEDOK PARK, SINGAPORE 46790~\n$ ADDRESSTYPE             &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ DESCRIPTION             &lt;chr&gt; \"Child Care Services\", \"Child Care Services\", ~\n$ HYPERLINK               &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ LANDXADDRESSPOINT       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ LANDYADDRESSPOINT       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ NAME                    &lt;chr&gt; \"APOLLO INTERNATIONAL PRESCHOOL PRIVATE LIMITE~\n$ PHOTOURL                &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ ADDRESSFLOORNUMBER      &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ INC_CRC                 &lt;chr&gt; \"0A2D85D9BC6DA78E\", \"BD725D1719396336\", \"FF040~\n$ FMEL_UPD_D              &lt;chr&gt; \"20211201093837\", \"20211201093837\", \"202112010~\n$ ADDRESSUNITNUMBER       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~\n$ geometry                &lt;POINT [m]&gt; POINT (40985.94 33848.38), POINT (28308.~\n\n\n\nst_crs(mpsz_sf)$epsg\n\n[1] 3414\n\nnrow(mpsz_sf)\n\n[1] 332\n\nnrow(childcare_sf)\n\n[1] 1925\n\n\n332 subzones and 1,925 childcare centres.\n\n4.1 Mapping the Data\n\ntmap_mode(\"plot\")\ntm_shape(mpsz_sf) +\n  tm_polygons(fill = \"grey95\", col = \"white\", lwd = 0.4) +\n  tm_shape(childcare_sf) +\n  tm_dots(fill = \"#c0392b\", size = 0.02) +\n  tm_title(\"Childcare centres in Singapore (2026)\")\n\n\n\n\n\n\n\n\nThe reference chapter also renders this as an interactive leaflet map. I built that version and then removed it: a self-contained HTML page with 1,925 interactive markers came out at over 7 MB and took pandoc the better part of an hour to assemble, which is not a reasonable thing to publish on a coursework site. A faceted static map carries the same information at a fraction of the weight.\n\ntm_shape(mpsz_sf) +\n  tm_polygons(fill = \"grey95\", col = \"white\", lwd = 0.3) +\n  tm_shape(childcare_sf) +\n  tm_dots(fill = \"#c0392b\", size = 0.04) +\n  tm_layout(frame = FALSE)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNoteWhat I notice first\n\n\n\nEven before any statistics, the map is obviously not uniform. The dots trace the HDB new towns — Jurong West, Woodlands, Sengkang, Punggol, Tampines — and thin out sharply over the central catchment, the western industrial estates and the military land. That already suggests the answer to question one is “no”, but eyeballing a map is not a test, which is exactly why the Clark-Evans statistic below matters.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#geospatial-data-wrangling",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#geospatial-data-wrangling",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "5. Geospatial Data Wrangling",
+    "text": "5. Geospatial Data Wrangling\nspatstat does not work on sf objects. It needs a ppp (point pattern) object for the events and an owin (observation window) object for the study area boundary.\n\n5.1 Converting to ppp Format\n\nchildcare_ppp &lt;- as.ppp(childcare_sf)\nchildcare_ppp\n\nMarked planar point pattern: 1925 points\nMark variables: \n   OBJECTID ADDRESSBLOCKHOUSENUMBER ADDRESSBUILDINGNAME ADDRESSPOSTALCODE \nADDRESSSTREETNAME ADDRESSTYPE DESCRIPTION HYPERLINK LANDXADDRESSPOINT \nLANDYADDRESSPOINT NAME PHOTOURL ADDRESSFLOORNUMBER INC_CRC FMEL_UPD_D \nADDRESSUNITNUMBER\nwindow: rectangle = [11810.03, 45404.24] x [25596.33, 49300.88] units\n\n\n\nsummary(childcare_ppp)\n\nMarked planar point pattern:  1925 points\nAverage intensity 2.417323e-06 points per square unit\n\nCoordinates are given to 11 decimal places\n\nMark variables: OBJECTID, ADDRESSBLOCKHOUSENUMBER, ADDRESSBUILDINGNAME, \nADDRESSPOSTALCODE, ADDRESSSTREETNAME, ADDRESSTYPE, DESCRIPTION, HYPERLINK, \nLANDXADDRESSPOINT, LANDYADDRESSPOINT, NAME, PHOTOURL, ADDRESSFLOORNUMBER, \nINC_CRC, FMEL_UPD_D, ADDRESSUNITNUMBER\nSummary:\n    OBJECTID     ADDRESSBLOCKHOUSENUMBER ADDRESSBUILDINGNAME ADDRESSPOSTALCODE \n Min.   :24641   Length:1925             Length:1925         Length:1925       \n 1st Qu.:25122   Class :character        Class :character    Class :character  \n Median :25603   Mode  :character        Mode  :character    Mode  :character  \n Mean   :25603                                                                 \n 3rd Qu.:26084                                                                 \n Max.   :26565                                                                 \n ADDRESSSTREETNAME  ADDRESSTYPE        DESCRIPTION         HYPERLINK        \n Length:1925        Length:1925        Length:1925        Length:1925       \n Class :character   Class :character   Class :character   Class :character  \n Mode  :character   Mode  :character   Mode  :character   Mode  :character  \n                                                                            \n                                                                            \n                                                                            \n LANDXADDRESSPOINT  LANDYADDRESSPOINT      NAME             PHOTOURL        \n Length:1925        Length:1925        Length:1925        Length:1925       \n Class :character   Class :character   Class :character   Class :character  \n Mode  :character   Mode  :character   Mode  :character   Mode  :character  \n                                                                            \n                                                                            \n                                                                            \n ADDRESSFLOORNUMBER   INC_CRC           FMEL_UPD_D        ADDRESSUNITNUMBER \n Length:1925        Length:1925        Length:1925        Length:1925       \n Class :character   Class :character   Class :character   Class :character  \n Mode  :character   Mode  :character   Mode  :character   Mode  :character  \n                                                                            \n                                                                            \n                                                                            \n\nWindow: rectangle = [11810.03, 45404.24] x [25596.33, 49300.88] units\n                    (33590 x 23700 units)\nWindow area = 796335000 square units\n\n\nThe summary warns about duplicated points. Checking directly:\n\nany(duplicated(childcare_ppp))\n\n[1] FALSE\n\nsum(multiplicity(childcare_ppp) &gt; 1)\n\n[1] 0\n\n\nDuplicates matter because spatial point pattern theory assumes points are distinct — two centres at identical coordinates break the nearest-neighbour distance calculations (a distance of zero). The standard fix is jittering, which shifts coincident points by a tiny random amount:\n\nchildcare_ppp_jit &lt;- rjitter(childcare_ppp,\n                             retry = TRUE,\n                             nsim = 1,\n                             drop = TRUE)\nany(duplicated(childcare_ppp_jit))\n\n[1] FALSE\n\n\n\n\n\n\n\n\nNoteWhy duplicates appear here\n\n\n\nThese are almost certainly real: several childcare centres share one building — a void deck with two operators, or a mall with several centres on different floors. The coordinates are building centroids, so the operators collapse onto one point. Jittering by a few metres is honest in this case because the true locations really are metres apart, not kilometres.\n\n\n\n\n5.2 Creating the owin Object\n\nsg_sf &lt;- mpsz_sf %&gt;%\n  st_union()\n\nsg_owin &lt;- as.owin(sg_sf)\nplot(sg_owin, main = \"Singapore boundary as an owin object\")\n\n\n\n\n\n\n\n\n\n\n5.3 Combining Points and Window\n\nchildcareSG_ppp &lt;- childcare_ppp_jit[sg_owin]\nchildcareSG_ppp\n\nMarked planar point pattern: 1925 points\nMark variables: \n   OBJECTID ADDRESSBLOCKHOUSENUMBER ADDRESSBUILDINGNAME ADDRESSPOSTALCODE \nADDRESSSTREETNAME ADDRESSTYPE DESCRIPTION HYPERLINK LANDXADDRESSPOINT \nLANDYADDRESSPOINT NAME PHOTOURL ADDRESSFLOORNUMBER INC_CRC FMEL_UPD_D \nADDRESSUNITNUMBER\nwindow: polygonal boundary\nenclosing rectangle: [2667.54, 56396.44] x [15748.72, 50256.33] units\n\n\n\nplot(childcareSG_ppp, main = \"Childcare centres within the Singapore window\",\n     cex = 0.3, pch = 19)",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#clark-evans-test-for-nearest-neighbour-analysis",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#clark-evans-test-for-nearest-neighbour-analysis",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "6. Clark-Evans Test for Nearest Neighbour Analysis",
+    "text": "6. Clark-Evans Test for Nearest Neighbour Analysis\nThe Clark-Evans R statistic is the ratio of observed mean nearest-neighbour distance to the distance expected under complete spatial randomness (CSR).\n\nR = 1 → random\nR &lt; 1 → clustered\nR &gt; 1 → regular / dispersed\n\n\\(H_0\\): the distribution of childcare centres is randomly distributed. \\(H_1\\): the distribution is not randomly distributed. Confidence level 95%, so I reject \\(H_0\\) if p &lt; 0.05.\n\n6.1 Without CSR Simulation\n\nclarkevans.test(childcareSG_ppp,\n                correction = \"none\",\n                clipregion = \"sg_owin\",\n                alternative = c(\"clustered\"),\n                nsim = 99)\n\n\n    Clark-Evans test\n    No edge correction\n    Z-test\n\ndata:  childcareSG_ppp\nR = 0.50859, p-value &lt; 2.2e-16\nalternative hypothesis: clustered (R &lt; 1)\n\n\n\n\n6.2 With CSR Simulation\nOn the number of simulations. The reference chapter uses nsim = 999. Each simulation has to scatter 1,925 random points inside Singapore’s full multipolygon boundary, which is slow enough at 999 that it dominates the build time for this whole site. I use nsim = 99, which gives a pointwise two-sided level of 2/100 = 0.02, still well inside the 0.05 I am testing at. The observed R sits far outside the simulated range rather than near its edge, so the conclusion does not depend on the extra simulations.\n\nclarkevans.test(childcareSG_ppp,\n                correction = \"none\",\n                clipregion = NULL,\n                alternative = c(\"clustered\"),\n                method = \"MonteCarlo\",\n                nsim = 99)\n\n\n    Clark-Evans test\n    No edge correction\n    Monte Carlo test based on 99 simulations of CSR with fixed n\n\ndata:  childcareSG_ppp\nR = 0.50859, p-value = 0.01\nalternative hypothesis: clustered (R &lt; 1)\n\n\n\n\n\n\n\n\nImportantConclusion of the test\n\n\n\nR is well below 1 and p is far below 0.05 under both the analytical Z-test and the Monte Carlo version, so I reject the null hypothesis. Childcare centres in Singapore are clustered, not randomly distributed. The Monte Carlo version is the one I would quote, because it does not depend on the asymptotic normality assumption that the plain Z-test makes.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#kernel-density-estimation",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#kernel-density-estimation",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "7. Kernel Density Estimation",
+    "text": "7. Kernel Density Estimation\nClark-Evans tells me that the pattern is clustered. KDE tells me where.\n\n7.1 Automatic Bandwidth Selection\n\nkde_childcareSG_bw &lt;- density(childcareSG_ppp,\n                              sigma = bw.diggle,\n                              edge = TRUE,\n                              kernel = \"gaussian\")\nplot(kde_childcareSG_bw, main = \"KDE, bw.diggle bandwidth\")\n\n\n\n\n\n\n\n\nThe bandwidth actually chosen:\n\nbw &lt;- bw.diggle(childcareSG_ppp)\nbw\n\n   sigma \n312.3243 \n\n\n\n\n7.2 Rescaling to Kilometres\nThe density values above are unreadable because the unit is metres — density comes out as “events per square metre”, which is a very small number. Rescaling the pattern to kilometres fixes the legend without changing the analysis.\n\nchildcareSG_ppp.km &lt;- rescale.ppp(childcareSG_ppp, 1000, \"km\")\n\nkde_childcareSG.bw &lt;- density(childcareSG_ppp.km,\n                              sigma = bw.diggle,\n                              edge = TRUE,\n                              kernel = \"gaussian\")\nplot(kde_childcareSG.bw, main = \"KDE rescaled to km\")\n\n\n\n\n\n\n\n\n\n\n7.3 Comparing Bandwidth Methods\n\nbw.CvL(childcareSG_ppp.km)\n\n   sigma \n6.669622 \n\nbw.scott(childcareSG_ppp.km)\n\n sigma.x  sigma.y \n2.159697 1.396286 \n\nbw.ppl(childcareSG_ppp.km)\n\n    sigma \n0.3611132 \n\nbw.diggle(childcareSG_ppp.km)\n\n    sigma \n0.3123243 \n\n\n\npar(mfrow = c(2, 2))\nplot(density(childcareSG_ppp.km, sigma = bw.CvL,    edge = TRUE, kernel = \"gaussian\"), main = \"bw.CvL\")\nplot(density(childcareSG_ppp.km, sigma = bw.scott,  edge = TRUE, kernel = \"gaussian\"), main = \"bw.scott\")\nplot(density(childcareSG_ppp.km, sigma = bw.ppl,    edge = TRUE, kernel = \"gaussian\"), main = \"bw.ppl\")\nplot(density(childcareSG_ppp.km, sigma = bw.diggle, edge = TRUE, kernel = \"gaussian\"), main = \"bw.diggle\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\n\n\n\n\n\n\nNoteWhich bandwidth I would use\n\n\n\nbw.CvL returns a much larger bandwidth and produces a smooth blob that says little beyond “the middle and east are busier”. bw.diggle and bw.ppl are far tighter and resolve individual towns. Baddeley’s advice is that bw.ppl is preferable when the pattern is a collection of tight clusters, and bw.diggle when the goal is detecting a single dominant cluster. Childcare centres are clearly the former — many town-sized clusters — so bw.ppl is the more defensible choice here, even though the chapter demonstrates bw.diggle first.\n\n\n\n\n7.4 Comparing Kernel Functions\n\npar(mfrow = c(2, 2))\nplot(density(childcareSG_ppp.km, sigma = bw.ppl, edge = TRUE, kernel = \"gaussian\"),     main = \"Gaussian\")\nplot(density(childcareSG_ppp.km, sigma = bw.ppl, edge = TRUE, kernel = \"epanechnikov\"), main = \"Epanechnikov\")\nplot(density(childcareSG_ppp.km, sigma = bw.ppl, edge = TRUE, kernel = \"quartic\"),      main = \"Quartic\")\nplot(density(childcareSG_ppp.km, sigma = bw.ppl, edge = TRUE, kernel = \"disc\"),         main = \"Disc\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\nThe four kernels are visually near-identical. That is the expected result — the choice of bandwidth dominates the choice of kernel, which is a useful thing to have seen rather than just read.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#fixed-and-adaptive-bandwidth-kde",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#fixed-and-adaptive-bandwidth-kde",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "8. Fixed and Adaptive Bandwidth KDE",
+    "text": "8. Fixed and Adaptive Bandwidth KDE\n\n8.1 Fixed Bandwidth\nA fixed 600m bandwidth (0.6 in km units):\n\nkde_childcareSG_600 &lt;- density(childcareSG_ppp.km,\n                               sigma = 0.6,\n                               edge = TRUE,\n                               kernel = \"gaussian\")\nplot(kde_childcareSG_600, main = \"Fixed bandwidth, sigma = 600m\")\n\n\n\n\n\n\n\n\n\n\n8.2 Adaptive Bandwidth\nFixed bandwidth is a problem when the underlying point density varies a lot across the study area — which is exactly the case in Singapore, where the centre is dense and the west is sparse. Adaptive bandwidth varies the smoothing locally.\n\nkde_childcareSG_adaptive &lt;- adaptive.density(childcareSG_ppp.km, method = \"kernel\")\nplot(kde_childcareSG_adaptive, main = \"Adaptive bandwidth KDE\")\n\n\n\n\n\n\n\n\n\npar(mfrow = c(1, 2))\nplot(kde_childcareSG.bw, main = \"Fixed bandwidth\")\nplot(kde_childcareSG_adaptive, main = \"Adaptive bandwidth\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\n\n\n\n\n\n\nNoteFixed vs adaptive\n\n\n\nThe adaptive surface keeps detail in the sparse western and northern areas that the fixed-bandwidth version smooths into near-nothing, while holding the dense central corridor together instead of fragmenting it. The trade-off is that the adaptive map is harder to explain to a non-technical reader, because the amount of smoothing is no longer constant across the map — two equally bright pixels do not necessarily mean the same thing.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#cartographic-quality-kde-map",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#cartographic-quality-kde-map",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "9. Cartographic Quality KDE Map",
+    "text": "9. Cartographic Quality KDE Map\nTo put the KDE surface on a proper map, the spatstat image is converted to a raster, given the SVY21 projection, and plotted with tmap.\n\nkde_childcareSG_bw_raster &lt;- rast(kde_childcareSG_bw)\nkde_childcareSG_bw_raster\n\nclass       : SpatRaster\nsize        : 128, 128, 1  (nrow, ncol, nlyr)\nresolution  : 419.757, 269.5907  (x, y)\nextent      : 2667.538, 56396.44, 15748.72, 50256.33  (xmin, xmax, ymin, ymax)\ncoord. ref. : \nsource(s)   : memory\nname        :    lyr.1\nmin value   :       -0\nmax value   : 0.000037\nunit        : unit\n\n\n\ncrs(kde_childcareSG_bw_raster) &lt;- \"EPSG:3414\"\nkde_childcareSG_bw_raster\n\nclass       : SpatRaster\nsize        : 128, 128, 1  (nrow, ncol, nlyr)\nresolution  : 419.757, 269.5907  (x, y)\nextent      : 2667.538, 56396.44, 15748.72, 50256.33  (xmin, xmax, ymin, ymax)\ncoord. ref. : SVY21 / Singapore TM (EPSG:3414)\nsource(s)   : memory\nname        :    lyr.1\nmin value   :       -0\nmax value   : 0.000037\nunit        : unit\n\n\n\ntmap_mode(\"plot\")\ntm_shape(kde_childcareSG_bw_raster) +\n  tm_raster(col.scale = tm_scale_continuous(values = \"viridis\"),\n            col.legend = tm_legend(title = \"Density\")) +\n  tm_layout(frame = FALSE)\n\n\n\n\n\n\n\n\nNote on tmap. This site renders with tmap 4.x, where tm_raster() takes col.scale/col.legend arguments rather than the palette = argument used in the version-3 reference code. The output is the same; only the API has moved on.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#first-order-sppa-at-the-planning-area-level",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#first-order-sppa-at-the-planning-area-level",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "10. First-order SPPA at the Planning Area Level",
+    "text": "10. First-order SPPA at the Planning Area Level\nA national KDE is dominated by the biggest clusters. Restricting the window to a single planning area gives a much fairer read of the pattern within it.\n\n10.1 Extracting the Study Areas\n\ncck &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"CHOA CHU KANG\")\ntm  &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"TAMPINES\")\njw  &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"JURONG WEST\")\npg  &lt;- mpsz_sf %&gt;% filter(PLN_AREA_N == \"PUNGGOL\")\n\n\npar(mfrow = c(2, 2))\nplot(st_geometry(cck), main = \"Choa Chu Kang\")\nplot(st_geometry(tm),  main = \"Tampines\")\nplot(st_geometry(jw),  main = \"Jurong West\")\nplot(st_geometry(pg),  main = \"Punggol\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\n\n\n10.2 Creating owin Objects and Point Patterns\n\ncck_owin &lt;- as.owin(st_union(cck))\ntm_owin  &lt;- as.owin(st_union(tm))\njw_owin  &lt;- as.owin(st_union(jw))\npg_owin  &lt;- as.owin(st_union(pg))\n\nchildcare_cck_ppp &lt;- childcare_ppp_jit[cck_owin]\nchildcare_tm_ppp  &lt;- childcare_ppp_jit[tm_owin]\nchildcare_jw_ppp  &lt;- childcare_ppp_jit[jw_owin]\nchildcare_pg_ppp  &lt;- childcare_ppp_jit[pg_owin]\n\nRescaling all four to kilometres:\n\nchildcare_cck_ppp.km &lt;- rescale.ppp(childcare_cck_ppp, 1000, \"km\")\nchildcare_tm_ppp.km  &lt;- rescale.ppp(childcare_tm_ppp,  1000, \"km\")\nchildcare_jw_ppp.km  &lt;- rescale.ppp(childcare_jw_ppp,  1000, \"km\")\nchildcare_pg_ppp.km  &lt;- rescale.ppp(childcare_pg_ppp,  1000, \"km\")\n\n\ndata.frame(\n  area   = c(\"Choa Chu Kang\", \"Tampines\", \"Jurong West\", \"Punggol\"),\n  points = c(npoints(childcare_cck_ppp), npoints(childcare_tm_ppp),\n             npoints(childcare_jw_ppp),  npoints(childcare_pg_ppp))\n)\n\n           area points\n1 Choa Chu Kang     74\n2      Tampines    117\n3   Jurong West    110\n4       Punggol     72\n\n\n\npar(mfrow = c(2, 2))\nplot(childcare_cck_ppp, main = \"Choa Chu Kang\", cex = 0.6, pch = 19)\nplot(childcare_tm_ppp,  main = \"Tampines\",      cex = 0.6, pch = 19)\nplot(childcare_jw_ppp,  main = \"Jurong West\",   cex = 0.6, pch = 19)\nplot(childcare_pg_ppp,  main = \"Punggol\",       cex = 0.6, pch = 19)\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\n\n\n10.3 Clark-Evans Test by Planning Area\n\nclarkevans.test(childcare_cck_ppp,\n                correction = \"none\",\n                clipregion = NULL,\n                alternative = c(\"two.sided\"),\n                method = \"MonteCarlo\",\n                nsim = 99)\n\n\n    Clark-Evans test\n    No edge correction\n    Monte Carlo test based on 99 simulations of CSR with fixed n\n\ndata:  childcare_cck_ppp\nR = 0.87895, p-value = 0.02\nalternative hypothesis: two-sided\n\n\n\nclarkevans.test(childcare_tm_ppp,\n                correction = \"none\",\n                clipregion = NULL,\n                alternative = c(\"two.sided\"),\n                method = \"MonteCarlo\",\n                nsim = 99)\n\n\n    Clark-Evans test\n    No edge correction\n    Monte Carlo test based on 99 simulations of CSR with fixed n\n\ndata:  childcare_tm_ppp\nR = 0.68062, p-value = 0.02\nalternative hypothesis: two-sided\n\n\n\n\n10.4 KDE Surfaces by Planning Area\n\npar(mfrow = c(2, 2))\nplot(density(childcare_cck_ppp.km, sigma = bw.diggle, edge = TRUE, kernel = \"gaussian\"), main = \"Choa Chu Kang\")\nplot(density(childcare_tm_ppp.km,  sigma = bw.diggle, edge = TRUE, kernel = \"gaussian\"), main = \"Tampines\")\nplot(density(childcare_jw_ppp.km,  sigma = bw.diggle, edge = TRUE, kernel = \"gaussian\"), main = \"Jurong West\")\nplot(density(childcare_pg_ppp.km,  sigma = bw.diggle, edge = TRUE, kernel = \"gaussian\"), main = \"Punggol\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))\n\nAnd with a fixed 250m bandwidth for a like-for-like comparison across the four areas:\n\npar(mfrow = c(2, 2))\nplot(density(childcare_cck_ppp.km, sigma = 0.25, edge = TRUE, kernel = \"gaussian\"), main = \"Choa Chu Kang\")\nplot(density(childcare_tm_ppp.km,  sigma = 0.25, edge = TRUE, kernel = \"gaussian\"), main = \"Tampines\")\nplot(density(childcare_jw_ppp.km,  sigma = 0.25, edge = TRUE, kernel = \"gaussian\"), main = \"Jurong West\")\nplot(density(childcare_pg_ppp.km,  sigma = 0.25, edge = TRUE, kernel = \"gaussian\"), main = \"Punggol\")\n\n\n\n\n\n\n\npar(mfrow = c(1, 1))",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Part01.html#what-i-take-from-this-exercise",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Part01.html#what-i-take-from-this-exercise",
+    "title": "First-order Spatial Point Patterns Analysis",
+    "section": "11. What I Take From This Exercise",
+    "text": "11. What I Take From This Exercise\nThe statistical answer. Childcare centres in Singapore are clustered at the national scale, decisively so — R = 0.51 with p effectively zero under Monte Carlo simulation. The high-density areas are the mature and newer HDB towns.\nThe methodological point that cost me the most time. The window matters as much as the points. Running Clark-Evans on the national pattern and running it on Choa Chu Kang are answering different questions, and the second is not a “zoomed-in” version of the first — changing the window changes the expected nearest-neighbour distance under CSR, which is the denominator of R. A pattern can be clustered nationally and close to random within a single town, and that is not a contradiction.\nWhat I would flag as a limitation. The whole analysis treats Singapore’s land area as uniformly available for childcare centres, which is plainly false. Catchment reserves, airbases, port land and industrial estates cannot host a childcare centre at all. A clustering result measured against a CSR null that allows points anywhere on land will therefore always look clustered, partly for reasons that have nothing to do with childcare policy. A more honest null would restrict the window to residential-zoned land. That is beyond this exercise, but it is the first thing I would change.\nConnecting to Part 02. First-order analysis stops at “where is it dense”. It cannot distinguish a pattern that is dense because the population is dense from a pattern that is dense because centres genuinely attract each other. The G, F, K and L functions in Part 02 are what separate those two.",
+    "crumbs": [
+      "Home",
+      "Hands-on Exercise 2",
+      "Part 01 — First-order SPPA"
     ]
   },
   {

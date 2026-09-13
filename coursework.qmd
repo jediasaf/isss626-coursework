@@ -22,3 +22,35 @@ wrangling, and mapping spatial data with <code>sf</code> and <code>tmap</code>.<
 [<span class="exercise-row-label">Part 02</span><span class="exercise-row-title">Choropleth Mapping with R</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex01/Part02.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">02</span>
+<span class="coursework-group-title">Hands-on Exercise 2</span>
+:::
+
+<p class="coursework-group-desc">Spatial point patterns analysis of Singapore's
+childcare centres — kernel density estimation and distance-based tests against
+complete spatial randomness with <code>spatstat</code>.</p>
+
+[<span class="exercise-row-label">Part 01</span><span class="exercise-row-title">First-order Spatial Point Patterns Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex02/Part01.qmd){.exercise-row}
+
+[<span class="exercise-row-label">Part 02</span><span class="exercise-row-title">Second-order Spatial Point Patterns Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex02/Part02.qmd){.exercise-row}
+
+:::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">03</span>
+<span class="coursework-group-title">Hands-on Exercise 3</span>
+:::
+
+<p class="coursework-group-desc">Point patterns confined to a road network —
+network kernel density estimation and network-constrained K-functions over
+Punggol with <code>spNetwork</code>.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Network Constrained Spatial Point Patterns Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd){.exercise-row}
+
+:::

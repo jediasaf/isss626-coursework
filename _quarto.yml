@@ -31,6 +31,16 @@ website:
             href: Hands-on_Ex/Hands-on_Ex01/Part01.qmd
           - text: "Part 02 — Choropleth Mapping"
             href: Hands-on_Ex/Hands-on_Ex01/Part02.qmd
+      - section: "Hands-on Exercise 2"
+        contents:
+          - text: "Part 01 — First-order SPPA"
+            href: Hands-on_Ex/Hands-on_Ex02/Part01.qmd
+          - text: "Part 02 — Second-order SPPA"
+            href: Hands-on_Ex/Hands-on_Ex02/Part02.qmd
+      - section: "Hands-on Exercise 3"
+        contents:
+          - text: "Network Constrained SPPA"
+            href: Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd
   page-footer:
     border: true
     left: |

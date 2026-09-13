@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jedidiah Asaf Tallulembang">
+<meta name="dcterms.date" content="2026-09-13">
+
+<title>Second-order Spatial Point Patterns Analysis – ISSS626</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html" rel="next">
+<link href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" rel="prev">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-8d35d25c058a660f3acb83b47bc45c83.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-0e2284caf1e23e1b7225925bd6748789.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-8d35d25c058a660f3acb83b47bc45c83.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-981fff69bf2bb404332acf5b2372c098.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-6d4489c898823dad07f04d0654e746f6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-981fff69bf2bb404332acf5b2372c098.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">ISSS626</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../../coursework.html" aria-current="page"> 
+<span class="menu-text">Exercises</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jediasaf/isss626-coursework"> <i class="bi bi-github" role="img" aria-label="GitHub repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html">Part 02 — Second-order SPPA</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../coursework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Coursework</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 1</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 01 — Geospatial Data Wrangling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 02 — Choropleth Mapping</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Hands-on Exercise 2</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 01 — First-order SPPA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Part 02 — Second-order SPPA</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 3</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Network Constrained SPPA</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1. Overview</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">2. The Data</a></li>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">3. Getting Started</a></li>
+  <li><a href="#data-import-and-preparation" id="toc-data-import-and-preparation" class="nav-link" data-scroll-target="#data-import-and-preparation">4. Data Import and Preparation</a></li>
+  <li><a href="#a-note-on-the-hypotheses-and-the-number-of-simulations" id="toc-a-note-on-the-hypotheses-and-the-number-of-simulations" class="nav-link" data-scroll-target="#a-note-on-the-hypotheses-and-the-number-of-simulations">5. A Note on the Hypotheses and the Number of Simulations</a></li>
+  <li><a href="#g-function-nearest-neighbour-distances" id="toc-g-function-nearest-neighbour-distances" class="nav-link" data-scroll-target="#g-function-nearest-neighbour-distances">6. G-Function: Nearest Neighbour Distances</a>
+  <ul class="collapse">
+  <li><a href="#choa-chu-kang" id="toc-choa-chu-kang" class="nav-link" data-scroll-target="#choa-chu-kang">6.1 Choa Chu Kang</a></li>
+  <li><a href="#tampines" id="toc-tampines" class="nav-link" data-scroll-target="#tampines">6.2 Tampines</a></li>
+  </ul></li>
+  <li><a href="#f-function-empty-space-distances" id="toc-f-function-empty-space-distances" class="nav-link" data-scroll-target="#f-function-empty-space-distances">7. F-Function: Empty Space Distances</a>
+  <ul class="collapse">
+  <li><a href="#choa-chu-kang-1" id="toc-choa-chu-kang-1" class="nav-link" data-scroll-target="#choa-chu-kang-1">7.1 Choa Chu Kang</a></li>
+  <li><a href="#tampines-1" id="toc-tampines-1" class="nav-link" data-scroll-target="#tampines-1">7.2 Tampines</a></li>
+  </ul></li>
+  <li><a href="#k-function-cumulative-counts" id="toc-k-function-cumulative-counts" class="nav-link" data-scroll-target="#k-function-cumulative-counts">8. K-Function: Cumulative Counts</a>
+  <ul class="collapse">
+  <li><a href="#choa-chu-kang-2" id="toc-choa-chu-kang-2" class="nav-link" data-scroll-target="#choa-chu-kang-2">8.1 Choa Chu Kang</a></li>
+  <li><a href="#tampines-2" id="toc-tampines-2" class="nav-link" data-scroll-target="#tampines-2">8.2 Tampines</a></li>
+  </ul></li>
+  <li><a href="#l-function" id="toc-l-function" class="nav-link" data-scroll-target="#l-function">9. L-Function</a>
+  <ul class="collapse">
+  <li><a href="#choa-chu-kang-3" id="toc-choa-chu-kang-3" class="nav-link" data-scroll-target="#choa-chu-kang-3">9.1 Choa Chu Kang</a></li>
+  <li><a href="#tampines-3" id="toc-tampines-3" class="nav-link" data-scroll-target="#tampines-3">9.2 Tampines</a></li>
+  </ul></li>
+  <li><a href="#sec-crossings" id="toc-sec-crossings" class="nav-link" data-scroll-target="#sec-crossings">10. Where Each Curve Leaves Its Envelope</a></li>
+  <li><a href="#what-i-take-from-this-exercise" id="toc-what-i-take-from-this-exercise" class="nav-link" data-scroll-target="#what-i-take-from-this-exercise">11. What I Take From This Exercise</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html">Part 02 — Second-order SPPA</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Second-order Spatial Point Patterns Analysis</h1>
+<p class="subtitle lead">HANDS-ON EXERCISE 2 · PART 02</p>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Jedidiah Asaf Tallulembang </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            ISSS626 — Geospatial Analytics and Applications
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 13, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="pill-row">
+<p><span class="pill">R</span> <span class="pill">spatstat</span> <span class="pill">G / F / K / L</span> <span class="pill">Monte Carlo</span></p>
+</div>
+<p>This is the second of the two Spatial Point Patterns Analysis readings for Hands-on Exercise 2: <a href="https://r4gdsa.netlify.app/chap05">2nd Order Spatial Point Patterns Analysis Methods</a>. The first-order methods are in <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Part 01</a>.</p>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">1. Overview</h2>
+<p>First-order analysis asked how intensity varies across space. Second-order analysis asks a different question: <strong>do the events interact?</strong> Given the number of points present, are they closer together than chance would produce (attraction / clustering), further apart (inhibition / regularity), or indistinguishable from random?</p>
+<p>Four distance-based functions answer this at a range of scales:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Function</th>
+<th>Measures</th>
+<th>Clustered when</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>G</strong></td>
+<td>distance from each event to its nearest event</td>
+<td>curve rises <strong>above</strong> the CSR envelope</td>
+</tr>
+<tr class="even">
+<td><strong>F</strong></td>
+<td>distance from random locations to the nearest event</td>
+<td>curve falls <strong>below</strong> the CSR envelope</td>
+</tr>
+<tr class="odd">
+<td><strong>K</strong></td>
+<td>cumulative count of events within distance <em>r</em></td>
+<td>curve rises <strong>above</strong> the envelope</td>
+</tr>
+<tr class="even">
+<td><strong>L</strong></td>
+<td>K, variance-stabilised to a flat zero line</td>
+<td>curve rises <strong>above</strong> zero</td>
+</tr>
+</tbody>
+</table>
+<p>Each is tested against a Monte Carlo envelope built from simulated CSR patterns. That envelope is the whole point: a raw G or K curve on its own tells me nothing, because almost every real pattern deviates somewhat from the theoretical CSR line.</p>
+</section>
+<section id="the-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-data">2. The Data</h2>
+<p>The same two layers as Part 01 — Child Care Services and the Master Plan 2019 Subzone Boundary (No Sea), both GeoJSON from data.gov.sg, both projected to SVY21 (EPSG:3414).</p>
+</section>
+<section id="getting-started" class="level2">
+<h2 class="anchored" data-anchor-id="getting-started">3. Getting Started</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spatstat, tmap, tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="data-import-and-preparation" class="level2">
+<h2 class="anchored" data-anchor-id="data-import-and-preparation">4. Data Import and Preparation</h2>
+<p>Repeating the Part 01 preparation so this page stands on its own — each Quarto page is its own R session.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>mpsz_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/MasterPlan2019SubzoneBoundaryNoSea.geojson"</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">quiet =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>childcare_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/geospatial/ChildCareServices.geojson"</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                        <span class="at">quiet =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>childcare_ppp <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(childcare_sf)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>childcare_ppp_jit <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(childcare_ppp, <span class="at">retry =</span> <span class="cn">TRUE</span>, <span class="at">nsim =</span> <span class="dv">1</span>, <span class="at">drop =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(childcare_ppp_jit))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<p>The seed is fixed because every envelope on this page is built from simulated CSR patterns. Without it the exact distance at which each observed curve crosses its envelope shifts by a few tens of metres on every rebuild, which makes any number I quote in the text wrong the next time the site is deployed.</p>
+<p>Two planning areas are used as study areas, as in the reference chapter: Choa Chu Kang and Tampines.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>cck <span class="ot">&lt;-</span> mpsz_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(PLN_AREA_N <span class="sc">==</span> <span class="st">"CHOA CHU KANG"</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tm  <span class="ot">&lt;-</span> mpsz_sf <span class="sc">%&gt;%</span> <span class="fu">filter</span>(PLN_AREA_N <span class="sc">==</span> <span class="st">"TAMPINES"</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>cck_owin <span class="ot">&lt;-</span> <span class="fu">as.owin</span>(<span class="fu">st_union</span>(cck))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>tm_owin  <span class="ot">&lt;-</span> <span class="fu">as.owin</span>(<span class="fu">st_union</span>(tm))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>childcare_cck_ppp <span class="ot">&lt;-</span> childcare_ppp_jit[cck_owin]</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>childcare_tm_ppp  <span class="ot">&lt;-</span> childcare_ppp_jit[tm_owin]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>childcare_cck_ppp.km <span class="ot">&lt;-</span> <span class="fu">rescale.ppp</span>(childcare_cck_ppp, <span class="dv">1000</span>, <span class="st">"km"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>childcare_tm_ppp.km  <span class="ot">&lt;-</span> <span class="fu">rescale.ppp</span>(childcare_tm_ppp,  <span class="dv">1000</span>, <span class="st">"km"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">area   =</span> <span class="fu">c</span>(<span class="st">"Choa Chu Kang"</span>, <span class="st">"Tampines"</span>),</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">points =</span> <span class="fu">c</span>(<span class="fu">npoints</span>(childcare_cck_ppp), <span class="fu">npoints</span>(childcare_tm_ppp)),</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">area_km2 =</span> <span class="fu">round</span>(<span class="fu">c</span>(<span class="fu">area</span>(cck_owin), <span class="fu">area</span>(tm_owin)) <span class="sc">/</span> <span class="fl">1e6</span>, <span class="dv">2</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           area points area_km2
+1 Choa Chu Kang     74     6.12
+2      Tampines    117    20.80</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(childcare_cck_ppp, <span class="at">main =</span> <span class="st">"Choa Chu Kang"</span>, <span class="at">cex =</span> <span class="fl">0.7</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(childcare_tm_ppp,  <span class="at">main =</span> <span class="st">"Tampines"</span>,      <span class="at">cex =</span> <span class="fl">0.7</span>, <span class="at">pch =</span> <span class="dv">19</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="a-note-on-the-hypotheses-and-the-number-of-simulations" class="level2">
+<h2 class="anchored" data-anchor-id="a-note-on-the-hypotheses-and-the-number-of-simulations">5. A Note on the Hypotheses and the Number of Simulations</h2>
+<p>For every test below:</p>
+<p><span class="math inline">\(H_0\)</span>: the distribution of childcare centres in the study area is randomly distributed. <span class="math inline">\(H_1\)</span>: the distribution is <strong>not</strong> randomly distributed.</p>
+<p><span class="math inline">\(H_0\)</span> is rejected at the 95% level if the observed curve leaves the envelope built from the simulated CSR patterns.</p>
+<p><strong>On <code>nsim</code>.</strong> The reference chapter uses <code>nsim = 999</code>. I use <code>nsim = 99</code> throughout this page. With 99 simulations the envelope is the pointwise minimum and maximum of the simulations, which corresponds to a two-sided significance level of 2/(99+1) = 0.02 — comfortably inside the 0.05 I am testing at, and it keeps this page rendering in seconds rather than minutes, which matters because the site is rebuilt on every deploy. Where the observed curve leaves the envelope below it does so by a wide margin rather than grazing the edge, so the extra simulations would not change the reading. A marginal result would be a reason to raise <code>nsim</code>, and I would.</p>
+</section>
+<section id="g-function-nearest-neighbour-distances" class="level2">
+<h2 class="anchored" data-anchor-id="g-function-nearest-neighbour-distances">6. G-Function: Nearest Neighbour Distances</h2>
+<p>The G-function is the cumulative distribution of the distance from each event to its nearest neighbouring event. Clustering pushes those distances down, so G rises <strong>faster</strong> than under CSR.</p>
+<section id="choa-chu-kang" class="level3">
+<h3 class="anchored" data-anchor-id="choa-chu-kang">6.1 Choa Chu Kang</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>G_CK <span class="ot">&lt;-</span> <span class="fu">Gest</span>(childcare_cck_ppp, <span class="at">correction =</span> <span class="st">"border"</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(G_CK, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>), <span class="at">main =</span> <span class="st">"G function — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>G_CK.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_cck_ppp, Gest, <span class="at">nsim =</span> <span class="dv">99</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 
+[27:04 remaining, estimate finish 2026-09-13 12:10:08]
+33, 
+[25:50 remaining, estimate finish 2026-09-13 12:08:54]
+34, 
+[24:40 remaining, estimate finish 2026-09-13 12:07:44]
+35, 
+[23:34 remaining, estimate finish 2026-09-13 12:06:39]
+36, 
+[22:32 remaining, estimate finish 2026-09-13 12:05:37]
+37, 
+[21:34 remaining, estimate finish 2026-09-13 12:04:39]
+38, 
+[20:39 remaining, estimate finish 2026-09-13 12:03:43]
+39, 
+[19:46 remaining, estimate finish 2026-09-13 12:02:51]
+40, 
+[18:57 remaining, estimate finish 2026-09-13 12:02:01]
+41, 
+[18:09 remaining, estimate finish 2026-09-13 12:01:14]
+42, 
+[17:25 remaining, estimate finish 2026-09-13 12:00:29]
+43, 
+[16:42 remaining, estimate finish 2026-09-13 11:59:47]
+44, 
+[16:01 remaining, estimate finish 2026-09-13 11:59:06]
+45, 
+[15:22 remaining, estimate finish 2026-09-13 11:58:27]
+46, 
+[14:45 remaining, estimate finish 2026-09-13 11:57:50]
+47, 
+[14:09 remaining, estimate finish 2026-09-13 11:57:14]
+48, 
+[13:35 remaining, estimate finish 2026-09-13 11:56:40]
+49, 
+[13:03 remaining, estimate finish 2026-09-13 11:56:07]
+50, 
+[12:31 remaining, estimate finish 2026-09-13 11:55:36]
+51, 
+[12:01 remaining, estimate finish 2026-09-13 11:55:06]
+52, 
+[11:33 remaining, estimate finish 2026-09-13 11:54:37]
+53, 
+[11:05 remaining, estimate finish 2026-09-13 11:54:10]
+54, 
+[10:38 remaining, estimate finish 2026-09-13 11:53:43]
+55, 
+[10:12 remaining, estimate finish 2026-09-13 11:53:17]
+56,  [9:48 remaining] 57,  [9:24 remaining] 58,  [9:01 remaining] 59,  [8:38 remaining] 60,  [8:17 remaining] 61,  [7:56 remaining] 62,  [7:36 remaining] 63,  [7:16 remaining] 64,  [6:58 remaining] 65,  [6:39 remaining] 66,  [6:22 remaining] 67,  [6:04 remaining] 68,  [5:48 remaining] 69,  [5:32 remaining] 70,  [5:16 remaining] 71,  [5:01 remaining] 72,  [4:46 remaining] 73,  [4:31 remaining] 74,  [4:17 remaining] 75,
+ [4:04 remaining] 76,  [3:51 remaining] 77,  [3:38 remaining] 78,  [3:25 remaining] 79,  [3:13 remaining] 80,  [3:01 remaining] 81,  [2:49 remaining] 82,  [2:38 remaining] 83,  [2:27 remaining] 84,  [2:16 remaining] 85,  [2:05 remaining] 86,  [1:55 remaining] 87,  [1:45 remaining] 88,  [1:35 remaining] 89,  [1:25 remaining] 90,  [1:16 remaining] 91,  [1:07 remaining] 92,  [58 sec remaining] 93,  [49 sec remaining] 94,  [40 sec remaining] 95,
+ [32 sec remaining] 96,  [24 sec remaining] 97,  [16 sec remaining] 98,  [8 sec remaining] 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(G_CK.csr, <span class="at">main =</span> <span class="st">"G function with CSR envelope — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="tampines" class="level3">
+<h3 class="anchored" data-anchor-id="tampines">6.2 Tampines</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>G_tm <span class="ot">&lt;-</span> <span class="fu">Gest</span>(childcare_tm_ppp, <span class="at">correction =</span> <span class="st">"best"</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(G_tm, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>), <span class="at">main =</span> <span class="st">"G function — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>G_tm.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_tm_ppp, Gest, <span class="at">correction =</span> <span class="st">"all"</span>, <span class="at">nsim =</span> <span class="dv">99</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(G_tm.csr, <span class="at">main =</span> <span class="st">"G function with CSR envelope — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Reading the G plots
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>In both areas the observed G rises above the grey envelope, meaning nearest neighbours are closer together than CSR would produce — clustering. The <em>range</em> over which it does so differs sharply between the two areas, and that turned out to be the more interesting result. Rather than eyeball it off the plots, I compute the exact crossing ranges for all four functions in <a href="#sec-crossings">section 10</a> below.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="f-function-empty-space-distances" class="level2">
+<h2 class="anchored" data-anchor-id="f-function-empty-space-distances">7. F-Function: Empty Space Distances</h2>
+<p>The F-function measures the distance from an arbitrary <em>location</em> to the nearest event. Clustering leaves large empty gaps between clusters, so F rises <strong>more slowly</strong> than under CSR — the mirror image of the G result.</p>
+<section id="choa-chu-kang-1" class="level3">
+<h3 class="anchored" data-anchor-id="choa-chu-kang-1">7.1 Choa Chu Kang</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>F_CK <span class="ot">&lt;-</span> <span class="fu">Fest</span>(childcare_cck_ppp)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_CK, <span class="at">main =</span> <span class="st">"F function — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>F_CK.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_cck_ppp, Fest, <span class="at">nsim =</span> <span class="dv">99</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_CK.csr, <span class="at">main =</span> <span class="st">"F function with CSR envelope — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="tampines-1" class="level3">
+<h3 class="anchored" data-anchor-id="tampines-1">7.2 Tampines</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>F_tm <span class="ot">&lt;-</span> <span class="fu">Fest</span>(childcare_tm_ppp, <span class="at">correction =</span> <span class="st">"best"</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_tm, <span class="at">main =</span> <span class="st">"F function — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>F_tm.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_tm_ppp, Fest, <span class="at">correction =</span> <span class="st">"all"</span>, <span class="at">nsim =</span> <span class="dv">99</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(F_tm.csr, <span class="at">main =</span> <span class="st">"F function with CSR envelope — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>F and G point in opposite directions, and that is correct
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>G above the envelope and F below the envelope look like contradictory results but are the same finding stated twice: G is measured from events, F from empty space. A clustered pattern has short event-to-event distances (G up) <em>and</em> large voids between clusters (F down). If both pointed the same way, one of them would be wrong.</p>
+<p>The computed table in <a href="#sec-crossings">section 10</a> confirms this holds in both study areas: G leaves its envelope upward, F leaves its envelope downward, and K and L leave theirs upward. Four statistics built on different distance definitions all reject CSR, consistently.</p>
+<p><strong>One caveat I want on the record.</strong> An earlier run of this page, before I fixed the seed, produced an F-function for Choa Chu Kang that never left its envelope at all — the opposite significance verdict from the one shown here. With only 74 points and 99 simulations, F in Choa Chu Kang is marginal enough that the answer moved with the simulation draw. G, K and L did not move. That is the concrete reason the seed is now fixed at the top of this page, and a warning against quoting a borderline Monte Carlo result as though it were stable. If this were assessed work with consequences I would raise <code>nsim</code> for F specifically rather than rely on a single draw.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="k-function-cumulative-counts" class="level2">
+<h2 class="anchored" data-anchor-id="k-function-cumulative-counts">8. K-Function: Cumulative Counts</h2>
+<p>The K-function counts, for each event, how many other events fall within a distance <em>r</em>, averaged and scaled by intensity. Unlike G and F it uses <strong>all</strong> neighbour distances, not just the nearest, so it describes the pattern across a range of scales at once.</p>
+<section id="choa-chu-kang-2" class="level3">
+<h3 class="anchored" data-anchor-id="choa-chu-kang-2">8.1 Choa Chu Kang</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>K_ck <span class="ot">&lt;-</span> <span class="fu">Kest</span>(childcare_cck_ppp, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_ck, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">ylab =</span> <span class="st">"K(d) - r"</span>, <span class="at">xlab =</span> <span class="st">"d (m)"</span>,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"K function — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>K_ck.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_cck_ppp, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_ck.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">ylab =</span> <span class="st">"K(d) - r"</span>,</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"K function with CSR envelope — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="tampines-2" class="level3">
+<h3 class="anchored" data-anchor-id="tampines-2">8.2 Tampines</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>K_tm <span class="ot">&lt;-</span> <span class="fu">Kest</span>(childcare_tm_ppp, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_tm, . <span class="sc">-</span> r <span class="sc">~</span> r,</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="st">"K(d) - r"</span>, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1000</span>),</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"K function — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>K_tm.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_tm_ppp, Kest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(K_tm.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">ylab =</span> <span class="st">"K(d) - r"</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>),</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"K function with CSR envelope — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="l-function" class="level2">
+<h2 class="anchored" data-anchor-id="l-function">9. L-Function</h2>
+<p>L is K transformed so that CSR is a flat line at zero, which makes deviations far easier to read off a plot than K’s rising curve.</p>
+<section id="choa-chu-kang-3" class="level3">
+<h3 class="anchored" data-anchor-id="choa-chu-kang-3">9.1 Choa Chu Kang</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>L_ck <span class="ot">&lt;-</span> <span class="fu">Lest</span>(childcare_cck_ppp, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(L_ck, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">ylab =</span> <span class="st">"L(d) - r"</span>, <span class="at">xlab =</span> <span class="st">"d (m)"</span>,</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"L function — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>L_ck.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_cck_ppp, Lest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
+[1:31:56 remaining, estimate finish 2026-09-13 13:50:47]
+18, 
+[1:25:32 remaining, estimate finish 2026-09-13 13:44:23]
+19, 
+[1:19:50 remaining, estimate finish 2026-09-13 13:38:42]
+20, 
+[1:14:46 remaining, estimate finish 2026-09-13 13:33:40]
+21, 
+[1:10:08 remaining, estimate finish 2026-09-13 13:29:02]
+22, 
+[1:05:57 remaining, estimate finish 2026-09-13 13:24:51]
+23, 
+[1:02:09 remaining, estimate finish 2026-09-13 13:21:03]
+24, 
+[58:40 remaining, estimate finish 2026-09-13 13:17:34]
+25, 
+[55:29 remaining, estimate finish 2026-09-13 13:14:23]
+26, 
+[52:33 remaining, estimate finish 2026-09-13 13:11:27]
+27, 
+[49:50 remaining, estimate finish 2026-09-13 13:08:44]
+28, 
+[47:19 remaining, estimate finish 2026-09-13 13:06:13]
+29, 
+[45:00 remaining, estimate finish 2026-09-13 13:03:54]
+30, 
+[42:49 remaining, estimate finish 2026-09-13 13:01:44]
+31, 
+[40:48 remaining, estimate finish 2026-09-13 12:59:42]
+32, 
+[38:54 remaining, estimate finish 2026-09-13 12:57:48]
+33, 
+[37:08 remaining, estimate finish 2026-09-13 12:56:02]
+34, 
+[35:27 remaining, estimate finish 2026-09-13 12:54:22]
+35, 
+[33:53 remaining, estimate finish 2026-09-13 12:52:48]
+36, 
+[32:24 remaining, estimate finish 2026-09-13 12:51:19]
+37, 
+[31:00 remaining, estimate finish 2026-09-13 12:49:55]
+38, 
+[29:42 remaining, estimate finish 2026-09-13 12:48:37]
+39, 
+[28:27 remaining, estimate finish 2026-09-13 12:47:22]
+40, 
+[27:15 remaining, estimate finish 2026-09-13 12:46:11]
+41, 
+[49:32 remaining, estimate finish 2026-09-13 13:24:36]
+42, 
+[47:30 remaining, estimate finish 2026-09-13 13:22:35]
+43, 
+[45:35 remaining, estimate finish 2026-09-13 13:20:40]
+44, 
+[43:44 remaining, estimate finish 2026-09-13 13:18:50]
+45, 
+[41:59 remaining, estimate finish 2026-09-13 13:17:06]
+46, 
+[40:18 remaining, estimate finish 2026-09-13 13:15:25]
+47, 
+[38:41 remaining, estimate finish 2026-09-13 13:13:48]
+48, 
+[37:08 remaining, estimate finish 2026-09-13 13:12:15]
+49, 
+[35:39 remaining, estimate finish 2026-09-13 13:10:46]
+50, 
+[34:13 remaining, estimate finish 2026-09-13 13:09:21]
+51, 
+[32:51 remaining, estimate finish 2026-09-13 13:07:59]
+52, 
+[31:32 remaining, estimate finish 2026-09-13 13:06:40]
+53, 
+[30:16 remaining, estimate finish 2026-09-13 13:05:24]
+54, 
+[29:03 remaining, estimate finish 2026-09-13 13:04:11]
+55, 
+[27:53 remaining, estimate finish 2026-09-13 13:03:01]
+56, 
+[26:46 remaining, estimate finish 2026-09-13 13:01:53]
+57, 
+[25:40 remaining, estimate finish 2026-09-13 13:00:48]
+58, 
+[24:37 remaining, estimate finish 2026-09-13 12:59:45]
+59, 
+[23:36 remaining, estimate finish 2026-09-13 12:58:44]
+60, 
+[22:38 remaining, estimate finish 2026-09-13 12:57:46]
+61, 
+[21:41 remaining, estimate finish 2026-09-13 12:56:49]
+62, 
+[20:46 remaining, estimate finish 2026-09-13 12:55:54]
+63, 
+[25:03 remaining, estimate finish 2026-09-13 13:09:06]
+64, 
+[23:59 remaining, estimate finish 2026-09-13 13:08:03]
+65, 
+[22:56 remaining, estimate finish 2026-09-13 13:07:01]
+66, 
+[21:55 remaining, estimate finish 2026-09-13 13:06:00]
+67, 
+[20:56 remaining, estimate finish 2026-09-13 13:05:01]
+68, 
+[19:59 remaining, estimate finish 2026-09-13 13:04:03]
+69, 
+[19:03 remaining, estimate finish 2026-09-13 13:03:08]
+70, 
+[18:09 remaining, estimate finish 2026-09-13 13:02:14]
+71, 
+[17:16 remaining, estimate finish 2026-09-13 13:01:21]
+72, 
+[16:25 remaining, estimate finish 2026-09-13 13:00:30]
+73, 
+[15:36 remaining, estimate finish 2026-09-13 12:59:41]
+74, 
+[14:47 remaining, estimate finish 2026-09-13 12:58:52]
+75, 
+[14:00 remaining, estimate finish 2026-09-13 12:58:06]
+76, 
+[13:15 remaining, estimate finish 2026-09-13 12:57:20]
+77, 
+[12:30 remaining, estimate finish 2026-09-13 12:56:35]
+78, 
+[11:47 remaining, estimate finish 2026-09-13 12:55:52]
+79, 
+[11:04 remaining, estimate finish 2026-09-13 12:55:10]
+80, 
+[10:23 remaining, estimate finish 2026-09-13 12:54:29]
+81,  [9:43 remaining] 82,  [9:04 remaining] 83,  [8:26 remaining] 84,  [7:48 remaining] 85,  [7:12 remaining] 86,  [6:36 remaining] 87,  [6:02 remaining] 88,  [5:28 remaining] 89,  [4:55 remaining] 90,  [4:22 remaining] 91,  [3:50 remaining] 92,  [3:19 remaining] 93,  [2:49 remaining] 94,  [2:19 remaining] 95,  [1:50 remaining] 96,  [1:22 remaining] 97,  [54 sec remaining] 98,  [27 sec remaining] 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(L_ck.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">ylab =</span> <span class="st">"L(d) - r"</span>,</span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"L function with CSR envelope — Choa Chu Kang"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="tampines-3" class="level3">
+<h3 class="anchored" data-anchor-id="tampines-3">9.2 Tampines</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>L_tm <span class="ot">&lt;-</span> <span class="fu">Lest</span>(childcare_tm_ppp, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(L_tm, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">ylab =</span> <span class="st">"L(d) - r"</span>, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1000</span>),</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"L function — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>L_tm.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(childcare_tm_ppp, Lest, <span class="at">nsim =</span> <span class="dv">99</span>, <span class="at">rank =</span> <span class="dv">1</span>, <span class="at">glocal =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Generating 99 simulated realisations of CSR  ...
+1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80,
+81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 
+99.
+
+Done.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(L_tm.csr, . <span class="sc">-</span> r <span class="sc">~</span> r, <span class="at">xlab =</span> <span class="st">"d (m)"</span>, <span class="at">ylab =</span> <span class="st">"L(d) - r"</span>, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>),</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"L function with CSR envelope — Tampines"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Part02_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-crossings" class="level2">
+<h2 class="anchored" data-anchor-id="sec-crossings">10. Where Each Curve Leaves Its Envelope</h2>
+<p>Reading significance off eight plots by eye is unreliable, so I compute it directly. For G, K and L a departure <strong>above</strong> the upper envelope indicates clustering; for F a departure <strong>below</strong> the lower envelope does.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>crossing <span class="ot">&lt;-</span> <span class="cf">function</span>(env, side) {</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="cf">if</span> (side <span class="sc">==</span> <span class="st">"above"</span>) env<span class="sc">$</span>r[env<span class="sc">$</span>obs <span class="sc">&gt;</span> env<span class="sc">$</span>hi] <span class="cf">else</span> env<span class="sc">$</span>r[env<span class="sc">$</span>obs <span class="sc">&lt;</span> env<span class="sc">$</span>lo]</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  d <span class="ot">&lt;-</span> d[<span class="sc">!</span><span class="fu">is.na</span>(d)]</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">length</span>(d) <span class="sc">==</span> <span class="dv">0</span>) <span class="st">"never leaves envelope"</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span> <span class="fu">paste0</span>(<span class="fu">round</span>(<span class="fu">min</span>(d)), <span class="st">"-"</span>, <span class="fu">round</span>(<span class="fu">max</span>(d)), <span class="st">" m"</span>)</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Function =</span> <span class="fu">c</span>(<span class="st">"G"</span>, <span class="st">"F"</span>, <span class="st">"K"</span>, <span class="st">"L"</span>),</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">Direction =</span> <span class="fu">c</span>(<span class="st">"above"</span>, <span class="st">"below"</span>, <span class="st">"above"</span>, <span class="st">"above"</span>),</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Choa Chu Kang</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="fu">crossing</span>(G_CK.csr, <span class="st">"above"</span>), <span class="fu">crossing</span>(F_CK.csr, <span class="st">"below"</span>),</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">crossing</span>(K_ck.csr, <span class="st">"above"</span>), <span class="fu">crossing</span>(L_ck.csr, <span class="st">"above"</span>)),</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Tampines =</span> <span class="fu">c</span>(<span class="fu">crossing</span>(G_tm.csr, <span class="st">"above"</span>), <span class="fu">crossing</span>(F_tm.csr, <span class="st">"below"</span>),</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a>               <span class="fu">crossing</span>(K_tm.csr, <span class="st">"above"</span>), <span class="fu">crossing</span>(L_tm.csr, <span class="st">"above"</span>)),</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Function Direction Choa Chu Kang  Tampines
+1        G     above      46-101 m   8-340 m
+2        F     below     279-484 m 273-819 m
+3        K     above      45-795 m 10-1665 m
+4        L     above      47-795 m 10-1665 m</code></pre>
+</div>
+</div>
+</section>
+<section id="what-i-take-from-this-exercise" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-take-from-this-exercise">11. What I Take From This Exercise</h2>
+<p><strong>All four functions agree.</strong> In both Choa Chu Kang and Tampines, G, K and L rise above their envelopes and F falls below its own — four different statistics, built on different distance definitions, all rejecting complete spatial randomness in the same direction. Childcare centres in both towns are clustered.</p>
+<p>The agreement is firmer in Tampines than in Choa Chu Kang. Tampines has 117 points to Choa Chu Kang’s 74, its curves leave the envelopes earlier and stay outside them longer, and its F result was stable across simulation draws where Choa Chu Kang’s was not.</p>
+<p><strong>Scale is the real finding.</strong> What matters is not <em>that</em> the curves leave the envelope but over what range, and the table in section 10 makes two things obvious. First, K departs over a far wider range than G in both areas — unsurprising, since K counts all neighbours rather than only the nearest, so it detects clustering that nearest-neighbour distances alone miss. Second, the two towns cluster at genuinely different scales: Tampines stays outside its K envelope well past a kilometre, while Choa Chu Kang returns inside it several hundred metres earlier. Those are two different spatial processes, and calling both simply “clustered” would throw the distinction away. A first-order KDE could not have told me any of this, because KDE has no notion of scale-dependent interaction.</p>
+<p><strong>What I got wrong, twice.</strong> First I read the F-function plot as contradicting the G-function plot and assumed I had mis-specified the edge correction. The two functions are <em>supposed</em> to point in opposite directions for a clustered pattern; writing out what each one measures from — events for G, empty space for F — fixed that.</p>
+<p>The second mistake was the instructive one. I wrote up the significance verdicts from reading the plots, then built the table in section 10 to compute them properly, and the F result for Choa Chu Kang came out differently from what I had written. Chasing it down, the cause was not a coding error but an unfixed random seed: F in that area is close enough to its envelope that the verdict moved between simulation runs. Two lessons out of one bug — compute the crossing points rather than eyeballing them, and fix the seed before writing any sentence that depends on a Monte Carlo result.</p>
+<p><strong>Limitation, again.</strong> Every test here compares the observed pattern to complete spatial randomness <em>within the planning area polygon</em>. But a childcare centre cannot be sited in a canal, a cemetery, a reservoir or an expressway interchange, and a meaningful share of both study areas is exactly that. The CSR null is therefore slightly too generous, and some of the measured “clustering” is really just “buildings are where buildings can be”. The honest fix is an inhomogeneous null (<code>Kinhom</code>, <code>Linhom</code>) fitted to a population or land-use covariate rather than a homogeneous CSR, which is where I would take this next.</p>
+<p>This is not a hypothetical worry. In <a href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html">Hands-on Exercise 3</a> I run the network-constrained equivalent of the K-function on Punggol, where the null only scatters simulated points along roads rather than anywhere inside the polygon — and the result flips from clustering to regularity. Some of what this page measures as clustering is the shape of the study area, not the behaviour of childcare operators.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/isss626-coursework\.vercel\.app");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="pagination-link" aria-label="Part 01 — First-order SPPA">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Part 01 — First-order SPPA</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html" class="pagination-link" aria-label="Network Constrained SPPA">
+        <span class="nav-page-text">Network Constrained SPPA</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p><strong>ISSS626</strong><br>
+Geospatial Analytics and Applications</p>
+</div>   
+    <div class="nav-footer-center">
+<p>By Jedidiah Asaf Tallulembang<br>
+Singapore Management University</p>
+</div>
+    <div class="nav-footer-right">
+<p>Coursework Portfolio · 2026</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

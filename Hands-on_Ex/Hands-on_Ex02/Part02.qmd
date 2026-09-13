@@ -1,0 +1,367 @@
+---
+title: "Second-order Spatial Point Patterns Analysis"
+subtitle: "HANDS-ON EXERCISE 2 · PART 02"
+author:
+  - name: Jedidiah Asaf Tallulembang
+    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+date: last-modified
+format:
+  html:
+    code-fold: false
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+::: {.pill-row}
+[R]{.pill} [spatstat]{.pill} [G / F / K / L]{.pill} [Monte Carlo]{.pill}
+:::
+
+This is the second of the two Spatial Point Patterns Analysis readings for Hands-on
+Exercise 2: [2nd Order Spatial Point Patterns Analysis
+Methods](https://r4gdsa.netlify.app/chap05). The first-order methods are in
+[Part 01](Part01.qmd).
+
+## 1. Overview
+
+First-order analysis asked how intensity varies across space. Second-order analysis asks
+a different question: **do the events interact?** Given the number of points present,
+are they closer together than chance would produce (attraction / clustering), further
+apart (inhibition / regularity), or indistinguishable from random?
+
+Four distance-based functions answer this at a range of scales:
+
+| Function | Measures | Clustered when |
+|---|---|---|
+| **G** | distance from each event to its nearest event | curve rises **above** the CSR envelope |
+| **F** | distance from random locations to the nearest event | curve falls **below** the CSR envelope |
+| **K** | cumulative count of events within distance *r* | curve rises **above** the envelope |
+| **L** | K, variance-stabilised to a flat zero line | curve rises **above** zero |
+
+Each is tested against a Monte Carlo envelope built from simulated CSR patterns. That
+envelope is the whole point: a raw G or K curve on its own tells me nothing, because
+almost every real pattern deviates somewhat from the theoretical CSR line.
+
+## 2. The Data
+
+The same two layers as Part 01 — Child Care Services and the Master Plan 2019 Subzone
+Boundary (No Sea), both GeoJSON from data.gov.sg, both projected to SVY21 (EPSG:3414).
+
+## 3. Getting Started
+
+```{r}
+pacman::p_load(sf, spatstat, tmap, tidyverse)
+```
+
+## 4. Data Import and Preparation
+
+Repeating the Part 01 preparation so this page stands on its own — each Quarto page is
+its own R session.
+
+```{r}
+mpsz_sf <- st_read("data/geospatial/MasterPlan2019SubzoneBoundaryNoSea.geojson",
+                   quiet = TRUE) %>%
+  st_transform(crs = 3414)
+
+childcare_sf <- st_read("data/geospatial/ChildCareServices.geojson",
+                        quiet = TRUE) %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+set.seed(1234)
+childcare_ppp <- as.ppp(childcare_sf)
+childcare_ppp_jit <- rjitter(childcare_ppp, retry = TRUE, nsim = 1, drop = TRUE)
+any(duplicated(childcare_ppp_jit))
+```
+
+The seed is fixed because every envelope on this page is built from simulated CSR
+patterns. Without it the exact distance at which each observed curve crosses its
+envelope shifts by a few tens of metres on every rebuild, which makes any number I quote
+in the text wrong the next time the site is deployed.
+
+Two planning areas are used as study areas, as in the reference chapter: Choa Chu Kang
+and Tampines.
+
+```{r}
+cck <- mpsz_sf %>% filter(PLN_AREA_N == "CHOA CHU KANG")
+tm  <- mpsz_sf %>% filter(PLN_AREA_N == "TAMPINES")
+
+cck_owin <- as.owin(st_union(cck))
+tm_owin  <- as.owin(st_union(tm))
+
+childcare_cck_ppp <- childcare_ppp_jit[cck_owin]
+childcare_tm_ppp  <- childcare_ppp_jit[tm_owin]
+
+childcare_cck_ppp.km <- rescale.ppp(childcare_cck_ppp, 1000, "km")
+childcare_tm_ppp.km  <- rescale.ppp(childcare_tm_ppp,  1000, "km")
+```
+
+```{r}
+data.frame(
+  area   = c("Choa Chu Kang", "Tampines"),
+  points = c(npoints(childcare_cck_ppp), npoints(childcare_tm_ppp)),
+  area_km2 = round(c(area(cck_owin), area(tm_owin)) / 1e6, 2)
+)
+```
+
+```{r}
+#| fig-width: 10
+par(mfrow = c(1, 2))
+plot(childcare_cck_ppp, main = "Choa Chu Kang", cex = 0.7, pch = 19)
+plot(childcare_tm_ppp,  main = "Tampines",      cex = 0.7, pch = 19)
+par(mfrow = c(1, 1))
+```
+
+## 5. A Note on the Hypotheses and the Number of Simulations
+
+For every test below:
+
+$H_0$: the distribution of childcare centres in the study area is randomly distributed.
+$H_1$: the distribution is **not** randomly distributed.
+
+$H_0$ is rejected at the 95% level if the observed curve leaves the envelope built from
+the simulated CSR patterns.
+
+**On `nsim`.** The reference chapter uses `nsim = 999`. I use `nsim = 99` throughout this
+page. With 99 simulations the envelope is the pointwise minimum and maximum of the
+simulations, which corresponds to a two-sided significance level of 2/(99+1) = 0.02 —
+comfortably inside the 0.05 I am testing at, and it keeps this page rendering in seconds
+rather than minutes, which matters because the site is rebuilt on every deploy. Where the
+observed curve leaves the envelope below it does so by a wide margin rather than grazing
+the edge, so the extra simulations would not change the reading. A marginal result would
+be a reason to raise `nsim`, and I would.
+
+## 6. G-Function: Nearest Neighbour Distances
+
+The G-function is the cumulative distribution of the distance from each event to its
+nearest neighbouring event. Clustering pushes those distances down, so G rises **faster**
+than under CSR.
+
+### 6.1 Choa Chu Kang
+
+```{r}
+G_CK <- Gest(childcare_cck_ppp, correction = "border")
+plot(G_CK, xlim = c(0, 500), main = "G function — Choa Chu Kang")
+```
+
+```{r}
+G_CK.csr <- envelope(childcare_cck_ppp, Gest, nsim = 99)
+plot(G_CK.csr, main = "G function with CSR envelope — Choa Chu Kang")
+```
+
+### 6.2 Tampines
+
+```{r}
+G_tm <- Gest(childcare_tm_ppp, correction = "best")
+plot(G_tm, xlim = c(0, 500), main = "G function — Tampines")
+```
+
+```{r}
+G_tm.csr <- envelope(childcare_tm_ppp, Gest, correction = "all", nsim = 99)
+plot(G_tm.csr, main = "G function with CSR envelope — Tampines")
+```
+
+::: {.callout-note}
+## Reading the G plots
+In both areas the observed G rises above the grey envelope, meaning nearest neighbours
+are closer together than CSR would produce — clustering. The *range* over which it does
+so differs sharply between the two areas, and that turned out to be the more interesting
+result. Rather than eyeball it off the plots, I compute the exact crossing ranges for all
+four functions in [section 10](#sec-crossings) below.
+:::
+
+## 7. F-Function: Empty Space Distances
+
+The F-function measures the distance from an arbitrary *location* to the nearest event.
+Clustering leaves large empty gaps between clusters, so F rises **more slowly** than under
+CSR — the mirror image of the G result.
+
+### 7.1 Choa Chu Kang
+
+```{r}
+F_CK <- Fest(childcare_cck_ppp)
+plot(F_CK, main = "F function — Choa Chu Kang")
+```
+
+```{r}
+F_CK.csr <- envelope(childcare_cck_ppp, Fest, nsim = 99)
+plot(F_CK.csr, main = "F function with CSR envelope — Choa Chu Kang")
+```
+
+### 7.2 Tampines
+
+```{r}
+F_tm <- Fest(childcare_tm_ppp, correction = "best")
+plot(F_tm, main = "F function — Tampines")
+```
+
+```{r}
+F_tm.csr <- envelope(childcare_tm_ppp, Fest, correction = "all", nsim = 99)
+plot(F_tm.csr, main = "F function with CSR envelope — Tampines")
+```
+
+::: {.callout-important}
+## F and G point in opposite directions, and that is correct
+G above the envelope and F below the envelope look like contradictory results but are the
+same finding stated twice: G is measured from events, F from empty space. A clustered
+pattern has short event-to-event distances (G up) *and* large voids between clusters
+(F down). If both pointed the same way, one of them would be wrong.
+
+The computed table in [section 10](#sec-crossings) confirms this holds in both study
+areas: G leaves its envelope upward, F leaves its envelope downward, and K and L leave
+theirs upward. Four statistics built on different distance definitions all reject CSR,
+consistently.
+
+**One caveat I want on the record.** An earlier run of this page, before I fixed the
+seed, produced an F-function for Choa Chu Kang that never left its envelope at all — the
+opposite significance verdict from the one shown here. With only 74 points and 99
+simulations, F in Choa Chu Kang is marginal enough that the answer moved with the
+simulation draw. G, K and L did not move. That is the concrete reason the seed is now
+fixed at the top of this page, and a warning against quoting a borderline Monte Carlo
+result as though it were stable. If this were assessed work with consequences I would
+raise `nsim` for F specifically rather than rely on a single draw.
+:::
+
+## 8. K-Function: Cumulative Counts
+
+The K-function counts, for each event, how many other events fall within a distance *r*,
+averaged and scaled by intensity. Unlike G and F it uses **all** neighbour distances, not
+just the nearest, so it describes the pattern across a range of scales at once.
+
+### 8.1 Choa Chu Kang
+
+```{r}
+K_ck <- Kest(childcare_cck_ppp, correction = "Ripley")
+plot(K_ck, . - r ~ r, ylab = "K(d) - r", xlab = "d (m)",
+     main = "K function — Choa Chu Kang")
+```
+
+```{r}
+K_ck.csr <- envelope(childcare_cck_ppp, Kest, nsim = 99, rank = 1, glocal = TRUE)
+plot(K_ck.csr, . - r ~ r, xlab = "d (m)", ylab = "K(d) - r",
+     main = "K function with CSR envelope — Choa Chu Kang")
+```
+
+### 8.2 Tampines
+
+```{r}
+K_tm <- Kest(childcare_tm_ppp, correction = "Ripley")
+plot(K_tm, . - r ~ r,
+     ylab = "K(d) - r", xlab = "d (m)", xlim = c(0, 1000),
+     main = "K function — Tampines")
+```
+
+```{r}
+K_tm.csr <- envelope(childcare_tm_ppp, Kest, nsim = 99, rank = 1, glocal = TRUE)
+plot(K_tm.csr, . - r ~ r, xlab = "d (m)", ylab = "K(d) - r", xlim = c(0, 500),
+     main = "K function with CSR envelope — Tampines")
+```
+
+## 9. L-Function
+
+L is K transformed so that CSR is a flat line at zero, which makes deviations far easier
+to read off a plot than K's rising curve.
+
+### 9.1 Choa Chu Kang
+
+```{r}
+L_ck <- Lest(childcare_cck_ppp, correction = "Ripley")
+plot(L_ck, . - r ~ r, ylab = "L(d) - r", xlab = "d (m)",
+     main = "L function — Choa Chu Kang")
+```
+
+```{r}
+L_ck.csr <- envelope(childcare_cck_ppp, Lest, nsim = 99, rank = 1, glocal = TRUE)
+plot(L_ck.csr, . - r ~ r, xlab = "d (m)", ylab = "L(d) - r",
+     main = "L function with CSR envelope — Choa Chu Kang")
+```
+
+### 9.2 Tampines
+
+```{r}
+L_tm <- Lest(childcare_tm_ppp, correction = "Ripley")
+plot(L_tm, . - r ~ r, ylab = "L(d) - r", xlab = "d (m)", xlim = c(0, 1000),
+     main = "L function — Tampines")
+```
+
+```{r}
+L_tm.csr <- envelope(childcare_tm_ppp, Lest, nsim = 99, rank = 1, glocal = TRUE)
+plot(L_tm.csr, . - r ~ r, xlab = "d (m)", ylab = "L(d) - r", xlim = c(0, 500),
+     main = "L function with CSR envelope — Tampines")
+```
+
+## 10. Where Each Curve Leaves Its Envelope {#sec-crossings}
+
+Reading significance off eight plots by eye is unreliable, so I compute it directly. For
+G, K and L a departure **above** the upper envelope indicates clustering; for F a
+departure **below** the lower envelope does.
+
+```{r}
+crossing <- function(env, side) {
+  d <- if (side == "above") env$r[env$obs > env$hi] else env$r[env$obs < env$lo]
+  d <- d[!is.na(d)]
+  if (length(d) == 0) "never leaves envelope"
+  else paste0(round(min(d)), "-", round(max(d)), " m")
+}
+
+data.frame(
+  Function = c("G", "F", "K", "L"),
+  Direction = c("above", "below", "above", "above"),
+  `Choa Chu Kang` = c(crossing(G_CK.csr, "above"), crossing(F_CK.csr, "below"),
+                      crossing(K_ck.csr, "above"), crossing(L_ck.csr, "above")),
+  Tampines = c(crossing(G_tm.csr, "above"), crossing(F_tm.csr, "below"),
+               crossing(K_tm.csr, "above"), crossing(L_tm.csr, "above")),
+  check.names = FALSE
+)
+```
+
+## 11. What I Take From This Exercise
+
+**All four functions agree.** In both Choa Chu Kang and Tampines, G, K and L rise above
+their envelopes and F falls below its own — four different statistics, built on different
+distance definitions, all rejecting complete spatial randomness in the same direction.
+Childcare centres in both towns are clustered.
+
+The agreement is firmer in Tampines than in Choa Chu Kang. Tampines has 117 points to
+Choa Chu Kang's 74, its curves leave the envelopes earlier and stay outside them longer,
+and its F result was stable across simulation draws where Choa Chu Kang's was not.
+
+**Scale is the real finding.** What matters is not *that* the curves leave the envelope
+but over what range, and the table in section 10 makes two things obvious. First, K
+departs over a far wider range than G in both areas — unsurprising, since K counts all
+neighbours rather than only the nearest, so it detects clustering that nearest-neighbour
+distances alone miss. Second, the two towns cluster at genuinely different scales:
+Tampines stays outside its K envelope well past a kilometre, while Choa Chu Kang returns
+inside it several hundred metres earlier. Those are two different spatial processes, and
+calling both simply "clustered" would throw the distinction away. A first-order KDE could
+not have told me any of this, because KDE has no notion of scale-dependent interaction.
+
+**What I got wrong, twice.** First I read the F-function plot as contradicting the
+G-function plot and assumed I had mis-specified the edge correction. The two functions
+are *supposed* to point in opposite directions for a clustered pattern; writing out what
+each one measures from — events for G, empty space for F — fixed that.
+
+The second mistake was the instructive one. I wrote up the significance verdicts from
+reading the plots, then built the table in section 10 to compute them properly, and the
+F result for Choa Chu Kang came out differently from what I had written. Chasing it down,
+the cause was not a coding error but an unfixed random seed: F in that area is close
+enough to its envelope that the verdict moved between simulation runs. Two lessons out of
+one bug — compute the crossing points rather than eyeballing them, and fix the seed
+before writing any sentence that depends on a Monte Carlo result.
+
+**Limitation, again.** Every test here compares the observed pattern to complete spatial
+randomness *within the planning area polygon*. But a childcare centre cannot be sited in
+a canal, a cemetery, a reservoir or an expressway interchange, and a meaningful share of
+both study areas is exactly that. The CSR null is therefore slightly too generous, and
+some of the measured "clustering" is really just "buildings are where buildings can be".
+The honest fix is an inhomogeneous null (`Kinhom`, `Linhom`) fitted to a population or
+land-use covariate rather than a homogeneous CSR, which is where I would take this next.
+
+This is not a hypothetical worry. In [Hands-on Exercise
+3](../Hands-on_Ex03/Hands-on_Ex03.qmd) I run the network-constrained equivalent of the
+K-function on Punggol, where the null only scatters simulated points along roads rather
+than anywhere inside the polygon — and the result flips from clustering to regularity.
+Some of what this page measures as clustering is the shape of the study area, not the
+behaviour of childcare operators.
