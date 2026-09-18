@@ -41,6 +41,10 @@ website:
         contents:
           - text: "Network Constrained SPPA"
             href: Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd
+      - section: "Hands-on Exercise 4"
+        contents:
+          - text: "Spatial Weights and Applications"
+            href: Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd
   page-footer:
     border: true
     left: |

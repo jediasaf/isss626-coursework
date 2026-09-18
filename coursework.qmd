@@ -54,3 +54,18 @@ Punggol with <code>spNetwork</code>.</p>
 [<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Network Constrained Spatial Point Patterns Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">04</span>
+<span class="coursework-group-title">Hands-on Exercise 4</span>
+:::
+
+<p class="coursework-group-desc">Areal data and neighbourhood definition — contiguity,
+distance-band and adaptive spatial weights over Hunan's 88 counties, and the spatially
+lagged variables built from them with <code>spdep</code>.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Spatial Weights and Applications</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd){.exercise-row}
+
+:::
