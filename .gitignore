@@ -1,0 +1,12 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+/.quarto/
+_freeze/
+.DS_Store
+.vercel
+.vercel/
+data/
+
+**/*.quarto_ipynb
