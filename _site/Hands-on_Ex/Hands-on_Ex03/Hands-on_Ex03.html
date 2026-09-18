@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jedidiah Asaf Tallulembang">
-<meta name="dcterms.date" content="2026-09-13">
+<meta name="dcterms.date" content="2026-09-18">
 
 <title>Network Constrained Spatial Point Patterns Analysis – ISSS626</title>
 <style>
@@ -390,13 +390,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — Geospatial Data Wrangling</span></a>
+ <span class="menu-text">Part 01: Geospatial Data Wrangling</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Choropleth Mapping</span></a>
+ <span class="menu-text">Part 02: Choropleth Mapping</span></a>
   </div>
 </li>
       </ul>
@@ -413,13 +413,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — First-order SPPA</span></a>
+ <span class="menu-text">Part 01: First-order SPPA</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Second-order SPPA</span></a>
+ <span class="menu-text">Part 02: Second-order SPPA</span></a>
   </div>
 </li>
       </ul>
@@ -509,7 +509,7 @@ window.Quarto = {
   </div>
   <div class="quarto-title-meta-contents">
         <p class="affiliation">
-            ISSS626 — Geospatial Analytics and Applications
+            ISSS626 Geospatial Analytics and Applications
           </p>
       </div>
   </div>
@@ -520,7 +520,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 13, 2026</p>
+      <p class="date">September 18, 2026</p>
     </div>
   </div>
   
@@ -569,7 +569,7 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Both were supplied with the course under Lesson 3 and are already in SVY21 (EPSG:3414), so no reprojection is needed — a first for these exercises.</p>
+<p>Both were supplied with the course under Lesson 3 and are already in SVY21 (EPSG:3414), so no reprojection is needed, a first for these exercises.</p>
 </section>
 <section id="getting-started" class="level2">
 <h2 class="anchored" data-anchor-id="getting-started">3. Getting Started</h2>
@@ -633,7 +633,7 @@ First 10 features:
 10 kml_222 POINT (37141.76 42326.36)</code></pre>
 </div>
 </div>
-<p>The <code>st_zm()</code> call on the childcare layer drops the Z (and M) dimension. The shapefile stores points as XYZ with a zero elevation, and <code>spNetwork</code> will refuse to snap 3D points onto a 2D network, so this is not cosmetic — leaving it out is an error later.</p>
+<p>The <code>st_zm()</code> call on the childcare layer drops the Z (and M) dimension. The shapefile stores points as XYZ with a zero elevation, and <code>spNetwork</code> will refuse to snap 3D points onto a 2D network, so this is not cosmetic. Leaving it out is an error later.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(network)<span class="sc">$</span>epsg</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -688,7 +688,7 @@ First 10 features:
 <h2 class="anchored" data-anchor-id="network-kde-analysis">6. Network KDE Analysis</h2>
 <section id="preparing-the-lixels" class="level3">
 <h3 class="anchored" data-anchor-id="preparing-the-lixels">6.1 Preparing the Lixels</h3>
-<p>A kernel density estimate on a network is evaluated along the network, not over a grid. The first step is to cut the network into <strong>lixels</strong> — line pixels — of roughly equal length.</p>
+<p>A kernel density estimate on a network is evaluated along the network, not over a grid. The first step is to cut the network into <strong>lixels</strong>, or line pixels, of roughly equal length.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(network,</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                         <span class="dv">700</span>,</span>
@@ -698,7 +698,7 @@ First 10 features:
 <pre><code>[1] 2645</code></pre>
 </div>
 </div>
-<p>The 700m target length with a 375m minimum means any leftover segment shorter than 375m is merged into the previous lixel rather than left as a stub. The count barely changes from the original 2,642 segments, which tells me most Punggol road segments were already shorter than 700m — this is a dense residential network, not a highway corridor.</p>
+<p>The 700m target length with a 375m minimum means any leftover segment shorter than 375m is merged into the previous lixel rather than left as a stub. The count barely changes from the original 2,642 segments, which tells me most Punggol road segments were already shorter than 700m. This is a dense residential network, not a highway corridor.</p>
 </section>
 <section id="generating-line-centre-points" class="level3">
 <h3 class="anchored" data-anchor-id="generating-line-centre-points">6.2 Generating Line Centre Points</h3>
@@ -732,9 +732,9 @@ First 10 features:
 </div>
 <p>A note on the arguments that actually change the answer:</p>
 <ul>
-<li><code>kernel_name = "quartic"</code> — the kernel shape. <code>spNetwork</code> also offers triangle, gaussian, tricube, cosine, epanechnikov and uniform.</li>
-<li><code>bw = 300</code> — the bandwidth, in metres <strong>along the network</strong>. This is the single most consequential choice here.</li>
-<li><code>method = "simple"</code> — the simplest of the three NKDE variants. It treats network distance as a straight replacement for Euclidean distance in the kernel. It is fast and intuitive, but it is <strong>not</strong> a true density: the values do not integrate to the number of events, because mass is duplicated at every intersection. <code>"discontinuous"</code> and <code>"continuous"</code> correct that at increasing computational cost.</li>
+<li><code>kernel_name = "quartic"</code> sets the kernel shape. <code>spNetwork</code> also offers triangle, gaussian, tricube, cosine, epanechnikov and uniform.</li>
+<li><code>bw = 300</code> is the bandwidth, in metres <strong>along the network</strong>. This is the single most consequential choice here.</li>
+<li><code>method = "simple"</code> is the simplest of the three NKDE variants. It treats network distance as a straight replacement for Euclidean distance in the kernel. It is fast and intuitive, but it is <strong>not</strong> a true density: the values do not integrate to the number of events, because mass is duplicated at every intersection. <code>"discontinuous"</code> and <code>"continuous"</code> correct that at increasing computational cost.</li>
 </ul>
 <p>Attaching the computed densities and rescaling from events-per-metre to events-per-kilometre so the legend is readable:</p>
 <div class="cell">
@@ -779,7 +779,7 @@ First 10 features:
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The high-density road segments are not a blob in the middle of Punggol. They are specific stretches — the roads threading the HDB precincts either side of Punggol Field and Punggol Central — while the roads along the waterway and the LRT viaduct run cold despite being geometrically close to plenty of centres. A planar KDE would smear density straight across the waterway and report a hotspot in the middle of the water, which is exactly the artefact this method exists to avoid.</p>
+<p>The high-density road segments are not a blob in the middle of Punggol. They are specific stretches, the roads threading the HDB precincts either side of Punggol Field and Punggol Central, while the roads along the waterway and the LRT viaduct run cold despite being geometrically close to plenty of centres. A planar KDE would smear density straight across the waterway and report a hotspot in the middle of the water, which is exactly the artefact this method exists to avoid.</p>
 </div>
 </div>
 </section>
@@ -862,12 +862,12 @@ First 10 features:
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Important</span>Conclusion of the test — and it is not what I expected
+<span class="screen-reader-only">Important</span>Conclusion of the test, and it is not what I expected
 </div>
 </div>
 <div class="callout-body-container callout-body">
 <p>The observed curves leave the envelope on the <strong>lower</strong> side, not the upper one. Fewer centres fall within a few hundred network metres of each other than complete spatial randomness along the network would produce.</p>
-<p>I reject the null hypothesis — the centres are not uniformly distributed along the network — but in the <strong>opposite direction to clustering</strong>. This is <em>regularity</em> (dispersion, inhibition). At longer distances the observed curve returns inside the envelope, so beyond that range the pattern is indistinguishable from random.</p>
+<p>I reject the null hypothesis, since the centres are not uniformly distributed along the network, but in the <strong>opposite direction to clustering</strong>. This is <em>regularity</em> (dispersion, inhibition). At longer distances the observed curve returns inside the envelope, so beyond that range the pattern is indistinguishable from random.</p>
 <p>The seed is fixed above so these ranges are reproducible; without it the exact crossing distances shift on every rebuild.</p>
 </div>
 </div>
@@ -879,7 +879,7 @@ First 10 features:
 <p>I do not think either result is wrong. They are answering different questions:</p>
 <ul>
 <li>The planar K-function asks “are centres closer together than random points scattered over this <strong>polygon</strong>?” A large share of that polygon is water, park and reserve where nothing can be built, so the random comparison points are spread over space that real centres can never occupy. Against that null, anything confined to buildable land looks clustered.</li>
-<li>The network K-function asks “are centres closer together than random points scattered over this <strong>road network</strong>?” That null already excludes the unbuildable space. What is left is the actual siting decision — and the actual siting decision turns out to space centres out, roughly one per residential precinct, which is exactly what a planner allocating childcare places by catchment would do.</li>
+<li>The network K-function asks “are centres closer together than random points scattered over this <strong>road network</strong>?” That null already excludes the unbuildable space. What is left is the actual siting decision, and that decision turns out to space centres out, roughly one per residential precinct, which is exactly what a planner allocating childcare places by catchment would do.</li>
 </ul>
 <p>So the planar “clustering” in Exercise 2 was substantially an artefact of the null, not a finding about childcare policy. That is an uncomfortable thing to discover about work I had already written up, and it is the strongest argument I have seen for why the network-constrained method exists.</p>
 <p><strong>Where the method is fragile.</strong> Three things would change the answer and none of them are statistical:</p>
@@ -888,8 +888,8 @@ First 10 features:
 <li><strong>Network completeness.</strong> <code>Punggol_St</code> is a road network. Parents in Punggol walk through void decks, park connectors and the waterway bridges, none of which are in this layer. The network I am measuring distance on is not the network people use.</li>
 <li><strong><code>method = "simple"</code>.</strong> It duplicates kernel mass at intersections, and Punggol is full of intersections. The continuous method exists precisely to fix this and I would want to re-run with it before quoting any of these density values as real.</li>
 </ol>
-<p><strong>On <code>nsim = 50</code>.</strong> The chapter uses 50 simulations and I have kept that, but 50 is thin for a 95% envelope — it puts the pointwise significance level at 2/51, close enough to 0.04 that a marginal result would not survive scrutiny. Here the observed curve sits clearly outside the envelope across a contiguous band of distances rather than grazing it at a single point, so the conclusion holds. A single-band excursion would have been a reason to raise <code>nsim</code> rather than report it.</p>
-<p><strong>Connecting back.</strong> Reading Exercise 2 and this one together is the actual lesson. First-order KDE says where events are dense. Second-order G/F/K/L say whether events interact. Network-constrained versions say whether either conclusion survives once you stop pretending people travel in straight lines and stop pretending reservoirs are candidate sites. Each layer removed an assumption the previous one was quietly making — and unlike the first two steps, this one did not confirm the earlier answer. It reversed it. The thing I will carry forward is that in spatial statistics the null hypothesis is a modelling choice as consequential as the estimator, and a result is only as meaningful as the randomness it was compared against.</p>
+<p><strong>On <code>nsim = 50</code>.</strong> The chapter uses 50 simulations and I have kept that, but 50 is thin for a 95% envelope. It puts the pointwise significance level at 2/51, close enough to 0.04 that a marginal result would not survive scrutiny. Here the observed curve sits clearly outside the envelope across a contiguous band of distances rather than grazing it at a single point, so the conclusion holds. A single-band excursion would have been a reason to raise <code>nsim</code> rather than report it.</p>
+<p><strong>Connecting back.</strong> Reading Exercise 2 and this one together is the actual lesson. First-order KDE says where events are dense. Second-order G/F/K/L say whether events interact. Network-constrained versions say whether either conclusion survives once you stop pretending people travel in straight lines and stop pretending reservoirs are candidate sites. Each layer removed an assumption the previous one was quietly making, and unlike the first two steps, this one did not confirm the earlier answer. It reversed it. The thing I will carry forward is that in spatial statistics the null hypothesis is a modelling choice as consequential as the estimator, and a result is only as meaningful as the randomness it was compared against.</p>
 
 
 </section>
@@ -1310,8 +1310,8 @@ First 10 features:
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="pagination-link" aria-label="Part 02 — Second-order SPPA">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Part 02 — Second-order SPPA</span>
+      <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="pagination-link" aria-label="Part 02: Second-order SPPA">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Part 02: Second-order SPPA</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">

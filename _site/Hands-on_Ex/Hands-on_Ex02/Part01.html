@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jedidiah Asaf Tallulembang">
-<meta name="dcterms.date" content="2026-09-12">
+<meta name="dcterms.date" content="2026-09-18">
 
 <title>First-order Spatial Point Patterns Analysis – ISSS626</title>
 <style>
@@ -360,7 +360,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Part 01 — First-order SPPA</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Part 01: First-order SPPA</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -390,13 +390,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — Geospatial Data Wrangling</span></a>
+ <span class="menu-text">Part 01: Geospatial Data Wrangling</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Choropleth Mapping</span></a>
+ <span class="menu-text">Part 02: Choropleth Mapping</span></a>
   </div>
 </li>
       </ul>
@@ -413,13 +413,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Part 01 — First-order SPPA</span></a>
+ <span class="menu-text">Part 01: First-order SPPA</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Second-order SPPA</span></a>
+ <span class="menu-text">Part 02: Second-order SPPA</span></a>
   </div>
 </li>
       </ul>
@@ -514,7 +514,7 @@ window.Quarto = {
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Part 01 — First-order SPPA</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Hands-on Exercise 2</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html">Part 01: First-order SPPA</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">First-order Spatial Point Patterns Analysis</h1>
 <p class="subtitle lead">HANDS-ON EXERCISE 2 · PART 01</p>
@@ -530,7 +530,7 @@ window.Quarto = {
   </div>
   <div class="quarto-title-meta-contents">
         <p class="affiliation">
-            ISSS626 — Geospatial Analytics and Applications
+            ISSS626 Geospatial Analytics and Applications
           </p>
       </div>
   </div>
@@ -541,7 +541,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 12, 2026</p>
+      <p class="date">September 18, 2026</p>
     </div>
   </div>
   
@@ -559,7 +559,7 @@ window.Quarto = {
 <p>This is the first of the two Spatial Point Patterns Analysis readings for Hands-on Exercise 2: <a href="https://r4gdsa.netlify.app/chap04">First-order Spatial Point Patterns Analysis Methods</a>. The second-order methods are written up separately in <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html">Part 02</a>.</p>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">1. Overview</h2>
-<p>First-order SPPA is about <strong>intensity</strong> — how many events fall per unit area, and how that density varies across space. It answers “where are childcare centres concentrated?” without yet asking “do centres attract or repel each other?” That second question is what Part 02 handles.</p>
+<p>First-order SPPA is about <strong>intensity</strong>: how many events fall per unit area, and how that density varies across space. It answers “where are childcare centres concentrated?” without yet asking “do centres attract or repel each other?” That second question is what Part 02 handles.</p>
 <p>The two questions I am trying to answer here:</p>
 <ul>
 <li>Are childcare centres in Singapore randomly distributed across the country?</li>
@@ -691,7 +691,7 @@ $ geometry                &lt;POINT [m]&gt; POINT (40985.94 33848.38), POINT (28
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Even before any statistics, the map is obviously not uniform. The dots trace the HDB new towns — Jurong West, Woodlands, Sengkang, Punggol, Tampines — and thin out sharply over the central catchment, the western industrial estates and the military land. That already suggests the answer to question one is “no”, but eyeballing a map is not a test, which is exactly why the Clark-Evans statistic below matters.</p>
+<p>Even before any statistics, the map is obviously not uniform. The dots trace the HDB new towns (Jurong West, Woodlands, Sengkang, Punggol, Tampines) and thin out sharply over the central catchment, the western industrial estates and the military land. That already suggests the answer to question one is “no”, but eyeballing a map is not a test, which is exactly why the Clark-Evans statistic below matters.</p>
 </div>
 </div>
 </section>
@@ -772,7 +772,7 @@ Window area = 796335000 square units</code></pre>
 <pre><code>[1] 0</code></pre>
 </div>
 </div>
-<p>Duplicates matter because spatial point pattern theory assumes points are distinct — two centres at identical coordinates break the nearest-neighbour distance calculations (a distance of zero). The standard fix is jittering, which shifts coincident points by a tiny random amount:</p>
+<p>Duplicates matter because spatial point pattern theory assumes points are distinct, because two centres at identical coordinates break the nearest-neighbour distance calculations (a distance of zero). The standard fix is jittering, which shifts coincident points by a tiny random amount:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>childcare_ppp_jit <span class="ot">&lt;-</span> <span class="fu">rjitter</span>(childcare_ppp,</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">retry =</span> <span class="cn">TRUE</span>,</span>
@@ -793,7 +793,7 @@ Window area = 796335000 square units</code></pre>
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>These are almost certainly real: several childcare centres share one building — a void deck with two operators, or a mall with several centres on different floors. The coordinates are building centroids, so the operators collapse onto one point. Jittering by a few metres is honest in this case because the true locations really are metres apart, not kilometres.</p>
+<p>These are almost certainly real: several childcare centres share one building: a void deck with two operators, or a mall with several centres on different floors. The coordinates are building centroids, so the operators collapse onto one point. Jittering by a few metres is honest in this case because the true locations really are metres apart, not kilometres.</p>
 </div>
 </div>
 </section>
@@ -820,7 +820,7 @@ Window area = 796335000 square units</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp <span class="ot">&lt;-</span> childcare_ppp_jit[sg_owin]</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Marked planar point pattern: 1925 points
+<pre><code>Marked planar point pattern: 1924 points
 Mark variables: 
    OBJECTID ADDRESSBLOCKHOUSENUMBER ADDRESSBUILDINGNAME ADDRESSPOSTALCODE 
 ADDRESSSTREETNAME ADDRESSTYPE DESCRIPTION HYPERLINK LANDXADDRESSPOINT 
@@ -867,7 +867,7 @@ enclosing rectangle: [2667.54, 56396.44] x [15748.72, 50256.33] units</code></pr
     Z-test
 
 data:  childcareSG_ppp
-R = 0.50859, p-value &lt; 2.2e-16
+R = 0.50996, p-value &lt; 2.2e-16
 alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 </div>
@@ -889,7 +889,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
     Monte Carlo test based on 99 simulations of CSR with fixed n
 
 data:  childcareSG_ppp
-R = 0.50859, p-value = 0.01
+R = 0.50996, p-value = 0.01
 alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 </div>
@@ -933,13 +933,13 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>bw</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   sigma 
-312.3243 </code></pre>
+303.8831 </code></pre>
 </div>
 </div>
 </section>
 <section id="rescaling-to-kilometres" class="level3">
 <h3 class="anchored" data-anchor-id="rescaling-to-kilometres">7.2 Rescaling to Kilometres</h3>
-<p>The density values above are unreadable because the unit is metres — density comes out as “events per square metre”, which is a very small number. Rescaling the pattern to kilometres fixes the legend without changing the analysis.</p>
+<p>The density values above are unreadable because the unit is metres, so density comes out as “events per square metre”, which is a very small number. Rescaling the pattern to kilometres fixes the legend without changing the analysis.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp.km <span class="ot">&lt;-</span> <span class="fu">rescale.ppp</span>(childcareSG_ppp, <span class="dv">1000</span>, <span class="st">"km"</span>)</span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -963,22 +963,22 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.CvL</span>(childcareSG_ppp.km)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   sigma 
-6.669622 </code></pre>
+7.364939 </code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.scott</span>(childcareSG_ppp.km)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code> sigma.x  sigma.y 
-2.159697 1.396286 </code></pre>
+2.160362 1.395405 </code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.ppl</span>(childcareSG_ppp.km)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    sigma 
-0.3611132 </code></pre>
+0.2464714 </code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bw.diggle</span>(childcareSG_ppp.km)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    sigma 
-0.3123243 </code></pre>
+0.3038831 </code></pre>
 </div>
 </div>
 <div class="cell">
@@ -1006,7 +1006,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><code>bw.CvL</code> returns a much larger bandwidth and produces a smooth blob that says little beyond “the middle and east are busier”. <code>bw.diggle</code> and <code>bw.ppl</code> are far tighter and resolve individual towns. Baddeley’s advice is that <code>bw.ppl</code> is preferable when the pattern is a collection of tight clusters, and <code>bw.diggle</code> when the goal is detecting a single dominant cluster. Childcare centres are clearly the former — many town-sized clusters — so <code>bw.ppl</code> is the more defensible choice here, even though the chapter demonstrates <code>bw.diggle</code> first.</p>
+<p><code>bw.CvL</code> returns a much larger bandwidth and produces a smooth blob that says little beyond “the middle and east are busier”. <code>bw.diggle</code> and <code>bw.ppl</code> are far tighter and resolve individual towns. Baddeley’s advice is that <code>bw.ppl</code> is preferable when the pattern is a collection of tight clusters, and <code>bw.diggle</code> when the goal is detecting a single dominant cluster. Childcare centres are clearly the former, being many town-sized clusters, so <code>bw.ppl</code> is the more defensible choice here, even though the chapter demonstrates <code>bw.diggle</code> first.</p>
 </div>
 </div>
 </section>
@@ -1027,7 +1027,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>The four kernels are visually near-identical. That is the expected result — the choice of bandwidth dominates the choice of kernel, which is a useful thing to have seen rather than just read.</p>
+<p>The four kernels are visually near-identical. That is the expected result, because the choice of bandwidth dominates the choice of kernel, which is a useful thing to have seen rather than just read.</p>
 </section>
 </section>
 <section id="fixed-and-adaptive-bandwidth-kde" class="level2">
@@ -1052,7 +1052,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </section>
 <section id="adaptive-bandwidth" class="level3">
 <h3 class="anchored" data-anchor-id="adaptive-bandwidth">8.2 Adaptive Bandwidth</h3>
-<p>Fixed bandwidth is a problem when the underlying point density varies a lot across the study area — which is exactly the case in Singapore, where the centre is dense and the west is sparse. Adaptive bandwidth varies the smoothing locally.</p>
+<p>Fixed bandwidth is a problem when the underlying point density varies a lot across the study area, which is exactly the case in Singapore, where the centre is dense and the west is sparse. Adaptive bandwidth varies the smoothing locally.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>kde_childcareSG_adaptive <span class="ot">&lt;-</span> <span class="fu">adaptive.density</span>(childcareSG_ppp.km, <span class="at">method =</span> <span class="st">"kernel"</span>)</span>
 <span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(kde_childcareSG_adaptive, <span class="at">main =</span> <span class="st">"Adaptive bandwidth KDE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -1087,7 +1087,7 @@ alternative hypothesis: clustered (R &lt; 1)</code></pre>
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The adaptive surface keeps detail in the sparse western and northern areas that the fixed-bandwidth version smooths into near-nothing, while holding the dense central corridor together instead of fragmenting it. The trade-off is that the adaptive map is harder to explain to a non-technical reader, because the amount of smoothing is no longer constant across the map — two equally bright pixels do not necessarily mean the same thing.</p>
+<p>The adaptive surface keeps detail in the sparse western and northern areas that the fixed-bandwidth version smooths into near-nothing, while holding the dense central corridor together instead of fragmenting it. The trade-off is that the adaptive map is harder to explain to a non-technical reader, because the amount of smoothing is no longer constant across the map, so two equally bright pixels do not necessarily mean the same thing.</p>
 </div>
 </div>
 </section>
@@ -1236,7 +1236,7 @@ unit        : unit</code></pre>
     Monte Carlo test based on 99 simulations of CSR with fixed n
 
 data:  childcare_cck_ppp
-R = 0.87895, p-value = 0.02
+R = 0.91077, p-value = 0.06
 alternative hypothesis: two-sided</code></pre>
 </div>
 </div>
@@ -1254,7 +1254,7 @@ alternative hypothesis: two-sided</code></pre>
     Monte Carlo test based on 99 simulations of CSR with fixed n
 
 data:  childcare_tm_ppp
-R = 0.68062, p-value = 0.02
+R = 0.69155, p-value = 0.02
 alternative hypothesis: two-sided</code></pre>
 </div>
 </div>
@@ -1296,8 +1296,8 @@ alternative hypothesis: two-sided</code></pre>
 </section>
 <section id="what-i-take-from-this-exercise" class="level2">
 <h2 class="anchored" data-anchor-id="what-i-take-from-this-exercise">11. What I Take From This Exercise</h2>
-<p><strong>The statistical answer.</strong> Childcare centres in Singapore are clustered at the national scale, decisively so — R = 0.51 with p effectively zero under Monte Carlo simulation. The high-density areas are the mature and newer HDB towns.</p>
-<p><strong>The methodological point that cost me the most time.</strong> The window matters as much as the points. Running Clark-Evans on the national pattern and running it on Choa Chu Kang are answering different questions, and the second is not a “zoomed-in” version of the first — changing the window changes the expected nearest-neighbour distance under CSR, which is the denominator of R. A pattern can be clustered nationally and close to random within a single town, and that is not a contradiction.</p>
+<p><strong>The statistical answer.</strong> Childcare centres in Singapore are clustered at the national scale, decisively so, at R = 0.51 with p effectively zero under Monte Carlo simulation. The high-density areas are the mature and newer HDB towns.</p>
+<p><strong>The methodological point that cost me the most time.</strong> The window matters as much as the points. Running Clark-Evans on the national pattern and running it on Choa Chu Kang are answering different questions, and the second is not a “zoomed-in” version of the first. Changing the window changes the expected nearest-neighbour distance under CSR, which is the denominator of R. A pattern can be clustered nationally and close to random within a single town, and that is not a contradiction.</p>
 <p><strong>What I would flag as a limitation.</strong> The whole analysis treats Singapore’s land area as uniformly available for childcare centres, which is plainly false. Catchment reserves, airbases, port land and industrial estates cannot host a childcare centre at all. A clustering result measured against a CSR null that allows points anywhere on land will therefore always look clustered, partly for reasons that have nothing to do with childcare policy. A more honest null would restrict the window to residential-zoned land. That is beyond this exercise, but it is the first thing I would change.</p>
 <p><strong>Connecting to Part 02.</strong> First-order analysis stops at “where is it dense”. It cannot distinguish a pattern that is dense because the population is dense from a pattern that is dense because centres genuinely attract each other. The G, F, K and L functions in <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html">Part 02</a> are what separate those two.</p>
 
@@ -1720,13 +1720,13 @@ alternative hypothesis: two-sided</code></pre>
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="pagination-link" aria-label="Part 02 — Choropleth Mapping">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Part 02 — Choropleth Mapping</span>
+      <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="pagination-link" aria-label="Part 02: Choropleth Mapping">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Part 02: Choropleth Mapping</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="pagination-link" aria-label="Part 02 — Second-order SPPA">
-        <span class="nav-page-text">Part 02 — Second-order SPPA</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="pagination-link" aria-label="Part 02: Second-order SPPA">
+        <span class="nav-page-text">Part 02: Second-order SPPA</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

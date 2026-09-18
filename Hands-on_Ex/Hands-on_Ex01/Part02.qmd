@@ -3,7 +3,7 @@ title: "Choropleth Mapping with R"
 subtitle: "HANDS-ON EXERCISE 1 · PART 02"
 author:
   - name: Jedidiah Asaf Tallulembang
-    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
 date: last-modified
 format:
   html:
@@ -61,7 +61,7 @@ exercise share the same base map.
 ### 4.1 Geospatial data
 
 Re-importing the same Master Plan 2014 subzone boundary used in
-[Part 01](Part01.qmd) — each exercise page runs as its own self-contained R session,
+[Part 01](Part01.qmd). Each exercise page runs as its own self-contained R session,
 so the object isn't carried over automatically:
 
 ```{r}
@@ -101,7 +101,7 @@ pop_sz <- popdata %>%
 One planning-area subtotal row breaks the `" - Total"` pattern: `Changi` is written as
 `"Changi- Total"`, with no space before the dash, while every other area uses
 `"Changi Bay - Total"` with a space. The regex above (`-\s*Total$`) allows for zero or
-more spaces so it still catches it — a plain `" - Total$"` match would have let
+more spaces so it still catches it. A plain `" - Total$"` match would have let
 `"Changi- Total"` slip through as if it were a subzone named `"Changi- Total"`, similar
 in spirit to the `YISHUN`/`Yishun` case-mismatch flagged in the KNIME Data Analytics Lab
 exercise.
@@ -199,7 +199,7 @@ tm_shape(mpsz_pop2020) +
 
 Quantile forces the same number of subzones into every bucket, which spreads colour
 evenly across the map regardless of how the underlying values are actually
-distributed — it's the most visually "balanced" of the three but can group very
+distributed. It is the most visually "balanced" of the three but can group very
 different dependency ratios into one class if the data clusters tightly. Equal
 interval slices the value range into five equal-width bands; because most subzones sit
 in a fairly narrow band, that concentrates almost every subzone into one or two classes
@@ -248,7 +248,7 @@ At `n = 2` the map only distinguishes "below median" from "above median" depende
 which hides all the variation within each half. Pushing up to `n = 10` or `n = 20`
 starts creating classes so narrow that neighbouring subzones with almost identical
 ratios get visibly different colours, which reads as more precision than the data
-actually supports — with only 201 subzones, 20 quantile bins means roughly 10 subzones
+actually supports. With only 201 subzones, 20 quantile bins means roughly 10 subzones
 per class, each one a razor-thin slice of the value range. Something in the 5–6 range
 is where the map still shows a clear spatial pattern without either flattening the
 variation or manufacturing false precision.
@@ -289,7 +289,7 @@ subtotals with subzone rows, `-` used for suppressed counts, and the one inconsi
 `"Changi- Total"` label were all things I only found by actually inspecting the output
 at each step rather than assuming the code from the reference chapter would apply
 unchanged. Once the join was right, the tmap classification and class-count comparisons
-were the part that most changed how I'd read a choropleth map going forward — the
+were the part that most changed how I'd read a choropleth map going forward. The
 classification method and the number of classes are both editorial choices, not neutral
 defaults, and they can make the same underlying data look like a strong spatial pattern
 or a fairly flat one.

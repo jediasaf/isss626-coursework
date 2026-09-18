@@ -3,7 +3,7 @@ title: "Geospatial Data Wrangling with R"
 subtitle: "HANDS-ON EXERCISE 1 · PART 01"
 author:
   - name: Jedidiah Asaf Tallulembang
-    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
 date: last-modified
 format:
   html:
@@ -51,7 +51,7 @@ Three datasets are used:
 pre-school location, and cycling path layers in Shapefile/KML format. All three have
 since been retired on the data.gov.sg portal in favour of GeoJSON-only downloads, so
 this write-up imports the GeoJSON versions directly with `st_read()` instead. The
-underlying `sf` workflow is identical regardless of source format — only the CRS each
+underlying `sf` workflow is identical regardless of source format. Only the CRS each
 layer arrives in differs (all three come in as WGS84 here, rather than the mix of
 WGS84/SVY21 the reference chapter describes).
 
@@ -127,7 +127,7 @@ st_crs(mpsz3414)
 
 ## 8. Importing and Converting an Aspatial Data Set
 
-The Airbnb listings CSV has `latitude`/`longitude` columns but no spatial geometry —
+The Airbnb listings CSV has `latitude`/`longitude` columns but no spatial geometry, so
 it needs to be converted into an `sf` object before it can be used alongside the other
 two layers.
 
@@ -201,10 +201,10 @@ The main friction point in this exercise wasn't the `sf` workflow itself, it was
 the reference chapter's data sources have moved on: data.gov.sg no longer serves the
 Master Plan boundary, pre-school, or cycling path layers as Shapefile/KML, only
 GeoJSON. `st_read()` handles GeoJSON exactly the same way it handles a Shapefile or
-KML, so the substitution didn't change anything downstream — the buffer, point-in-
+KML, so the substitution didn't change anything downstream. The buffer, point-in-
 polygon, and density workflows all ran the same way once every layer was reprojected
 to EPSG:3414. The one thing worth double-checking whenever a dataset gets swapped like
-this is what coordinate system it actually arrives in — all three geospatial layers
+this is what coordinate system it actually arrives in. All three geospatial layers
 here came in as WGS84, whereas the reference chapter has some of them (the cycling
 path, in particular) already in SVY21.
 

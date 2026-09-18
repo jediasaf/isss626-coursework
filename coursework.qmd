@@ -14,7 +14,7 @@ at Singapore Management University.
 <span class="coursework-group-title">Hands-on Exercise 1</span>
 :::
 
-<p class="coursework-group-desc">Geospatial data fundamentals — importing,
+<p class="coursework-group-desc">Geospatial data fundamentals: importing,
 wrangling, and mapping spatial data with <code>sf</code> and <code>tmap</code>.</p>
 
 [<span class="exercise-row-label">Part 01</span><span class="exercise-row-title">Geospatial Data Wrangling with R</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex01/Part01.qmd){.exercise-row}
@@ -31,7 +31,7 @@ wrangling, and mapping spatial data with <code>sf</code> and <code>tmap</code>.<
 :::
 
 <p class="coursework-group-desc">Spatial point patterns analysis of Singapore's
-childcare centres — kernel density estimation and distance-based tests against
+childcare centres, using kernel density estimation and distance-based tests against
 complete spatial randomness with <code>spatstat</code>.</p>
 
 [<span class="exercise-row-label">Part 01</span><span class="exercise-row-title">First-order Spatial Point Patterns Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex02/Part01.qmd){.exercise-row}
@@ -47,7 +47,7 @@ complete spatial randomness with <code>spatstat</code>.</p>
 <span class="coursework-group-title">Hands-on Exercise 3</span>
 :::
 
-<p class="coursework-group-desc">Point patterns confined to a road network —
+<p class="coursework-group-desc">Point patterns confined to a road network, using
 network kernel density estimation and network-constrained K-functions over
 Punggol with <code>spNetwork</code>.</p>
 
@@ -62,7 +62,7 @@ Punggol with <code>spNetwork</code>.</p>
 <span class="coursework-group-title">Hands-on Exercise 4</span>
 :::
 
-<p class="coursework-group-desc">Areal data and neighbourhood definition — contiguity,
+<p class="coursework-group-desc">Areal data and neighbourhood definition: contiguity,
 distance-band and adaptive spatial weights over Hunan's 88 counties, and the spatially
 lagged variables built from them with <code>spdep</code>.</p>
 

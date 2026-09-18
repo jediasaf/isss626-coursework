@@ -3,7 +3,7 @@ title: "Network Constrained Spatial Point Patterns Analysis"
 subtitle: "HANDS-ON EXERCISE 3"
 author:
   - name: Jedidiah Asaf Tallulembang
-    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
 date: last-modified
 format:
   html:
@@ -47,7 +47,7 @@ The study area is Punggol.
 | `Punggol_CC` | Childcare centres in Punggol | ESRI Shapefile (point) |
 
 Both were supplied with the course under Lesson 3 and are already in SVY21
-(EPSG:3414), so no reprojection is needed — a first for these exercises.
+(EPSG:3414), so no reprojection is needed, a first for these exercises.
 
 ## 3. Getting Started
 
@@ -78,7 +78,7 @@ childcare
 
 The `st_zm()` call on the childcare layer drops the Z (and M) dimension. The shapefile
 stores points as XYZ with a zero elevation, and `spNetwork` will refuse to snap 3D points
-onto a 2D network, so this is not cosmetic — leaving it out is an error later.
+onto a 2D network, so this is not cosmetic. Leaving it out is an error later.
 
 ```{r}
 st_crs(network)$epsg
@@ -114,7 +114,7 @@ tm_shape(network) +
 ### 6.1 Preparing the Lixels
 
 A kernel density estimate on a network is evaluated along the network, not over a grid.
-The first step is to cut the network into **lixels** — line pixels — of roughly equal
+The first step is to cut the network into **lixels**, or line pixels, of roughly equal
 length.
 
 ```{r}
@@ -127,7 +127,7 @@ nrow(lixels)
 The 700m target length with a 375m minimum means any leftover segment shorter than 375m
 is merged into the previous lixel rather than left as a stub. The count barely changes
 from the original 2,642 segments, which tells me most Punggol road segments were already
-shorter than 700m — this is a dense residential network, not a highway corridor.
+shorter than 700m. This is a dense residential network, not a highway corridor.
 
 ### 6.2 Generating Line Centre Points
 
@@ -162,11 +162,11 @@ densities <- nkde(network,
 
 A note on the arguments that actually change the answer:
 
-- `kernel_name = "quartic"` — the kernel shape. `spNetwork` also offers triangle,
+- `kernel_name = "quartic"` sets the kernel shape. `spNetwork` also offers triangle,
   gaussian, tricube, cosine, epanechnikov and uniform.
-- `bw = 300` — the bandwidth, in metres **along the network**. This is the single most
+- `bw = 300` is the bandwidth, in metres **along the network**. This is the single most
   consequential choice here.
-- `method = "simple"` — the simplest of the three NKDE variants. It treats network
+- `method = "simple"` is the simplest of the three NKDE variants. It treats network
   distance as a straight replacement for Euclidean distance in the kernel. It is fast
   and intuitive, but it is **not** a true density: the values do not integrate to the
   number of events, because mass is duplicated at every intersection. `"discontinuous"`
@@ -202,8 +202,8 @@ tm_shape(lixels) +
 ::: {.callout-note}
 ## What the NKDE map shows that a planar KDE would not
 The high-density road segments are not a blob in the middle of Punggol. They are
-specific stretches — the roads threading the HDB precincts either side of Punggol
-Field and Punggol Central — while the roads along the waterway and the LRT viaduct
+specific stretches, the roads threading the HDB precincts either side of Punggol
+Field and Punggol Central, while the roads along the waterway and the LRT viaduct
 run cold despite being geometrically close to plenty of centres. A planar KDE would
 smear density straight across the waterway and report a hotspot in the middle of the
 water, which is exactly the artefact this method exists to avoid.
@@ -275,13 +275,13 @@ data.frame(
 ```
 
 ::: {.callout-important}
-## Conclusion of the test — and it is not what I expected
+## Conclusion of the test, and it is not what I expected
 The observed curves leave the envelope on the **lower** side, not the upper one. Fewer
 centres fall within a few hundred network metres of each other than complete spatial
 randomness along the network would produce.
 
-I reject the null hypothesis — the centres are not uniformly distributed along the
-network — but in the **opposite direction to clustering**. This is *regularity*
+I reject the null hypothesis, since the centres are not uniformly distributed along the
+network, but in the **opposite direction to clustering**. This is *regularity*
 (dispersion, inhibition). At longer distances the observed curve returns inside the
 envelope, so beyond that range the pattern is indistinguishable from random.
 
@@ -305,7 +305,7 @@ I do not think either result is wrong. They are answering different questions:
   clustered.
 - The network K-function asks "are centres closer together than random points scattered
   over this **road network**?" That null already excludes the unbuildable space. What is
-  left is the actual siting decision — and the actual siting decision turns out to space
+  left is the actual siting decision, and that decision turns out to space
   centres out, roughly one per residential precinct, which is exactly what a planner
   allocating childcare places by catchment would do.
 
@@ -328,7 +328,7 @@ are statistical:
    want to re-run with it before quoting any of these density values as real.
 
 **On `nsim = 50`.** The chapter uses 50 simulations and I have kept that, but 50 is thin
-for a 95% envelope — it puts the pointwise significance level at 2/51, close enough to
+for a 95% envelope. It puts the pointwise significance level at 2/51, close enough to
 0.04 that a marginal result would not survive scrutiny. Here the observed curve sits
 clearly outside the envelope across a contiguous band of distances rather than grazing it
 at a single point, so the conclusion holds. A single-band excursion would have been a
@@ -338,7 +338,7 @@ reason to raise `nsim` rather than report it.
 First-order KDE says where events are dense. Second-order G/F/K/L say whether events
 interact. Network-constrained versions say whether either conclusion survives once you
 stop pretending people travel in straight lines and stop pretending reservoirs are
-candidate sites. Each layer removed an assumption the previous one was quietly making —
+candidate sites. Each layer removed an assumption the previous one was quietly making,
 and unlike the first two steps, this one did not confirm the earlier answer. It reversed
 it. The thing I will carry forward is that in spatial statistics the null hypothesis is
 a modelling choice as consequential as the estimator, and a result is only as meaningful

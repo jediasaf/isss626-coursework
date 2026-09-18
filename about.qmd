@@ -7,7 +7,7 @@ This site collects the hands-on and take-home exercises completed for **ISSS626:
 Geospatial Analytics and Applications**, part of the Master of IT in Business
 programme at Singapore Management University.
 
-Each exercise is written up as a reproducible R notebook — the code, its output, and
+Each exercise is written up as a reproducible R notebook containing the code, its output, and
 a short reflection on what the data actually showed, including the places where
 real-world datasets didn't match the reference material exactly and had to be worked
 around.

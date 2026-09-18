@@ -360,13 +360,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — Geospatial Data Wrangling</span></a>
+ <span class="menu-text">Part 01: Geospatial Data Wrangling</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Choropleth Mapping</span></a>
+ <span class="menu-text">Part 02: Choropleth Mapping</span></a>
   </div>
 </li>
       </ul>
@@ -383,13 +383,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — First-order SPPA</span></a>
+ <span class="menu-text">Part 01: First-order SPPA</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Second-order SPPA</span></a>
+ <span class="menu-text">Part 02: Second-order SPPA</span></a>
   </div>
 </li>
       </ul>
@@ -470,7 +470,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#spatial-window-sum" id="toc-spatial-window-sum" class="nav-link" data-scroll-target="#spatial-window-sum">10.4 Spatial Window Sum</a></li>
   <li><a href="#comparing-the-four-lag-definitions" id="toc-comparing-the-four-lag-definitions" class="nav-link" data-scroll-target="#comparing-the-four-lag-definitions">10.5 Comparing the Four Lag Definitions</a></li>
   </ul></li>
-  <li><a href="#what-i-take-from-this-exercise" id="toc-what-i-take-from-this-exercise" class="nav-link" data-scroll-target="#what-i-take-from-this-exercise">11. What I Take From This Exercise</a></li>
+  <li><a href="#my-own-exploration-does-the-choice-of-weights-matrix-actually-matter" id="toc-my-own-exploration-does-the-choice-of-weights-matrix-actually-matter" class="nav-link" data-scroll-target="#my-own-exploration-does-the-choice-of-weights-matrix-actually-matter">11. My Own Exploration: Does the Choice of Weights Matrix Actually Matter?</a>
+  <ul class="collapse">
+  <li><a href="#building-all-five-schemes" id="toc-building-all-five-schemes" class="nav-link" data-scroll-target="#building-all-five-schemes">11.1 Building All Five Schemes</a></li>
+  <li><a href="#how-connected-is-each-scheme" id="toc-how-connected-is-each-scheme" class="nav-link" data-scroll-target="#how-connected-is-each-scheme">11.2 How Connected Is Each Scheme?</a></li>
+  <li><a href="#do-the-lagged-values-agree" id="toc-do-the-lagged-values-agree" class="nav-link" data-scroll-target="#do-the-lagged-values-agree">11.3 Do the Lagged Values Agree?</a></li>
+  <li><a href="#which-counties-disagree-most" id="toc-which-counties-disagree-most" class="nav-link" data-scroll-target="#which-counties-disagree-most">11.4 Which Counties Disagree Most?</a></li>
+  </ul></li>
+  <li><a href="#what-i-take-from-this-exercise" id="toc-what-i-take-from-this-exercise" class="nav-link" data-scroll-target="#what-i-take-from-this-exercise">12. What I Take From This Exercise</a></li>
   </ul>
 </nav>
     </div>
@@ -494,7 +501,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </div>
   <div class="quarto-title-meta-contents">
         <p class="affiliation">
-            ISSS626 — Geospatial Analytics and Applications
+            ISSS626 Geospatial Analytics and Applications
           </p>
       </div>
   </div>
@@ -523,7 +530,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>This exercise follows <a href="https://r4gdsa.netlify.app/chap08">Spatial Weights and Applications</a>, the first reading in the Spatial Weights block of the course.</p>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">1. Overview</h2>
-<p>Everything in Exercises 2 and 3 treated space as distance between <em>points</em>. This exercise switches to <strong>areal</strong> data — polygons with values attached — where the question is no longer “how far apart are these events” but “which regions are neighbours, and how much should each neighbour count?”</p>
+<p>Everything in Exercises 2 and 3 treated space as distance between <em>points</em>. This exercise switches to <strong>areal</strong> data, meaning polygons with values attached, where the question is no longer “how far apart are these events” but “which regions are neighbours, and how much should each neighbour count?”</p>
 <p>That is what a <strong>spatial weights matrix</strong> encodes. It is the object that every subsequent technique in the course depends on: spatial autocorrelation, clustering, and geographically weighted regression all take a weights matrix as input. Getting it wrong quietly invalidates everything downstream, which is why a whole exercise is spent on it.</p>
 <p>By the end I should be able to compute contiguity weights, distance-based weights, inverse-distance weights, row-standardise them, and use them to derive spatially lagged variables.</p>
 </section>
@@ -545,7 +552,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tbody>
 <tr class="odd">
 <td><code>Hunan</code></td>
-<td>County boundary layer for Hunan province, China — 88 counties</td>
+<td>County boundary layer for Hunan province, China, 88 counties</td>
 <td>ESRI Shapefile (polygon)</td>
 </tr>
 <tr class="even">
@@ -555,7 +562,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<p>A change of scene from Singapore. Hunan gives 88 areal units with a real spread of development levels, which is exactly what is needed to see spatial weighting do something visible — Singapore’s 332 subzones are too small and too uniformly urban to make a good contiguity example.</p>
+<p>A change of scene from Singapore. Hunan gives 88 areal units with a real spread of development levels, which is exactly what is needed to see spatial weighting do something visible. Singapore’s 332 subzones are too small and too uniformly urban to make a good contiguity example.</p>
 </section>
 <section id="getting-started" class="level2">
 <h2 class="anchored" data-anchor-id="getting-started">3. Getting Started</h2>
@@ -667,7 +674,7 @@ $ ROREmp      &lt;dbl&gt; 0.8929619, 0.8782065, 0.8041262, 0.7460163, 0.9052651,
 <pre><code>[1] 88</code></pre>
 </div>
 </div>
-<p>88 counties in, 88 out — no rows duplicated or dropped by the join, which is the first thing worth checking after any <code>left_join</code> onto a spatial layer.</p>
+<p>88 counties in, 88 out, with no rows duplicated or dropped by the join, which is the first thing worth checking after any <code>left_join</code> onto a spatial layer.</p>
 </section>
 </section>
 <section id="visualising-the-regional-development-indicator" class="level2">
@@ -702,7 +709,7 @@ $ ROREmp      &lt;dbl&gt; 0.8929619, 0.8782065, 0.8041262, 0.7460163, 0.9052651,
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>High GDP per capita is not scattered at random. The brighter counties sit together, clustered around Changsha in the north-east, and the lower quantiles form a contiguous band through the west. That visual impression of “like next to like” is precisely what spatial autocorrelation statistics formalise — but none of them can be computed until I have defined what “next to” means, which is this exercise.</p>
+<p>High GDP per capita is not scattered at random. The brighter counties sit together, clustered around Changsha in the north-east, and the lower quantiles form a contiguous band through the west. That visual impression of “like next to like” is precisely what spatial autocorrelation statistics formalise, but none of them can be computed until I have defined what “next to” means, which is this exercise.</p>
 </div>
 </div>
 </section>
@@ -823,7 +830,7 @@ Link number distribution:
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Queen finds a handful more links than rook. Those extra links are the corner-only contacts — counties meeting at a single point. On a regular grid the difference is large and systematic; on irregular administrative boundaries like these, exact corner-touching is rare, so the two rules very nearly agree.</p>
+<p>Queen finds a handful more links than rook. Those extra links are the corner-only contacts, where counties meet at a single point. On a regular grid the difference is large and systematic; on irregular administrative boundaries like these, exact corner-touching is rare, so the two rules very nearly agree.</p>
 <p>That does <strong>not</strong> make the choice unimportant. It makes it cheap to defend: with so few cases in dispute, I can state that the substantive results are insensitive to the choice, which is a stronger position than having to argue for one rule on theory alone.</p>
 </div>
 </div>
@@ -883,7 +890,7 @@ Link number distribution:
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>My first attempt passed the output of <code>st_centroid()</code> straight into <code>knearneigh()</code> — an <code>sfc</code> object rather than a coordinate matrix — and got a maximum first-neighbour distance of <strong>0.6</strong> instead of 61.8. The <code>longlat = TRUE</code> argument was silently overridden, so <code>spdep</code> measured in <em>degrees of latitude and longitude</em> as though they were planar units. A 62-unit cut-off then made every county a neighbour of every other county, and the fixed-distance matrix came out with 87 links per county instead of about 4.</p>
+<p>My first attempt passed the output of <code>st_centroid()</code> straight into <code>knearneigh()</code>, an <code>sfc</code> object rather than a coordinate matrix, and got a maximum first-neighbour distance of <strong>0.6</strong> instead of 61.8. The <code>longlat = TRUE</code> argument was silently overridden, so <code>spdep</code> measured in <em>degrees of latitude and longitude</em> as though they were planar units. A 62-unit cut-off then made every county a neighbour of every other county, and the fixed-distance matrix came out with 87 links per county instead of about 4.</p>
 <p>What makes this dangerous is that it does not error. It produces a perfectly well-formed weights matrix that is completely wrong, and every statistic computed from it afterwards would have been wrong too, with nothing to indicate a problem. The lesson: pass <code>st_coordinates()</code> output, and sanity-check that the distances come back in plausible kilometres before using them.</p>
 </div>
 </div>
@@ -1378,12 +1385,198 @@ Average number of links: 6.090909 </code></pre>
 </div>
 </section>
 </section>
+<section id="my-own-exploration-does-the-choice-of-weights-matrix-actually-matter" class="level2">
+<h2 class="anchored" data-anchor-id="my-own-exploration-does-the-choice-of-weights-matrix-actually-matter">11. My Own Exploration: Does the Choice of Weights Matrix Actually Matter?</h2>
+<p>Everything above follows the reference chapter. This section does not. Writing section 10 left me with a question the exercise never asks: I had just built five different definitions of “neighbour” from one unchanged shapefile, and I had no idea whether that choice changes any answer or is merely bookkeeping. Rather than assert it matters, I decided to measure it.</p>
+<p>The test is simple. Compute the spatially lagged GDP per capita under every weighting scheme, then correlate the resulting vectors. If the correlations are near 1, the choice is cosmetic. If they are not, every downstream statistic inherits the choice.</p>
+<section id="building-all-five-schemes" class="level3">
+<h3 class="anchored" data-anchor-id="building-all-five-schemes">11.1 Building All Five Schemes</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>wm_d62_e  <span class="ot">&lt;-</span> <span class="fu">dnearneigh</span>(coords, <span class="dv">0</span>, <span class="dv">62</span>, <span class="at">longlat =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>knn6_e    <span class="ot">&lt;-</span> <span class="fu">knn2nb</span>(<span class="fu">knearneigh</span>(coords, <span class="at">k =</span> <span class="dv">6</span>))</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>dist_e    <span class="ot">&lt;-</span> <span class="fu">nbdists</span>(wm_q, coords, <span class="at">longlat =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>ids_e     <span class="ot">&lt;-</span> <span class="fu">lapply</span>(dist_e, <span class="cf">function</span>(x) <span class="dv">1</span> <span class="sc">/</span> x)</span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a>lagged <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">Queen     =</span> <span class="fu">lag.listw</span>(<span class="fu">nb2listw</span>(wm_q,    <span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>), hunan<span class="sc">$</span>GDPPC),</span>
+<span id="cb64-8"><a href="#cb64-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">Rook      =</span> <span class="fu">lag.listw</span>(<span class="fu">nb2listw</span>(wm_r,    <span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>), hunan<span class="sc">$</span>GDPPC),</span>
+<span id="cb64-9"><a href="#cb64-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">Fixed62   =</span> <span class="fu">lag.listw</span>(<span class="fu">nb2listw</span>(wm_d62_e,<span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>), hunan<span class="sc">$</span>GDPPC,</span>
+<span id="cb64-10"><a href="#cb64-10" aria-hidden="true" tabindex="-1"></a>                        <span class="at">zero.policy =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb64-11"><a href="#cb64-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">Adaptive6 =</span> <span class="fu">lag.listw</span>(<span class="fu">nb2listw</span>(knn6_e,  <span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>), hunan<span class="sc">$</span>GDPPC),</span>
+<span id="cb64-12"><a href="#cb64-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">IDW       =</span> <span class="fu">lag.listw</span>(<span class="fu">nb2listw</span>(wm_q, <span class="at">glist =</span> ids_e, <span class="at">style =</span> <span class="st">"W"</span>, <span class="at">zero.policy =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb64-13"><a href="#cb64-13" aria-hidden="true" tabindex="-1"></a>                        hunan<span class="sc">$</span>GDPPC)</span>
+<span id="cb64-14"><a href="#cb64-14" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="how-connected-is-each-scheme" class="level3">
+<h3 class="anchored" data-anchor-id="how-connected-is-each-scheme">11.2 How Connected Is Each Scheme?</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Scheme   =</span> <span class="fu">c</span>(<span class="st">"Queen"</span>, <span class="st">"Rook"</span>, <span class="st">"Fixed 62 km"</span>, <span class="st">"Adaptive k=6"</span>),</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Links    =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">card</span>(wm_q)), <span class="fu">sum</span>(<span class="fu">card</span>(wm_r)), <span class="fu">sum</span>(<span class="fu">card</span>(wm_d62_e)), <span class="fu">sum</span>(<span class="fu">card</span>(knn6_e))),</span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">Min      =</span> <span class="fu">c</span>(<span class="fu">min</span>(<span class="fu">card</span>(wm_q)), <span class="fu">min</span>(<span class="fu">card</span>(wm_r)), <span class="fu">min</span>(<span class="fu">card</span>(wm_d62_e)), <span class="fu">min</span>(<span class="fu">card</span>(knn6_e))),</span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">Max      =</span> <span class="fu">c</span>(<span class="fu">max</span>(<span class="fu">card</span>(wm_q)), <span class="fu">max</span>(<span class="fu">card</span>(wm_r)), <span class="fu">max</span>(<span class="fu">card</span>(wm_d62_e)), <span class="fu">max</span>(<span class="fu">card</span>(knn6_e))),</span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">Isolates =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">card</span>(wm_q) <span class="sc">==</span> <span class="dv">0</span>), <span class="fu">sum</span>(<span class="fu">card</span>(wm_r) <span class="sc">==</span> <span class="dv">0</span>),</span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>               <span class="fu">sum</span>(<span class="fu">card</span>(wm_d62_e) <span class="sc">==</span> <span class="dv">0</span>), <span class="fu">sum</span>(<span class="fu">card</span>(knn6_e) <span class="sc">==</span> <span class="dv">0</span>))</span>
+<span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        Scheme Links Min Max Isolates
+1        Queen   448   1  11        0
+2         Rook   440   1  10        0
+3  Fixed 62 km   324   1   6        0
+4 Adaptive k=6   528   6   6        0</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">3</span>, <span class="dv">3</span>, <span class="dv">1</span>))</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (nm <span class="cf">in</span> <span class="fu">c</span>(<span class="st">"Queen"</span>, <span class="st">"Rook"</span>, <span class="st">"Fixed 62 km"</span>, <span class="st">"Adaptive k=6"</span>)) {</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>  nb <span class="ot">&lt;-</span> <span class="cf">switch</span>(nm, <span class="st">"Queen"</span> <span class="ot">=</span> wm_q, <span class="st">"Rook"</span> <span class="ot">=</span> wm_r,</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>               <span class="st">"Fixed 62 km"</span> <span class="ot">=</span> wm_d62_e, <span class="st">"Adaptive k=6"</span> <span class="ot">=</span> knn6_e)</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">hist</span>(<span class="fu">card</span>(nb), <span class="at">breaks =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">12</span>, <span class="at">main =</span> nm, <span class="at">xlab =</span> <span class="st">"neighbours"</span>,</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> <span class="st">"#c0392b"</span>, <span class="at">border =</span> <span class="st">"white"</span>)</span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex04_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="do-the-lagged-values-agree" class="level3">
+<h3 class="anchored" data-anchor-id="do-the-lagged-values-agree">11.3 Do the Lagged Values Agree?</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">cor</span>(lagged), <span class="dv">4</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           Queen   Rook Fixed62 Adaptive6    IDW
+Queen     1.0000 0.9975  0.8754    0.9558 0.9852
+Rook      0.9975 1.0000  0.8814    0.9557 0.9850
+Fixed62   0.8754 0.8814  1.0000    0.9166 0.9251
+Adaptive6 0.9558 0.9557  0.9166    1.0000 0.9576
+IDW       0.9852 0.9850  0.9251    0.9576 1.0000</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pairs</span>(lagged, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">cex =</span> <span class="fl">0.4</span>, <span class="at">col =</span> <span class="st">"#2980b9"</span>,</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>      <span class="at">main =</span> <span class="st">"Lagged GDPPC under five weighting schemes"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex04_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The answer, and it is not uniform
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The correlations split the five schemes into two camps.</p>
+<p><strong>Queen and rook are effectively the same thing here.</strong> They correlate at <strong>0.998</strong>. I had already guessed this in section 6.2 from the link counts, but guessing and measuring are different, and now I can say it rather than hedge it.</p>
+<p><strong>Contiguity and distance are not the same thing at all.</strong> Queen against the fixed 62 km band correlates at only <strong>0.875</strong>. That is a real divergence. Roughly a quarter of the variance in one lagged variable is unexplained by the other, from identical input data, purely because of how I defined “neighbour”.</p>
+<p>So the honest summary is that the queen/rook decision is safe to make casually, and the contiguity/distance decision is not. Those two choices are presented side by side in the chapter as though they were the same kind of decision. They are not.</p>
+</div>
+</div>
+</section>
+<section id="which-counties-disagree-most" class="level3">
+<h3 class="anchored" data-anchor-id="which-counties-disagree-most">11.4 Which Counties Disagree Most?</h3>
+<p>An average hides where the disagreement lives, so I looked at the individual counties where queen contiguity and adaptive k=6 diverge most.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>pct_diff <span class="ot">&lt;-</span> <span class="fu">abs</span>(lagged<span class="sc">$</span>Queen <span class="sc">-</span> lagged<span class="sc">$</span>Adaptive6) <span class="sc">/</span> lagged<span class="sc">$</span>Queen <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>ord <span class="ot">&lt;-</span> <span class="fu">order</span>(<span class="sc">-</span>pct_diff)[<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>]</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">County        =</span> hunan<span class="sc">$</span>NAME_3[ord],</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">GDPPC         =</span> hunan<span class="sc">$</span>GDPPC[ord],</span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Queen lag</span><span class="st">`</span>   <span class="ot">=</span> <span class="fu">round</span>(lagged<span class="sc">$</span>Queen[ord]),</span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Adaptive lag</span><span class="st">`</span><span class="ot">=</span> <span class="fu">round</span>(lagged<span class="sc">$</span>Adaptive6[ord]),</span>
+<span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Difference %</span><span class="st">`</span><span class="ot">=</span> <span class="fu">round</span>(pct_diff[ord], <span class="dv">1</span>),</span>
+<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Queen nbrs</span><span class="st">`</span>  <span class="ot">=</span> <span class="fu">card</span>(wm_q)[ord],</span>
+<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb72-12"><a href="#cb72-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      County GDPPC Queen lag Adaptive lag Difference % Queen nbrs
+1   Longshan  9754     12926        17038         31.8          3
+2   Taojiang 19509     35934        44943         25.1          7
+3   Jianghua 15801     17003        20681         21.6          4
+4   Xiangyin 33983     37058        44816         20.9          5
+5 Shuangfeng 17755     24094        28846         19.7          6
+6   Xinhuang 15412     20518        16676         18.7          1
+7   Yongshun  9590     14943        17709         18.5          5
+8    Dongkou 13240     13870        16177         16.6          5</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>hunan<span class="sc">$</span>lag_gap <span class="ot">&lt;-</span> pct_diff</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(hunan) <span class="sc">+</span></span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">fill =</span> <span class="st">"lag_gap"</span>,</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.scale =</span> <span class="fu">tm_scale_intervals</span>(<span class="at">style =</span> <span class="st">"quantile"</span>, <span class="at">values =</span> <span class="st">"-viridis"</span>),</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.legend =</span> <span class="fu">tm_legend</span>(<span class="at">title =</span> <span class="st">"Queen vs adaptive</span><span class="sc">\n</span><span class="st">disagreement (%)"</span>),</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>              <span class="at">col =</span> <span class="st">"white"</span>, <span class="at">lwd =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">FALSE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex04_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Before asserting a pattern from the top eight, I tested it across all 88 counties.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Queen neighbours</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"1 to 3"</span>, <span class="st">"4 to 6"</span>, <span class="st">"7 or more"</span>),</span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">Counties =</span> <span class="fu">c</span>(<span class="fu">sum</span>(<span class="fu">card</span>(wm_q) <span class="sc">&lt;=</span> <span class="dv">3</span>),</span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">sum</span>(<span class="fu">card</span>(wm_q) <span class="sc">&gt;=</span> <span class="dv">4</span> <span class="sc">&amp;</span> <span class="fu">card</span>(wm_q) <span class="sc">&lt;=</span> <span class="dv">6</span>),</span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>               <span class="fu">sum</span>(<span class="fu">card</span>(wm_q) <span class="sc">&gt;=</span> <span class="dv">7</span>)),</span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Mean disagreement %</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">round</span>(<span class="fu">c</span>(<span class="fu">mean</span>(pct_diff[<span class="fu">card</span>(wm_q) <span class="sc">&lt;=</span> <span class="dv">3</span>]),</span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">mean</span>(pct_diff[<span class="fu">card</span>(wm_q) <span class="sc">&gt;=</span> <span class="dv">4</span> <span class="sc">&amp;</span> <span class="fu">card</span>(wm_q) <span class="sc">&lt;=</span> <span class="dv">6</span>]),</span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>                                  <span class="fu">mean</span>(pct_diff[<span class="fu">card</span>(wm_q) <span class="sc">&gt;=</span> <span class="dv">7</span>])), <span class="dv">1</span>),</span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Queen neighbours Counties Mean disagreement %
+1           1 to 3       16                10.4
+2           4 to 6       54                 7.3
+3        7 or more       18                 7.2</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(<span class="fu">card</span>(wm_q), pct_diff)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] -0.1795046</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Where the disagreement concentrates, and how strong that pattern really is
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>My first reading of the top-eight table was that poorly connected counties disagree most. Longshan is the worst case at about <strong>32%</strong> and has only 3 queen neighbours, which fits neatly.</p>
+<p>Then I checked it properly, and the neat story is only partly true. Counties with 3 or fewer neighbours do disagree more on average (<strong>10.4%</strong> against roughly <strong>7.2%</strong> for everyone else), but the correlation between neighbour count and disagreement is only about <strong>-0.18</strong>. That is a weak tendency, not a rule. Taojiang sits second in the table with a 25% gap and has 7 neighbours, which the story does not explain at all.</p>
+<p>The mechanism I can defend is narrower than the one I first reached for. If a county has three contiguous neighbours and adaptive weighting forces it to six, three non-touching counties each receive a sixth of the weight, which can move the average a long way. That explains Longshan. It does not explain Taojiang, where something else is going on, most likely a neighbour with an extreme GDPPC entering or leaving the set.</p>
+<p>What I take from this is less about Hunan than about my own habit. I had the explanation written before I had the correlation, and the correlation turned out to be 0.18 rather than the 0.6 or 0.7 my confident phrasing implied. Ranking a table by one column and reading a cause off the top rows is a good way to generate a hypothesis and a bad way to confirm one.</p>
+</div>
+</div>
+</section>
+</section>
 <section id="what-i-take-from-this-exercise" class="level2">
-<h2 class="anchored" data-anchor-id="what-i-take-from-this-exercise">11. What I Take From This Exercise</h2>
-<p><strong>The weights matrix is a modelling assumption, not a data property.</strong> Nothing in the Hunan shapefile tells me whether two counties are neighbours. Queen or rook, 62 km or 6 nearest neighbours, binary or inverse-distance, row-standardised or not — each is a decision I make, and each produces a different matrix from identical data. Every autocorrelation statistic and spatial regression later in the course inherits whichever one I pick. This exercise is not really about <code>spdep</code> syntax; it is about the fact that a large part of a spatial analysis is decided before any statistic is computed.</p>
-<p><strong>The silent-failure lesson.</strong> The <code>sfc</code>-versus-matrix mistake in section 7.1 is the one I will actually remember. It did not throw an error, it did not produce an obviously absurd map, and it yielded a valid weights object — it was simply measuring degrees and calling them kilometres. The only thing that caught it was noticing that a first-nearest-neighbour distance of 0.6 km between Chinese counties is impossible. Unit plausibility checks are not busywork; here they were the only line of defence.</p>
+<h2 class="anchored" data-anchor-id="what-i-take-from-this-exercise">12. What I Take From This Exercise</h2>
+<p><strong>The weights matrix is a modelling assumption, not a data property.</strong> Nothing in the Hunan shapefile tells me whether two counties are neighbours. Queen or rook, 62 km or 6 nearest neighbours, binary or inverse-distance, row-standardised or not. Each is a decision I make, and each produces a different matrix from identical data. Every autocorrelation statistic and spatial regression later in the course inherits whichever one I pick. This exercise is not really about <code>spdep</code> syntax; it is about the fact that a large part of a spatial analysis is decided before any statistic is computed.</p>
+<p><strong>The silent-failure lesson.</strong> The <code>sfc</code>-versus-matrix mistake in section 7.1 is the one I will actually remember. It did not throw an error, it did not produce an obviously absurd map, and it yielded a valid weights object. It was simply measuring degrees and calling them kilometres. The only thing that caught it was noticing that a first-nearest-neighbour distance of 0.6 km between Chinese counties is impossible. Unit plausibility checks are not busywork; here they were the only line of defence.</p>
 <p><strong>Averages versus sums matter more than they look.</strong> The four lag definitions in section 10 produce visibly different maps from the same variable and the same neighbour list. The binary-sum versions are partly just a map of <em>how many neighbours each county has</em>, which is a property of the geography rather than of GDP. Row standardisation removes that artefact, which is why it is the sensible default for comparing across regions of uneven connectivity.</p>
-<p><strong>Connecting forward.</strong> The row-standardised queen contiguity matrix built here is the direct input to Moran’s I and Geary’s C in the next exercise. Now that I have seen how much the matrix can change with defensible choices, the obvious question for that exercise is how sensitive the autocorrelation result is to the weights — and I intend to check rather than assume.</p>
+<p><strong>Connecting forward.</strong> The row-standardised queen contiguity matrix built here is the direct input to Moran’s I and Geary’s C in the next exercise. Section 11 gives me a concrete expectation to carry into that: switching between queen and rook should barely move Moran’s I, while switching from contiguity to a distance band plausibly could. I intend to run the autocorrelation statistic under at least two weighting schemes rather than report a single number as though the matrix behind it were a fact about Hunan instead of a decision I made.</p>
 
 
 </section>

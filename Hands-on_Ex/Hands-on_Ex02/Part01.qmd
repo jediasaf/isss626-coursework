@@ -3,7 +3,7 @@ title: "First-order Spatial Point Patterns Analysis"
 subtitle: "HANDS-ON EXERCISE 2 · PART 01"
 author:
   - name: Jedidiah Asaf Tallulembang
-    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
 date: last-modified
 format:
   html:
@@ -25,7 +25,7 @@ separately in [Part 02](Part02.qmd).
 
 ## 1. Overview
 
-First-order SPPA is about **intensity** — how many events fall per unit area, and how
+First-order SPPA is about **intensity**: how many events fall per unit area, and how
 that density varies across space. It answers "where are childcare centres concentrated?"
 without yet asking "do centres attract or repel each other?" That second question is
 what Part 02 handles.
@@ -114,7 +114,7 @@ tm_shape(mpsz_sf) +
 ::: {.callout-note}
 ## What I notice first
 Even before any statistics, the map is obviously not uniform. The dots trace the HDB
-new towns — Jurong West, Woodlands, Sengkang, Punggol, Tampines — and thin out sharply
+new towns (Jurong West, Woodlands, Sengkang, Punggol, Tampines) and thin out sharply
 over the central catchment, the western industrial estates and the military land. That
 already suggests the answer to question one is "no", but eyeballing a map is not a test,
 which is exactly why the Clark-Evans statistic below matters.
@@ -143,7 +143,7 @@ any(duplicated(childcare_ppp))
 sum(multiplicity(childcare_ppp) > 1)
 ```
 
-Duplicates matter because spatial point pattern theory assumes points are distinct —
+Duplicates matter because spatial point pattern theory assumes points are distinct, because
 two centres at identical coordinates break the nearest-neighbour distance calculations
 (a distance of zero). The standard fix is jittering, which shifts coincident points by a
 tiny random amount:
@@ -158,7 +158,7 @@ any(duplicated(childcare_ppp_jit))
 
 ::: {.callout-note}
 ## Why duplicates appear here
-These are almost certainly real: several childcare centres share one building — a
+These are almost certainly real: several childcare centres share one building: a
 void deck with two operators, or a mall with several centres on different floors. The
 coordinates are building centroids, so the operators collapse onto one point. Jittering
 by a few metres is honest in this case because the true locations really are metres
@@ -261,7 +261,7 @@ bw
 
 ### 7.2 Rescaling to Kilometres
 
-The density values above are unreadable because the unit is metres — density comes out
+The density values above are unreadable because the unit is metres, so density comes out
 as "events per square metre", which is a very small number. Rescaling the pattern to
 kilometres fixes the legend without changing the analysis.
 
@@ -300,8 +300,8 @@ par(mfrow = c(1, 1))
 beyond "the middle and east are busier". `bw.diggle` and `bw.ppl` are far tighter and
 resolve individual towns. Baddeley's advice is that `bw.ppl` is preferable when the
 pattern is a collection of tight clusters, and `bw.diggle` when the goal is detecting a
-single dominant cluster. Childcare centres are clearly the former — many town-sized
-clusters — so `bw.ppl` is the more defensible choice here, even though the chapter
+single dominant cluster. Childcare centres are clearly the former, being many town-sized
+clusters, so `bw.ppl` is the more defensible choice here, even though the chapter
 demonstrates `bw.diggle` first.
 :::
 
@@ -317,7 +317,7 @@ plot(density(childcareSG_ppp.km, sigma = bw.ppl, edge = TRUE, kernel = "disc"), 
 par(mfrow = c(1, 1))
 ```
 
-The four kernels are visually near-identical. That is the expected result — the choice
+The four kernels are visually near-identical. That is the expected result, because the choice
 of bandwidth dominates the choice of kernel, which is a useful thing to have seen rather
 than just read.
 
@@ -338,7 +338,7 @@ plot(kde_childcareSG_600, main = "Fixed bandwidth, sigma = 600m")
 ### 8.2 Adaptive Bandwidth
 
 Fixed bandwidth is a problem when the underlying point density varies a lot across the
-study area — which is exactly the case in Singapore, where the centre is dense and the
+study area, which is exactly the case in Singapore, where the centre is dense and the
 west is sparse. Adaptive bandwidth varies the smoothing locally.
 
 ```{r}
@@ -360,7 +360,7 @@ The adaptive surface keeps detail in the sparse western and northern areas that 
 fixed-bandwidth version smooths into near-nothing, while holding the dense central
 corridor together instead of fragmenting it. The trade-off is that the adaptive map is
 harder to explain to a non-technical reader, because the amount of smoothing is no
-longer constant across the map — two equally bright pixels do not necessarily mean the
+longer constant across the map, so two equally bright pixels do not necessarily mean the
 same thing.
 :::
 
@@ -503,12 +503,12 @@ par(mfrow = c(1, 1))
 ## 11. What I Take From This Exercise
 
 **The statistical answer.** Childcare centres in Singapore are clustered at the national
-scale, decisively so — R = 0.51 with p effectively zero under Monte Carlo simulation. The high-density areas are the mature and newer HDB towns.
+scale, decisively so, at R = 0.51 with p effectively zero under Monte Carlo simulation. The high-density areas are the mature and newer HDB towns.
 
 **The methodological point that cost me the most time.** The window matters as much as
 the points. Running Clark-Evans on the national pattern and running it on Choa Chu Kang
 are answering different questions, and the second is not a "zoomed-in" version of the
-first — changing the window changes the expected nearest-neighbour distance under CSR,
+first. Changing the window changes the expected nearest-neighbour distance under CSR,
 which is the denominator of R. A pattern can be clustered nationally and close to random
 within a single town, and that is not a contradiction.
 

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Jedidiah Asaf Tallulembang">
-<meta name="dcterms.date" content="2026-09-05">
+<meta name="dcterms.date" content="2026-09-18">
 
 <title>Geospatial Data Wrangling with R – ISSS626</title>
 <style>
@@ -331,7 +331,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Hands-on Exercise 1</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Part 01 — Geospatial Data Wrangling</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Hands-on Exercise 1</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Part 01: Geospatial Data Wrangling</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -361,13 +361,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Part 01 — Geospatial Data Wrangling</span></a>
+ <span class="menu-text">Part 01: Geospatial Data Wrangling</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Choropleth Mapping</span></a>
+ <span class="menu-text">Part 02: Choropleth Mapping</span></a>
   </div>
 </li>
       </ul>
@@ -384,13 +384,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 01 — First-order SPPA</span></a>
+ <span class="menu-text">Part 01: First-order SPPA</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Part 02 — Second-order SPPA</span></a>
+ <span class="menu-text">Part 02: Second-order SPPA</span></a>
   </div>
 </li>
       </ul>
@@ -466,7 +466,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Hands-on Exercise 1</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Part 01 — Geospatial Data Wrangling</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Hands-on Exercise 1</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html">Part 01: Geospatial Data Wrangling</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Geospatial Data Wrangling with R</h1>
 <p class="subtitle lead">HANDS-ON EXERCISE 1 · PART 01</p>
@@ -482,7 +482,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </div>
   <div class="quarto-title-meta-contents">
         <p class="affiliation">
-            ISSS626 — Geospatial Analytics and Applications
+            ISSS626 Geospatial Analytics and Applications
           </p>
       </div>
   </div>
@@ -493,7 +493,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 5, 2026</p>
+      <p class="date">September 18, 2026</p>
     </div>
   </div>
   
@@ -553,7 +553,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
-<p><strong>Note on format:</strong> the original exercise reference uses the Master Plan boundary, pre-school location, and cycling path layers in Shapefile/KML format. All three have since been retired on the data.gov.sg portal in favour of GeoJSON-only downloads, so this write-up imports the GeoJSON versions directly with <code>st_read()</code> instead. The underlying <code>sf</code> workflow is identical regardless of source format — only the CRS each layer arrives in differs (all three come in as WGS84 here, rather than the mix of WGS84/SVY21 the reference chapter describes).</p>
+<p><strong>Note on format:</strong> the original exercise reference uses the Master Plan boundary, pre-school location, and cycling path layers in Shapefile/KML format. All three have since been retired on the data.gov.sg portal in favour of GeoJSON-only downloads, so this write-up imports the GeoJSON versions directly with <code>st_read()</code> instead. The underlying <code>sf</code> workflow is identical regardless of source format. Only the CRS each layer arrives in differs (all three come in as WGS84 here, rather than the mix of WGS84/SVY21 the reference chapter describes).</p>
 </section>
 <section id="importing-geospatial-data" class="level2">
 <h2 class="anchored" data-anchor-id="importing-geospatial-data">4. Importing Geospatial Data</h2>
@@ -795,7 +795,7 @@ PROJCRS["SVY21 / Singapore TM",
 </section>
 <section id="importing-and-converting-an-aspatial-data-set" class="level2">
 <h2 class="anchored" data-anchor-id="importing-and-converting-an-aspatial-data-set">8. Importing and Converting an Aspatial Data Set</h2>
-<p>The Airbnb listings CSV has <code>latitude</code>/<code>longitude</code> columns but no spatial geometry — it needs to be converted into an <code>sf</code> object before it can be used alongside the other two layers.</p>
+<p>The Airbnb listings CSV has <code>latitude</code>/<code>longitude</code> columns but no spatial geometry, so it needs to be converted into an <code>sf</code> object before it can be used alongside the other two layers.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>listings <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/aspatial/listings.csv"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
@@ -903,7 +903,7 @@ Projected CRS: SVY21 / Singapore TM
 </section>
 <section id="reflections" class="level2">
 <h2 class="anchored" data-anchor-id="reflections">10. Reflections</h2>
-<p>The main friction point in this exercise wasn’t the <code>sf</code> workflow itself, it was that the reference chapter’s data sources have moved on: data.gov.sg no longer serves the Master Plan boundary, pre-school, or cycling path layers as Shapefile/KML, only GeoJSON. <code>st_read()</code> handles GeoJSON exactly the same way it handles a Shapefile or KML, so the substitution didn’t change anything downstream — the buffer, point-in- polygon, and density workflows all ran the same way once every layer was reprojected to EPSG:3414. The one thing worth double-checking whenever a dataset gets swapped like this is what coordinate system it actually arrives in — all three geospatial layers here came in as WGS84, whereas the reference chapter has some of them (the cycling path, in particular) already in SVY21.</p>
+<p>The main friction point in this exercise wasn’t the <code>sf</code> workflow itself, it was that the reference chapter’s data sources have moved on: data.gov.sg no longer serves the Master Plan boundary, pre-school, or cycling path layers as Shapefile/KML, only GeoJSON. <code>st_read()</code> handles GeoJSON exactly the same way it handles a Shapefile or KML, so the substitution didn’t change anything downstream. The buffer, point-in- polygon, and density workflows all ran the same way once every layer was reprojected to EPSG:3414. The one thing worth double-checking whenever a dataset gets swapped like this is what coordinate system it actually arrives in. All three geospatial layers here came in as WGS84, whereas the reference chapter has some of them (the cycling path, in particular) already in SVY21.</p>
 <div class="page-nav-next">
 <p><a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html">Part 02: Choropleth Mapping with R →</a></p>
 </div>
@@ -1332,8 +1332,8 @@ Projected CRS: SVY21 / Singapore TM
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="pagination-link" aria-label="Part 02 — Choropleth Mapping">
-        <span class="nav-page-text">Part 02 — Choropleth Mapping</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="pagination-link" aria-label="Part 02: Choropleth Mapping">
+        <span class="nav-page-text">Part 02: Choropleth Mapping</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

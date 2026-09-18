@@ -3,7 +3,7 @@ title: "Spatial Weights and Applications"
 subtitle: "HANDS-ON EXERCISE 4"
 author:
   - name: Jedidiah Asaf Tallulembang
-    affiliation: "ISSS626 — Geospatial Analytics and Applications"
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
 date: last-modified
 format:
   html:
@@ -25,7 +25,7 @@ Weights block of the course.
 ## 1. Overview
 
 Everything in Exercises 2 and 3 treated space as distance between *points*. This
-exercise switches to **areal** data — polygons with values attached — where the
+exercise switches to **areal** data, meaning polygons with values attached, where the
 question is no longer "how far apart are these events" but "which regions are
 neighbours, and how much should each neighbour count?"
 
@@ -43,12 +43,12 @@ variables.
 
 | Dataset | Description | Format |
 |---|---|---|
-| `Hunan` | County boundary layer for Hunan province, China — 88 counties | ESRI Shapefile (polygon) |
+| `Hunan` | County boundary layer for Hunan province, China, 88 counties | ESRI Shapefile (polygon) |
 | `Hunan_2012.csv` | Selected local development indicators for 2012 | CSV |
 
 A change of scene from Singapore. Hunan gives 88 areal units with a real spread of
 development levels, which is exactly what is needed to see spatial weighting do
-something visible — Singapore's 332 subzones are too small and too uniformly urban to
+something visible. Singapore's 332 subzones are too small and too uniformly urban to
 make a good contiguity example.
 
 ## 3. Getting Started
@@ -98,7 +98,7 @@ names(hunan)
 nrow(hunan)
 ```
 
-88 counties in, 88 out — no rows duplicated or dropped by the join, which is the first
+88 counties in, 88 out, with no rows duplicated or dropped by the join, which is the first
 thing worth checking after any `left_join` onto a spatial layer.
 
 ## 5. Visualising the Regional Development Indicator
@@ -123,7 +123,7 @@ tmap_arrange(basemap, gdppc, asp = 1, ncol = 2)
 High GDP per capita is not scattered at random. The brighter counties sit together,
 clustered around Changsha in the north-east, and the lower quantiles form a contiguous
 band through the west. That visual impression of "like next to like" is precisely what
-spatial autocorrelation statistics formalise — but none of them can be computed until I
+spatial autocorrelation statistics formalise, but none of them can be computed until I
 have defined what "next to" means, which is this exercise.
 :::
 
@@ -185,7 +185,7 @@ data.frame(
 ::: {.callout-note}
 ## Queen vs rook, and why the difference is small here
 Queen finds a handful more links than rook. Those extra links are the corner-only
-contacts — counties meeting at a single point. On a regular grid the difference is
+contacts, where counties meet at a single point. On a regular grid the difference is
 large and systematic; on irregular administrative boundaries like these, exact
 corner-touching is rare, so the two rules very nearly agree.
 
@@ -235,8 +235,8 @@ summary(k1dists)
 
 ::: {.callout-important}
 ## The mistake that cost me this section
-My first attempt passed the output of `st_centroid()` straight into `knearneigh()` —
-an `sfc` object rather than a coordinate matrix — and got a maximum first-neighbour
+My first attempt passed the output of `st_centroid()` straight into `knearneigh()`,
+an `sfc` object rather than a coordinate matrix, and got a maximum first-neighbour
 distance of **0.6** instead of 61.8. The `longlat = TRUE` argument was silently
 overridden, so `spdep` measured in *degrees of latitude and longitude* as though they
 were planar units. A 62-unit cut-off then made every county a neighbour of every other
@@ -459,11 +459,170 @@ tmap_arrange(lag_maps("lag GDPPC", "Lag (row-std average)"),
              ncol = 2, nrow = 2)
 ```
 
-## 11. What I Take From This Exercise
+## 11. My Own Exploration: Does the Choice of Weights Matrix Actually Matter?
+
+Everything above follows the reference chapter. This section does not. Writing section
+10 left me with a question the exercise never asks: I had just built five different
+definitions of "neighbour" from one unchanged shapefile, and I had no idea whether that
+choice changes any answer or is merely bookkeeping. Rather than assert it matters,
+I decided to measure it.
+
+The test is simple. Compute the spatially lagged GDP per capita under every weighting
+scheme, then correlate the resulting vectors. If the correlations are near 1, the choice
+is cosmetic. If they are not, every downstream statistic inherits the choice.
+
+### 11.1 Building All Five Schemes
+
+```{r}
+wm_d62_e  <- dnearneigh(coords, 0, 62, longlat = TRUE)
+knn6_e    <- knn2nb(knearneigh(coords, k = 6))
+dist_e    <- nbdists(wm_q, coords, longlat = TRUE)
+ids_e     <- lapply(dist_e, function(x) 1 / x)
+
+lagged <- data.frame(
+  Queen     = lag.listw(nb2listw(wm_q,    style = "W", zero.policy = TRUE), hunan$GDPPC),
+  Rook      = lag.listw(nb2listw(wm_r,    style = "W", zero.policy = TRUE), hunan$GDPPC),
+  Fixed62   = lag.listw(nb2listw(wm_d62_e,style = "W", zero.policy = TRUE), hunan$GDPPC,
+                        zero.policy = TRUE),
+  Adaptive6 = lag.listw(nb2listw(knn6_e,  style = "W", zero.policy = TRUE), hunan$GDPPC),
+  IDW       = lag.listw(nb2listw(wm_q, glist = ids_e, style = "W", zero.policy = TRUE),
+                        hunan$GDPPC)
+)
+```
+
+### 11.2 How Connected Is Each Scheme?
+
+```{r}
+data.frame(
+  Scheme   = c("Queen", "Rook", "Fixed 62 km", "Adaptive k=6"),
+  Links    = c(sum(card(wm_q)), sum(card(wm_r)), sum(card(wm_d62_e)), sum(card(knn6_e))),
+  Min      = c(min(card(wm_q)), min(card(wm_r)), min(card(wm_d62_e)), min(card(knn6_e))),
+  Max      = c(max(card(wm_q)), max(card(wm_r)), max(card(wm_d62_e)), max(card(knn6_e))),
+  Isolates = c(sum(card(wm_q) == 0), sum(card(wm_r) == 0),
+               sum(card(wm_d62_e) == 0), sum(card(knn6_e) == 0))
+)
+```
+
+```{r}
+#| fig-height: 4
+par(mfrow = c(1, 4), mar = c(4, 3, 3, 1))
+for (nm in c("Queen", "Rook", "Fixed 62 km", "Adaptive k=6")) {
+  nb <- switch(nm, "Queen" = wm_q, "Rook" = wm_r,
+               "Fixed 62 km" = wm_d62_e, "Adaptive k=6" = knn6_e)
+  hist(card(nb), breaks = 0:12, main = nm, xlab = "neighbours",
+       col = "#c0392b", border = "white")
+}
+par(mfrow = c(1, 1))
+```
+
+### 11.3 Do the Lagged Values Agree?
+
+```{r}
+round(cor(lagged), 4)
+```
+
+```{r}
+#| fig-height: 5
+pairs(lagged, pch = 19, cex = 0.4, col = "#2980b9",
+      main = "Lagged GDPPC under five weighting schemes")
+```
+
+::: {.callout-important}
+## The answer, and it is not uniform
+The correlations split the five schemes into two camps.
+
+**Queen and rook are effectively the same thing here.** They correlate at **0.998**.
+I had already guessed this in section 6.2 from the link counts, but guessing and
+measuring are different, and now I can say it rather than hedge it.
+
+**Contiguity and distance are not the same thing at all.** Queen against the fixed
+62 km band correlates at only **0.875**. That is a real divergence. Roughly a quarter
+of the variance in one lagged variable is unexplained by the other, from identical
+input data, purely because of how I defined "neighbour".
+
+So the honest summary is that the queen/rook decision is safe to make casually, and the
+contiguity/distance decision is not. Those two choices are presented side by side in the
+chapter as though they were the same kind of decision. They are not.
+:::
+
+### 11.4 Which Counties Disagree Most?
+
+An average hides where the disagreement lives, so I looked at the individual counties
+where queen contiguity and adaptive k=6 diverge most.
+
+```{r}
+pct_diff <- abs(lagged$Queen - lagged$Adaptive6) / lagged$Queen * 100
+ord <- order(-pct_diff)[1:8]
+
+data.frame(
+  County        = hunan$NAME_3[ord],
+  GDPPC         = hunan$GDPPC[ord],
+  `Queen lag`   = round(lagged$Queen[ord]),
+  `Adaptive lag`= round(lagged$Adaptive6[ord]),
+  `Difference %`= round(pct_diff[ord], 1),
+  `Queen nbrs`  = card(wm_q)[ord],
+  check.names = FALSE
+)
+```
+
+```{r}
+#| fig-height: 5
+hunan$lag_gap <- pct_diff
+tm_shape(hunan) +
+  tm_polygons(fill = "lag_gap",
+              fill.scale = tm_scale_intervals(style = "quantile", values = "-viridis"),
+              fill.legend = tm_legend(title = "Queen vs adaptive\ndisagreement (%)"),
+              col = "white", lwd = 0.3) +
+  tm_layout(frame = FALSE)
+```
+
+Before asserting a pattern from the top eight, I tested it across all 88 counties.
+
+```{r}
+data.frame(
+  `Queen neighbours` = c("1 to 3", "4 to 6", "7 or more"),
+  Counties = c(sum(card(wm_q) <= 3),
+               sum(card(wm_q) >= 4 & card(wm_q) <= 6),
+               sum(card(wm_q) >= 7)),
+  `Mean disagreement %` = round(c(mean(pct_diff[card(wm_q) <= 3]),
+                                  mean(pct_diff[card(wm_q) >= 4 & card(wm_q) <= 6]),
+                                  mean(pct_diff[card(wm_q) >= 7])), 1),
+  check.names = FALSE
+)
+
+cor(card(wm_q), pct_diff)
+```
+
+::: {.callout-note}
+## Where the disagreement concentrates, and how strong that pattern really is
+My first reading of the top-eight table was that poorly connected counties disagree
+most. Longshan is the worst case at about **32%** and has only 3 queen neighbours,
+which fits neatly.
+
+Then I checked it properly, and the neat story is only partly true. Counties with 3 or
+fewer neighbours do disagree more on average (**10.4%** against roughly **7.2%** for
+everyone else), but the correlation between neighbour count and disagreement is only
+about **-0.18**. That is a weak tendency, not a rule. Taojiang sits second in the table
+with a 25% gap and has 7 neighbours, which the story does not explain at all.
+
+The mechanism I can defend is narrower than the one I first reached for. If a county
+has three contiguous neighbours and adaptive weighting forces it to six, three
+non-touching counties each receive a sixth of the weight, which can move the average a
+long way. That explains Longshan. It does not explain Taojiang, where something else is
+going on, most likely a neighbour with an extreme GDPPC entering or leaving the set.
+
+What I take from this is less about Hunan than about my own habit. I had the
+explanation written before I had the correlation, and the correlation turned out to be
+0.18 rather than the 0.6 or 0.7 my confident phrasing implied. Ranking a table by one
+column and reading a cause off the top rows is a good way to generate a hypothesis and
+a bad way to confirm one.
+:::
+
+## 12. What I Take From This Exercise
 
 **The weights matrix is a modelling assumption, not a data property.** Nothing in the
 Hunan shapefile tells me whether two counties are neighbours. Queen or rook, 62 km or
-6 nearest neighbours, binary or inverse-distance, row-standardised or not — each is a
+6 nearest neighbours, binary or inverse-distance, row-standardised or not. Each is a
 decision I make, and each produces a different matrix from identical data. Every
 autocorrelation statistic and spatial regression later in the course inherits whichever
 one I pick. This exercise is not really about `spdep` syntax; it is about the fact that
@@ -471,7 +630,7 @@ a large part of a spatial analysis is decided before any statistic is computed.
 
 **The silent-failure lesson.** The `sfc`-versus-matrix mistake in section 7.1 is the one
 I will actually remember. It did not throw an error, it did not produce an obviously
-absurd map, and it yielded a valid weights object — it was simply measuring degrees and
+absurd map, and it yielded a valid weights object. It was simply measuring degrees and
 calling them kilometres. The only thing that caught it was noticing that a
 first-nearest-neighbour distance of 0.6 km between Chinese counties is impossible. Unit
 plausibility checks are not busywork; here they were the only line of defence.
@@ -484,7 +643,9 @@ that artefact, which is why it is the sensible default for comparing across regi
 uneven connectivity.
 
 **Connecting forward.** The row-standardised queen contiguity matrix built here is the
-direct input to Moran's I and Geary's C in the next exercise. Now that I have seen how
-much the matrix can change with defensible choices, the obvious question for that
-exercise is how sensitive the autocorrelation result is to the weights — and I intend to
-check rather than assume.
+direct input to Moran's I and Geary's C in the next exercise. Section 11 gives me a
+concrete expectation to carry into that: switching between queen and rook should barely
+move Moran's I, while switching from contiguity to a distance band plausibly could. I
+intend to run the autocorrelation statistic under at least two weighting schemes rather
+than report a single number as though the matrix behind it were a fact about Hunan
+instead of a decision I made.
