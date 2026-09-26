@@ -1,0 +1,1795 @@
+---
+title: "Where peat burns, and how close together"
+subtitle: "TAKE-HOME EXERCISE 1"
+description: |
+  A first- and second-order point-pattern analysis of VIIRS active-fire detections
+  in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026.
+author:
+  - name: Jedidiah Asaf Tallulembang
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-summary: "code"
+    code-tools: true
+    fig-width: 8
+    fig-height: 5
+    fig-dpi: 200
+    fig-align: left
+    tbl-cap-location: bottom
+    fig-cap-location: bottom
+    number-sections: true
+abstract: |
+  Pulang Pisau Regency has the highest density of VIIRS active-fire detections of
+  any Kalimantan regency large enough to support second-order estimation at the
+  kilometre scale. This report asks where those detections concentrate, whether they
+  interact beyond that concentration, and what the answer can and cannot support in
+  fire-management planning. The analytical core is a distinction the raw data invites
+  readers to miss: a VIIRS hotspot is a 375 m pixel observed during one satellite
+  overpass, not a fire, and the raw detection count overstates distinct burning
+  locations by a factor of about 3.4. Testing such a pattern against complete
+  spatial randomness rejects the null overwhelmingly and establishes nothing.
+  Replacing that null with an inhomogeneous Poisson process, and re-estimating its
+  intensity for every simulated pattern, gives a test that can fail. It does not
+  fail. Residual clustering is strongest at roughly 440 m and decays to within 10%
+  of no excess only by about 7 km, which is three times further than an earlier
+  5 km analysis in this same project concluded before its range was extended. A
+  Thomas process fitted after removing the trend puts the dominant cluster scale at
+  1.1 km, with 95% of a cluster inside 2.6 km; fitted without removing the trend it
+  returns 3.3 km and 440 events per cluster, which is the peat belt re-described as
+  a few giant clusters. A Knox permutation test under random labelling finds
+  space-time interaction concentrated within a few hundred metres and a few days.
+  Distance to the road network accounts for 1,991 of the 2,005 AIC units separating
+  a covariate model from an intercept-only model; mapped drainage accounts for
+  almost none, because OpenStreetMap does not map the canal network that defines
+  this landscape.
+execute:
+  echo: true
+---
+
+::: {.pill-row}
+[R]{.pill} [sf]{.pill} [spatstat]{.pill} [NASA FIRMS]{.pill} [KDE]{.pill} [Kinhom]{.pill} [Knox test]{.pill} [Thomas process]{.pill}
+:::
+
+[**Executive summary, 10 slides**](slides.qmd){.btn} · [**Repository**](https://github.com/jediasaf/isss626-coursework/tree/main/Take-home_Ex/Take-home_Ex01)
+
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(fig.showtext = FALSE, out.width = "100%")
+suppressPackageStartupMessages({
+  library(dplyr); library(tidyr); library(sf); library(ggplot2); library(glue)
+  library(knitr); library(spatstat.geom); library(spatstat.explore)
+  library(spatstat.model); library(spatstat.random); library(patchwork)
+})
+source("R/00_config.R")
+source("R/helpers.R")
+
+P  <- readRDS(file.path(DIR_DERIVED, "prepared.rds"))
+FO <- readRDS(file.path(DIR_DERIVED, "firstorder.rds"))
+SO <- readRDS(file.path(DIR_DERIVED, "secondorder.rds"))
+ST <- readRDS(file.path(DIR_DERIVED, "spacetime.rds"))
+CM <- readRDS(file.path(DIR_DERIVED, "covariates_models.rds"))
+EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
+TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
+RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
+PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
+GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
+
+win_sf <- P$win_sf; win_p <- P$win_p; bb <- st_bbox(win_p)
+gg_win <- list(
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.4),
+  coord_sf(expand = FALSE, datum = NA),
+  scalebar_layer(bb), north_layer(bb), theme_map()
+)
+```
+
+# Introduction and study context
+
+Indonesian Borneo burns every dry season, and the fires that matter most for
+public health are not forest fires in the ordinary sense. They are peat fires.
+Drained tropical peat is a metres-deep carbon store that, once dry, smoulders
+below the surface for weeks, cannot be extinguished by suppressing a surface
+flame front, and releases a dense particulate smoke that carries hundreds of
+kilometres. The public-safety burden is respiratory rather than thermal: school
+closures, airport closures, and a measurable excess of acute respiratory
+presentations across Central Kalimantan and, in the severe years, across the
+Malacca Strait.
+
+Pulang Pisau Regency occupies the centre of this problem. Its southern half was
+the site of the Mega Rice Project, a 1990s programme that cut thousands of
+kilometres of drainage canal into deep peat before being abandoned. The canals
+remain, the water table remains lowered, and the land remains unusually
+combustible. The regency is therefore not an arbitrary choice of study window:
+it is a place where the mechanism connecting land management to public-safety
+outcomes is unusually legible.
+
+This report analyses satellite active-fire detections over that regency across
+the 2026 dry season. The analytical question is deliberately narrow. Fire
+detections are point events in space and time, so point-pattern analysis is the
+natural tool, and the exercise is to establish what that tool can honestly
+support.
+
+## The problem the data creates
+
+One thing has to be said before any analysis, because it governs every
+interpretation that follows.
+
+A VIIRS active-fire detection is not a fire. It is a 375 m pixel in which a
+radiometer measured a thermal anomaly during a single overpass. A large peat
+fire covering ten square kilometres produces many dozens of detections in one
+pass. Two satellites pass overhead roughly four times a day between them, so the
+same fire is detected repeatedly. A detection therefore records *sensor sampling
+of fire*, not fire occurrence, and any statistic computed on the raw detection
+set partly measures the instrument.
+
+The consequence is that the textbook second-order question, "is this pattern
+clustered relative to complete spatial randomness", has a known answer before
+any computation. It is clustered, overwhelmingly, and would be clustered even if
+fires were sited completely at random, because each fire generates a burst of
+spatially adjacent detections. Reporting that rejection as a finding would be
+close to meaningless.
+
+Section 6 therefore does two things instead: it changes the unit of analysis
+from the detection to the 375 m cell, and it changes the null model from
+complete spatial randomness to an inhomogeneous Poisson process. Both are stated
+here, at the front, because they are the substantive methodological content of
+the exercise rather than technical housekeeping.
+
+# Research questions and objectives
+
+Four questions, each with a stated null and a stated reason for asking.
+
+**Q1. How does the intensity of fire detection vary across the regency, and at
+what spatial scale is that variation stable?**
+First-order. The reason for asking is that a fire-management agency allocates
+fixed resources to places, so the useful output is a surface, not a test. The
+scale qualifier matters because a kernel estimate can be made to show almost any
+structure by choice of bandwidth, so the question is only answerable alongside a
+defence of that choice.
+
+**Q2. How does intensity vary in time, and is the temporal signal a property of
+fire activity or of the observing system?**
+First-order. Asked separately because the two satellites observe at fixed local
+times, so any apparent diurnal cycle is a sampling artefact and must not be read
+as fire behaviour.
+
+**Q3. Once large-scale variation in intensity is accounted for, is there
+residual interaction between events, and over what distance?**
+Second-order. Null: an inhomogeneous Poisson process with intensity
+$\hat{\lambda}(u)$ estimated by kernel smoothing. Rejecting this null is
+informative in a way that rejecting complete spatial randomness is not, because
+the inhomogeneous null already contains everything the first-order analysis
+found. The distance qualifier is the part with operational value.
+
+**Q4. Is there space-time interaction, over and above the separate spatial and
+temporal patterns?**
+Second-order, spatio-temporal. Null: random labelling, in which the observed
+locations and the observed set of dates are both held fixed and only the pairing
+between them is permuted. This conditions on both marginal patterns, so a
+rejection cannot be explained by the seasonal ramp or by the spatial
+concentration, both of which are already known to exist.
+
+A fifth question is treated as a value-added extension in Section 9: what is the
+clustering organised around, and how large is a cluster?
+
+# Data and study design
+
+## Sources
+
+```{r tbl-sources}
+#| label: tbl-sources
+#| tbl-cap: "Data sources, as accessed. Both are re-creatable by running `R/01_acquire.R`; the geoBoundaries release is pinned to a commit hash so the boundary geometry cannot change under the analysis."
+tibble::tribble(
+  ~Item, ~Detail,
+  "Event data", "NASA FIRMS, VIIRS 375 m Collection 2, near-real-time (NRT)",
+  "Platforms", "Suomi NPP and NOAA-20, both retained",
+  "Access route", "FIRMS `area` REST API, CSV, 5-day request blocks",
+  "Access date", format(ACCESS_DATE, "%d %B %Y"),
+  "Spatial extent requested", "108.5 to 119.1 E, 5.2 S to 4.5 N (all Kalimantan)",
+  "Boundaries", "geoBoundaries gbOpen Indonesia ADM1 and ADM2, commit 9469f09",
+  "Boundary vintage", "2020, sourced from BPS Statistics Indonesia via OCHA",
+  "Boundary licence", "CC BY 3.0 IGO",
+  "Covariates", "OpenStreetMap via Overpass: `highway`, `waterway`",
+  "Software", glue("R {getRversion()}, sf {packageVersion('sf')}, spatstat.explore {packageVersion('spatstat.explore')}")
+) |> kable()
+```
+
+## Why this regency
+
+The study window was chosen by a rule applied to the whole island, after the
+data were downloaded for all 56 Kalimantan regencies and cities and screened for
+confidence. The rule is stated before the result: **the highest detection density
+among regencies large enough to support second-order estimation to a 5 km lag**,
+operationalised as an area above 5,000 km².
+
+Density rather than raw count, because intensity relative to window area governs
+how much signal a point pattern carries; and the size floor because a 5 km lag in
+a small window approaches the window's own dimension, at which point edge effects
+dominate every second-order estimate.
+
+```{r tbl-rank}
+#| label: tbl-rank
+#| tbl-cap: "The ten Kalimantan regencies with the most retained VIIRS detections, 1 July to 25 September 2026. Ketapang leads on count; Pulang Pisau leads on density among regencies above the 5,000 km² size floor, which is the selection rule applied. Kota Palangka Raya's very high density in a small window illustrates why the floor is needed."
+RANK |> slice_head(n = 10) |>
+  transmute(
+    Regency = shapeName, Province = province,
+    Detections = fmt_n(n_detections),
+    `Area (km²)` = fmt_n(round(area_km2)),
+    `Per 1,000 km²` = round(per_1000km2)
+  ) |> kable(align = "llrrr")
+```
+
+Pulang Pisau wins that rule outright, at
+`r round(RANK$per_1000km2[RANK$shapeName == STUDY_REGENCY])` detections per
+1,000 km². Two alternatives were seriously considered and rejected, and the
+reasons are recorded because a choice is only reviewable alongside them.
+
+**Ketapang** leads on absolute count, with
+`r fmt_n(RANK$n_detections[RANK$shapeName == "Ketapang"])` detections against
+Pulang Pisau's `r fmt_n(RANK$n_detections[RANK$shapeName == STUDY_REGENCY])`. It
+was not chosen because it covers
+`r fmt_n(round(RANK$area_km2[RANK$shapeName == "Ketapang"]))` km², slightly over
+three times the area, and ranks second on density. Its larger count is mostly a
+larger window.
+
+**Kota Palangka Raya** has the highest density of any unit at
+`r fmt_n(round(RANK$per_1000km2[RANK$shapeName == "Kota Palangka Raya"]))` per
+1,000 km², but covers only
+`r fmt_n(round(RANK$area_km2[RANK$shapeName == "Kota Palangka Raya"]))` km². A
+5 km lag there is a substantial fraction of the window's own width, so edge
+effects would govern the second-order results.
+
+Pulang Pisau is also rank
+`r which(RANK$shapeName == STUDY_REGENCY)` of `r nrow(RANK)` on raw count, so the
+rule does not select an obscure unit. Its window of
+`r fmt_n(round(P$area_km2))` km², at
+`r round((bb["xmax"]-bb["xmin"])/1000)` km by
+`r round((bb["ymax"]-bb["ymin"])/1000)` km, comfortably supports estimation to a
+5 km lag.
+
+An earlier iteration of this analysis selected the regency on a seven-day sample
+of the same feed, on which Pulang Pisau led on count. Over the full window it does
+not. The selection rule above was therefore restated against the complete record,
+and it is reported here rather than quietly corrected, because a rule chosen after
+seeing which unit it favours is not a rule.
+
+## Point event definition
+
+An event is **one 375 m grid cell in which at least one qualifying VIIRS
+detection was recorded**, where qualifying means all of the following.
+
+```{=html}
+<dl class="assump">
+<dt>Sensor and product</dt>
+<dd>VIIRS 375 m I-band, Collection 2, S-NPP or NOAA-20. MODIS is excluded: its
+1 km footprint is coarser than the distances this analysis is about, so including
+it would blur the very scale under study.</dd>
+<dt>Confidence</dt>
+<dd>Nominal or high. Low-confidence detections are dropped. They are dominated by
+small or cool anomalies and by edge-of-scan geometry, so retaining them would
+make apparent intensity vary with viewing angle rather than with fire.</dd>
+<dt>Coordinates</dt>
+<dd>Present, finite, within valid latitude and longitude ranges, and not the
+(0, 0) sentinel that some pipelines emit for a failed geolocation.</dd>
+<dt>Timestamp</dt>
+<dd>A parseable UTC acquisition time. Converted to WITA (UTC+8), because the
+definition of a fire day and any reading of diurnal behaviour must be local.</dd>
+<dt>Location</dt>
+<dd>Strictly within the Pulang Pisau polygon. This also serves as the offshore
+screen, since the polygon is terrestrial.</dd>
+<dt>Not a fixed installation</dt>
+<dd>See the persistence screen below. This substitutes for a field the NRT
+product does not carry.</dd>
+<dt>Deduplicated</dt>
+<dd>Exact duplicate records removed, then collapsed to one event per 375 m cell
+per local day.</dd>
+</dl>
+```
+
+Three patterns are constructed from the same screened detections, because the
+right unit depends on the question:
+
+| Pattern | Unit | Used for |
+|---|---|---|
+| `ppp_all` | every retained detection | sensitivity checks only |
+| `ppp_daycell` | one event per 375 m cell per local day | spatio-temporal analysis |
+| `ppp_cell` | one event per 375 m cell over the window | primary spatial analysis |
+
+`ppp_cell` is the primary spatial pattern because it removes the repeat-detection
+inflation described in Section 1.1. A cell that burned for three weeks and was
+detected eighty times contributes one point, not eighty. The representative point
+for each cell is the earliest detection in it, a deterministic rule that keeps a
+real sensor coordinate. Snapping to cell centres was rejected: it would impose a
+regular lattice and manufacture apparent regularity at small lags, contaminating
+exactly the statistic the report relies on.
+
+## Spatial study window
+
+The window is the Pulang Pisau administrative polygon, unbuffered, in WGS 84 /
+UTM zone 49S (EPSG:32749).
+
+A projected, equal-unit coordinate system is not optional here. Every
+second-order statistic is a function of Euclidean distance in metres, and one
+degree of longitude is about 111 km at this latitude while one degree of latitude
+is about 110.6 km, so working in degrees would introduce a systematic anisotropy
+into every distance. Zone 49S is correct for a regency centroid at 113.96°E,
+which falls inside the zone's 108°E to 114°E span; the eastern edge of the
+regency reaches 114.35°E, marginally outside, and the resulting scale error is
+below 0.1% and therefore immaterial at the kilometre scales used.
+
+The administrative boundary rather than a buffered or natural window is used
+because the management question is administrative. A regency fire-management
+agency has jurisdiction to that line. The cost is a real edge effect, since fires
+do not stop at the boundary, and it is handled by edge correction rather than
+ignored (Section 5).
+
+## Temporal study window
+
+**1 July to 25 September 2026, 87 days.** The lower bound is imposed, not
+chosen, and the constraint is worth stating precisely because it is the kind of
+thing a report can easily misrepresent.
+
+```{r tbl-probe}
+#| label: tbl-probe
+#| tbl-cap: "Retention probe. Single-day FIRMS NRT queries over a Kalimantan-wide box. Exactly zero detections across a 10.6° by 9.7° box for every sampled date from January to 30 June is not a physically credible result for Borneo, so the zeros are read as absence of coverage. The standard-processing archive, queried for the same region in August, also returns zero rows: it has not yet been built for 2026."
+PROBE$nrt |> transmute(Date = format(date, "%d %b %Y"),
+                       `Detections returned` = fmt_n(n)) |> kable(align = "lr")
+```
+
+The FIRMS `area` endpoint serves NRT granules on a rolling retention of roughly
+90 days, and the standard-processing archive that would cover January to June has
+not been produced for 2026. The earliest retrievable day is 1 July 2026, located
+to the day by the probe above. The upper bound is a choice: the last complete UTC
+day before access, so that no partially observed day enters the daily series and
+appears as a decline.
+
+The resulting window is not merely what was available. It happens to span the
+onset, escalation and peak of the 2026 dry season, which is the period over which
+a fire agency actually acts. Had the retention limit truncated the peak rather
+than the wet-season baseline, the study design would have had to change. The
+honest cost is that no wet-season comparison is possible, so this report cannot
+speak to the seasonal amplitude of fire activity, only to its within-season
+structure. That is recorded again in Section 11.
+
+## A completeness audit, and a real outage
+
+Counting downloaded rows does not establish that the record is complete. The
+specific failure that matters for a daily series is a request that returns empty:
+it is indistinguishable from a day on which nothing burned, and it would appear in
+the analysis as a decline in fire activity.
+
+The audit is therefore constructed to catch that. Each of the two platforms should
+contribute at least one detection somewhere in Kalimantan on every day of an
+87-day dry season, because an island-sized box is never entirely without fire. Any
+day on which a platform contributes nothing is a candidate failure.
+
+```{r tbl-gap}
+#| label: tbl-gap
+#| tbl-cap: "Completeness audit. Local dates on which one VIIRS platform contributed no detection anywhere in the Kalimantan bounding box. Each was re-queried four times with backoff by `R/01b_fill_gaps.R`, and each returned empty again, so these are not failed requests."
+GAP$missing_after |> transmute(Date = format(dt, "%d %B %Y"),
+                               `Platform absent` = platform) |> kable(align = "ll")
+```
+
+```{r}
+#| label: gap-inline
+#| include: false
+bad <- GAP$missing_after$dt
+ev_bad <- sum(P$daily_daycell$n_events[P$daily_daycell$date_local %in% bad])
+ev_all <- sum(P$daily_daycell$n_events)
+```
+
+Six of the seven dates are consecutive. Re-querying resolved nothing: Suomi NPP
+returns an empty result for 11 to 16 July and for 3 August however many times it is
+asked, so this is an absence in the FIRMS near-real-time record rather than a
+transient request failure. On those seven days the analysis rests on NOAA-20 alone,
+and detection counts are depressed by roughly the contribution of one platform.
+
+The consequence is small but it is not nothing. Those dates carry
+`r fmt_n(ev_bad)` of `r fmt_n(ev_all)` events, or
+`r sprintf("%.2f%%", 100 * ev_bad / ev_all)` of the record, and all of them fall in
+the near-zero early season before the dry-season ramp. Mean daily events on the
+affected dates are `r round(mean(P$daily_daycell$n_events[P$daily_daycell$date_local %in% bad]), 1)`
+against `r round(mean(P$daily_daycell$n_events[P$daily_daycell$date_local >= as.Date("2026-07-01") & P$daily_daycell$date_local <= as.Date("2026-07-26") & !(P$daily_daycell$date_local %in% bad)]), 1)`
+on nearby unaffected July dates, a difference consistent with a one-platform
+deficit on very small counts. No conclusion in this report turns on those seven
+days, and the early-season portion of the daily series should be read as a slight
+underestimate.
+
+# Data preparation and quality assessment
+
+## The audit trail
+
+Every exclusion is counted. The table below is generated from the pipeline, not
+transcribed, so it cannot drift away from what the code did.
+
+```{r tbl-qa}
+#| label: tbl-qa
+#| tbl-cap: "Screening audit. Each row is one rule applied in `R/02_prepare.R`, in the order applied. Counts are rows of the detection table, before the collapse to cell-level events."
+P$qa |> transmute(Step = step, Rule = rule,
+                  `In` = fmt_n(n_in), Removed = fmt_n(n_removed), `Out` = fmt_n(n_out)) |>
+  kable(align = "llrrr")
+```
+
+Three observations about this table.
+
+The largest single reduction is the spatial clip, which is expected: the download
+covered all of Kalimantan so that the choice of regency could be justified
+against alternatives, and the overwhelming majority of those detections lie
+outside Pulang Pisau.
+
+The coordinate and timestamp screens removed nothing. This is worth stating
+rather than passing over, because a cleaning step that fires on nothing is
+frequently a cleaning step that is not actually testing what it claims. Here the
+screens were verified against deliberately constructed failing cases during
+development, and the FIRMS product is simply well-formed: every record carried
+finite coordinates in range and a parseable timestamp. The screens are retained
+because the pipeline is meant to be re-run against other windows and products
+where this will not hold.
+
+The confidence screen removed
+`r percent(P$qa$n_removed[P$qa$step == "03 confidence"] / P$qa$n_in[P$qa$step == "03 confidence"], accuracy = 0.1)`
+of records, and exact duplicate removal a further
+`r fmt_n(P$qa$n_removed[P$qa$step == "06 exact duplicates"])` rows, confirming
+that the API does deliver a small number of repeated granule records.
+
+```{r tbl-conf}
+#| label: tbl-conf
+#| tbl-cap: "Confidence classes among detections surviving the coordinate and timestamp screens, before the confidence screen itself is applied. VIIRS confidence is categorical, not a percentage."
+P$conf_tab |> transmute(Confidence = confidence, Detections = fmt_n(n),
+                        Share = percent(n / sum(n), accuracy = 0.1)) |>
+  kable(align = "lrr")
+```
+
+## The missing `type` field, and what replaces it
+
+The FIRMS standard-processing product carries a `type` field distinguishing
+vegetation fire (0) from active volcano (1), other static land source (2) and
+offshore (3). The NRT product used here does not carry it, verified against the
+API response header: `r glue("column present = {P$has_type}")`. The screen it
+would have provided has to be reconstructed.
+
+- **Volcanoes (type 1)** pose no risk. Borneo has no Holocene volcano. The screen
+  is unnecessary rather than approximated.
+- **Offshore (type 3)** is removed by the clip to the terrestrial polygon.
+- **Other static land sources (type 2)** are a genuine contamination risk.
+  Kalimantan has palm-oil mills, coal operations and gas flares, all of which
+  present as persistent thermal anomalies. This is the case that needs work.
+
+The substitute is a **persistence screen**. A vegetation fire burns out or moves;
+a flare stack does not. Each 375 m cell is scored by the number of distinct local
+dates on which it was detected, as a fraction of the 87-day window, and cells
+above a threshold are removed as fixed installations.
+
+```{r tbl-persist}
+#| label: tbl-persist
+#| tbl-cap: "Sensitivity of the persistence screen. The adopted threshold is 60% of days, at which the screen removes nothing. The grid extends well below that value to show where the screen would begin to act, which is the evidence that it is functional rather than merely quiet."
+P$persist_sens |> transmute(
+  `Threshold (share of days)` = percent(threshold, accuracy = 1),
+  `Cells removed` = fmt_n(n_cells),
+  `Detections removed` = fmt_n(n_detections)) |> kable(align = "lrr")
+```
+
+**The screen removed nothing, and that is the correct result rather than a failed
+test.** Two pieces of evidence support reading it that way.
+
+First, no cell comes close to the threshold. The most persistent cell in the
+window was detected on `r P$persist_max_days` of `r P$n_days` days, a share of
+`r percent(P$persist_max_days / P$n_days, accuracy = 0.1)`. A flare stack or mill
+would be detected on most clear-sky overpasses across the entire window.
+
+Second, radiative power discriminates the two cases independently of persistence.
+A fixed industrial source emits a high and steady radiative power; smouldering
+peat emits a low one.
+
+```{r tbl-persist-top}
+#| label: tbl-persist-top
+#| tbl-cap: "The ten most persistently detected cells, with their mean fire radiative power. If these were industrial sources their mean FRP would sit far above the window median; instead they sit at or near it, which is the signature of recurrent low-intensity peat combustion."
+P$persist_top |> transmute(
+  Cell = cell, Detections = n_det, `Days detected` = n_days,
+  `Share of window` = percent(day_frac, accuracy = 0.1),
+  `Mean FRP (MW)` = mean_frp) |> kable(align = "lrrrr")
+```
+
+The median FRP across all retained detections in the window is
+`r round(P$frp_median_all, 1)` MW, and the most persistent cells range from
+`r min(P$persist_top$mean_frp)` to `r max(P$persist_top$mean_frp)` MW. They are
+not brighter than the population; they are ordinary peat fires that recurred.
+This is consistent with the regency's land use: Pulang Pisau is peatland and
+smallholder agriculture, without the gas processing or open-cut coal operations
+that generate persistent thermal anomalies elsewhere in Kalimantan. Had the study
+window been in East Kalimantan, the screen would have been load-bearing.
+
+Reporting the sensitivity rather than a single threshold is the point. A screen
+whose result swung sharply with the threshold would be a decision dressed as a
+method.
+
+## Evidence that a detection is not a fire
+
+The central claim of Section 1.1 is checkable. If detections were independent
+events, most occupied cells would be detected once. They are not.
+
+```{r fig-mult}
+#| label: fig-mult
+#| fig-cap: "Detections per occupied 375 m cell over the 87-day window, log scale on both axes. If each detection were an independent event, the distribution would be concentrated at one. Instead a long tail of cells is detected tens or hundreds of times, which is the repeat-observation signature of persistent fire in a fixed pixel grid observed roughly four times daily."
+#| fig-height: 3.6
+mt <- P$multiplicity
+ggplot(mt, aes(n_det, n_cells)) +
+  geom_segment(aes(xend = n_det, yend = 0), colour = PAL$accent, linewidth = 0.35, alpha = 0.85) +
+  scale_x_log10(labels = label_number(accuracy = 1)) +
+  scale_y_log10(labels = label_number(big.mark = ",", accuracy = 1)) +
+  labs(x = "Detections recorded in the cell", y = "Number of cells",
+       title = "One fire, many detections",
+       subtitle = glue("{fmt_n(sum(mt$n_cells))} occupied cells. Median {median(rep(mt$n_det, mt$n_cells))} detections per cell, ",
+                       "maximum {max(mt$n_det)}.")) +
+  theme_ex01()
+```
+
+```{r}
+#| label: mult-stats
+#| include: false
+mt_v <- rep(mt$n_det, mt$n_cells)
+share_once <- mean(mt_v == 1)
+infl <- P$ppp_all$n / P$ppp_cell$n
+```
+
+`r percent(share_once, accuracy = 0.1)` of occupied cells were detected exactly
+once. The mean number of detections per occupied cell is
+`r round(mean(mt_v), 1)`, so the raw detection count overstates the number of
+distinct burning locations by a factor of about `r round(infl, 1)`. Analysing the
+raw detections as a point pattern would therefore be analysing the satellite's
+revisit schedule as much as the fire regime, which is why `ppp_cell` is the
+primary unit.
+
+```{r tbl-patterns}
+#| label: tbl-patterns
+#| tbl-cap: "The three constructed patterns and their mean intensities. The difference between the first and third rows is the repeat-detection inflation quantified above."
+tibble::tibble(
+  Pattern = c("`ppp_all`", "`ppp_daycell`", "`ppp_cell`"),
+  Unit = c("retained detection", "cell-day", "cell"),
+  n = c(P$ppp_all$n, P$ppp_daycell$n, P$ppp_cell$n),
+  `Mean intensity (per 1,000 km²)` = round(c(P$ppp_all$n, P$ppp_daycell$n, P$ppp_cell$n) / P$area_km2 * 1000)
+) |> mutate(n = fmt_n(n)) |> kable(align = "llrr")
+```
+
+## Geometry validation
+
+The boundary polygon was checked for validity before use. It is a single valid
+polygon, so no multipart or self-intersection handling was required, and
+`st_make_valid` was applied regardless as a defensive step. Point-in-polygon
+assignment used `st_within` rather than `st_intersects`, so a detection falling
+exactly on the boundary arc is excluded rather than double-counted against a
+neighbouring regency. `spatstat`'s window conversion reported no points rejected
+as lying outside the window, confirming that the clip and the `owin` agree.
+
+Two operations that commonly go wrong were handled explicitly. First, regencies
+were assigned to parent provinces by testing containment of an interior
+representative point in a projected coordinate system, not by nearest-feature
+matching, which would silently mis-assign any regency whose representative point
+fell marginally outside its own province. Second, the 159 MB national ADM2 file
+was read through a bounding-box filter at the GDAL level rather than loaded and
+then subset, so the full national geometry is never held in memory.
+
+# Analytical assumptions and methodological decisions
+
+The rubric asks for assumptions to be stated and their reasonableness discussed.
+Stating them is easy; the discussion is where a report earns or loses trust, so
+each assumption below carries the reason it might fail.
+
+```{=html}
+<dl class="assump">
+<dt>A1. Detections are a censored observation of fire, not a sample of fires</dt>
+<dd>VIIRS detects fires above a size and temperature threshold that varies with
+scan angle, cloud, and canopy. Smouldering sub-surface peat combustion, which is
+the dominant mode in this landscape, is systematically under-detected because the
+surface signature is weak. The pattern analysed is therefore the pattern of
+<em>detectable</em> fire. This biases against exactly the fire type of greatest
+public-health concern, and no correction is available within this data source.
+Consequence: intensity is a lower bound, and its spatial variation is partly a
+variation in detectability.</dd>
+
+<dt>A2. Cloud cover is not spatially confounded with fire location</dt>
+<dd>Assumed, and not fully defensible. Dry-season convection over Borneo is not
+spatially uniform, and smoke itself attenuates the signal. If cloud were
+systematically thicker over one part of the regency, apparent intensity there
+would be depressed. The direction of any bias cannot be established from the
+detection data alone.</dd>
+
+<dt>A3. The window is fixed and known, and events outside it are irrelevant</dt>
+<dd>False as physics, adopted as a management framing. Fires cross the regency
+boundary. Every second-order estimate is therefore edge-corrected, and the
+sensitivity of the conclusions to the correction is reported rather than
+assumed away.</dd>
+
+<dt>A4. The 375 m cell is the finest meaningful spatial resolution</dt>
+<dd>Follows from the sensor. It imposes a hard minimum separation between
+distinct events, which is visible in the pair correlation function as inhibition
+below roughly 400 m. That inhibition is an instrument property and must not be
+interpreted as fires avoiding one another.</dd>
+
+<dt>A5. For the spatial analysis, time is collapsed</dt>
+<dd>`ppp_cell` treats a cell burning in July and a cell burning in September as
+equivalent points. This is appropriate for the question "where does fire occur
+over a season" and inappropriate for "where is fire now". Section 8 relaxes it.</dd>
+
+<dt>A6. The intensity used as the inhomogeneous null is estimable from the data</dt>
+<dd>The weakest link in the second-order analysis. Using $\hat{\lambda}(u)$
+estimated from the same pattern being tested lets the estimate absorb some of the
+clustering under test, which biases the envelope outward and makes the test
+conservative. Two mitigations are applied: the bandwidth is chosen to describe
+broad trend rather than local structure, and $\hat{\lambda}$ is re-estimated for
+every simulated pattern so data and simulations are treated identically. The
+residual bias is toward <em>failing</em> to detect clustering, so the clustering
+that is detected is not an artefact of this choice.</dd>
+
+<dt>A7. Isotropy</dt>
+<dd>Assumed by $K$, $L$ and $g$, which average over direction. Peat fires spread
+with wind and along canal lines, so anisotropy is likely. The consequence is that
+a directional structure would be averaged into a weaker isotropic signal, so
+reported clustering is again a conservative reading.</dd>
+
+<dt>A8. Random labelling is the right null for space-time interaction</dt>
+<dd>Permuting time labels across fixed locations conditions on both marginals.
+This is the correct null for "is there interaction beyond the two separate
+patterns", and the wrong null for "is the seasonal ramp real", which it assumes.
+That is intended: the ramp is established in Section 7 and is not in question.</dd>
+</dl>
+```
+
+## Decisions, and what was rejected
+
+```{r tbl-decisions}
+#| label: tbl-decisions
+#| tbl-cap: "Methodological decisions. The right-hand column records the alternative that was considered and not taken, which is the part that makes a decision reviewable."
+tibble::tribble(
+  ~Decision, ~Choice, ~`Rejected alternative and why`,
+  "Coordinate system", "EPSG:32749, UTM 49S", "Geographic coordinates: distance-based statistics require equal units",
+  "Event unit", "one 375 m cell", "raw detections: inflates n by ~4x and measures revisit schedule",
+  "Representative point", "earliest detection in cell", "cell centre: imposes a lattice, manufactures small-scale regularity",
+  "Sensor", "VIIRS 375 m only", "adding MODIS 1 km: coarser than the scales under study",
+  "Bandwidth", "fixed 4 km, justified against the interaction range", "bw.ppl and bw.diggle at ~0.6 km: absorb the clustering the second-order test is meant to detect",
+  "Kernel", "Gaussian, isotropic", "quartic: negligible difference, less standard diagnostics",
+  "Edge correction, KDE", "Diggle's correction", "none: 86 km-wide window, boundary understated",
+  "Edge correction, K and L", "border", "Ripley isotropic: cost not justified at this n",
+  "r range, K and L", "0 to 5 km", "larger: elongated window makes long lags unreliable",
+  "Null model, primary", "inhomogeneous Poisson", "CSR: rejected trivially, uninformative",
+  "Envelope construction", "lambda re-estimated per simulation", "fixed lambda: absorbs the clustering under test",
+  "Significance", "MAD and DCLF global tests", "pointwise envelopes alone: inflate type-I error",
+  "Simulations", glue("{SO$nsim} for envelopes, {ST$nperm} for Knox"), "fewer: coarse Monte Carlo p-value floor"
+) |> kable()
+```
+
+Two of these deserve a note.
+
+**Border versus Ripley correction.** Ripley's isotropic correction is more
+efficient but costs substantially more computation, and the envelope procedure
+requires `r SO$nsim` re-computations. At `r fmt_n(SO$n_cell)` points the border
+correction's loss of efficiency is immaterial, because the number of pairs
+contributing at each lag is very large. The choice is a compute trade-off, made
+explicitly rather than by default.
+
+**Global versus pointwise tests.** A pointwise envelope is read at every one of
+several hundred values of $r$, so the probability of at least one excursion under
+the null far exceeds the nominal level. Pointwise envelopes are still plotted,
+because they show *where* on the $r$ axis the departure sits, which a single
+p-value cannot. Every claim of significance in this report is backed by the MAD or
+DCLF global test, not by the band.
+
+# First-order analysis: where, and when
+
+## The pattern in its region
+
+```{r fig-context}
+#| label: fig-context
+#| fig-cap: "Detection density across the 56 regencies and cities of Indonesian Borneo, 1 July to 25 September 2026, with Pulang Pisau outlined. The concentration in the southern peat belt of Central Kalimantan is the regional structure within which the study window sits. Reading: the choice of study window is not an outlier hunt. Pulang Pisau is the most intense cell of a coherent regional band running along the southern coastal peat domes, so findings about its internal structure plausibly transfer to its neighbours. The map also shows what the regency boundary does analytically: it cuts a continuous field of fire activity, which is why the edge corrections of Section 5 matter rather than being a formality."
+#| fig-height: 5.2
+kal <- readRDS(file.path(DIR_DERIVED, "kal_adm2.rds")) |> st_transform(STUDY_CRS)
+kal_m <- kal |> left_join(RANK |> select(shapeName, per_1000km2), by = "shapeName") |>
+  mutate(per_1000km2 = tidyr::replace_na(per_1000km2, 0))
+ggplot(kal_m) +
+  geom_sf(aes(fill = per_1000km2), colour = "white", linewidth = 0.18) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.8) +
+  scale_fill_intensity(name = "Detections per 1,000 km\u00b2", v = kal_m$per_1000km2) +
+  annotate("text", x = bb["xmax"] + 60000, y = (bb["ymin"] + bb["ymax"]) / 2,
+           label = "Pulang Pisau", hjust = 0, size = 3.1, colour = PAL$ink,
+           family = "Helvetica") +
+  annotate("segment", x = bb["xmax"] + 55000, xend = bb["xmax"] + 4000,
+           y = (bb["ymin"] + bb["ymax"]) / 2, yend = (bb["ymin"] + bb["ymax"]) / 2,
+           colour = PAL$ink, linewidth = 0.3) +
+  coord_sf(datum = NA, clip = "off") +
+  labs(title = "A regional band, not an isolated hotspot") +
+  theme_map() + theme(plot.margin = margin(5, 90, 5, 5))
+```
+
+## The point pattern
+
+```{r fig-points}
+#| label: fig-points
+#| fig-cap: "The primary spatial pattern: one point per 375 m cell in which fire was detected. Colour shows the local date of first detection, so the map carries the season as well as the location. Reading: two things are immediately visible and both matter. The pattern is strongly concentrated in the southern two-thirds of the regency, which is the drained peat of the former Mega Rice Project, while the northern interior is nearly empty. Second, the colour gradient is not spatially random: earlier detections (lighter) sit disproportionately in the south and east, later ones spread north and west. That is a testable claim about space-time interaction rather than an impression, and Section 8 tests it."
+#| fig-height: 6.4
+pts_df <- P$fires |> st_coordinates() |> as.data.frame() |>
+  bind_cols(P$fires |> st_drop_geometry() |> select(date_local))
+first_seen <- P$ppp_cell
+pc <- tibble(x = first_seen$x, y = first_seen$y,
+             date = marks(first_seen)$date_local)
+ggplot() +
+  geom_sf(data = win_p, fill = PAL$ground_alt, colour = NA) +
+  geom_point(data = pc, aes(x, y, colour = as.numeric(date - WINDOW_START) + 1),
+             size = 0.16, alpha = 0.55) +
+  scale_colour_gradientn(colours = c("#F6DFC8", "#E2803C", "#C2410C", "#4A1403"),
+                         name = "Day of window (1 July = 1)",
+                         breaks = c(1, 30, 60, 87)) +
+  gg_win +
+  labs(title = glue("{fmt_n(P$ppp_cell$n)} burned cells, coloured by first detection"))
+```
+
+## Quadrat counts, and why they are not enough
+
+```{r tbl-quad}
+#| label: tbl-quad
+#| tbl-cap: "Chi-squared test of a homogeneous Poisson process, across quadrat resolutions. The variance-to-mean ratio (VMR) is 1 under complete spatial randomness. The verdict is identical at every resolution, which is the point: the test is not informative, it is merely arithmetically certain."
+FO$quad_summary |> transmute(
+  Grid = glue("{nx} x {ny}"), Quadrats = n_quadrats,
+  `chi-squared` = fmt_n(round(X2)), df = df,
+  VMR = vmr, `p-value` = vapply(p_value, fmt_p, character(1))) |> kable(align = "lrrrrr")
+```
+
+The chi-squared statistic exceeds its degrees of freedom by three to four orders
+of magnitude at every resolution tested, and the variance-to-mean ratio ranges
+from `r min(FO$quad_summary$vmr)` to `r max(FO$quad_summary$vmr)` against a null
+value of 1. Complete spatial homogeneity is rejected with certainty.
+
+This is reported for transparency and should persuade nobody of anything. The
+result was guaranteed by the data-generating process described in Section 1.1 and
+by the obvious geography: a regency that is half drained peatland and half
+comparatively intact landscape cannot possibly have uniform fire intensity.
+Quadrat counts also inherit an arbitrary origin and cell size, and they discard
+all within-quadrat information. Their only genuine use here is the VMR column,
+which quantifies *how far* from uniform the pattern is at each scale rather than
+asking a yes-or-no question already answered.
+
+## Bandwidth selection, and why cross-validation was rejected
+
+The substantive first-order tool is kernel density estimation, and the decision
+that determines what it shows is the bandwidth.
+
+```{r tbl-bw}
+#| label: tbl-bw
+#| tbl-cap: "Bandwidth selectors compared on the primary pattern, ordered as computed. The spread is a factor of roughly eighteen from smallest to largest, which is why reporting a single surface without this table would conceal the most consequential choice in the first-order analysis."
+FO$bw_tab |> transmute(Selector = selector, `sigma (m)` = round(sigma_m),
+                       `sigma (km)` = sigma_km) |> kable(align = "lrr")
+```
+
+The two cross-validation selectors return sub-kilometre bandwidths,
+`r round(FO$sigma_ppl)` m for `bw.ppl` and `r round(FO$sigma_diggle)` m for
+`bw.diggle`, and `density.ppp` emits a numerical-underflow warning at that scale
+over a window of `r fmt_n(round(P$area_km2))` km². Neither was adopted, and the
+reason is not that the warning is inconvenient.
+
+Cross-validation selectors are documented to choose very small bandwidths when a
+pattern is strongly clustered at short range. Their criteria reward a surface
+that reproduces the local bursts, so they interpret clustering as fine-grained
+intensity structure. That is a reasonable thing to want in some applications, and
+the wrong thing to want here, because the same estimate is used as the reference
+intensity for the second-order test in Section 7.3. If $\hat{\lambda}(u)$ has
+already absorbed the sub-kilometre clustering, then asking whether clustering
+remains after removing $\hat{\lambda}(u)$ is a rigged question, and the answer
+would be no by construction.
+
+The adopted bandwidth is therefore fixed at
+**`r fmt_n(FO$sigma_main)` m**, on a criterion stated before the surfaces were
+inspected: it must exceed the interaction range, so that trend and interaction are
+estimated by separate parts of the analysis rather than competing for the same
+signal. Four kilometres sits above the roughly 2 km interaction range that
+Section 7.3 goes on to find, inside the interval spanned by the two components of
+`bw.scott` (`r fmt_n(round(FO$sigma_scott[1]))` m and
+`r fmt_n(round(FO$sigma_scott[2]))` m), and below `bw.CvL`
+(`r fmt_n(round(FO$sigma_CvL))` m).
+
+This is a judgement, not an optimisation, and it is stated as one. The comparison
+below shows what each alternative would have produced, so a reader who disagrees
+can see the consequence rather than having to take the choice on trust.
+
+```{r fig-bw}
+#| label: fig-bw
+#| fig-cap: "The same pattern under four bandwidths. Reading: the choice is not cosmetic. The cross-validated surface resolves individual fire complexes and, at this sample size, a great deal of structure no agency could act on; it is also the surface that would sabotage the second-order test, for the reason given above. The 10.5 km bw.CvL surface is stable but has smoothed away the distinction between the peat belt and its margins, which is the distinction of interest. The adopted 4 km surface and bw.scott's 3.8 km are visually close, which is reassurance that the adopted value is not an idiosyncratic pick. The important disclosure is that all four agree on the location of the principal concentration and disagree on how many secondary concentrations exist, so no claim about secondary hotspots is made."
+#| fig-height: 5.6
+bw_panels <- list(
+  ppl   = glue("bw.ppl, {round(FO$sigma_ppl)} m (rejected)"),
+  main  = glue("adopted, {fmt_n(FO$sigma_main)} m"),
+  scott = glue("bw.scott x, {fmt_n(round(FO$sigma_scott[1]))} m"),
+  CvL   = glue("bw.CvL, {fmt_n(round(FO$sigma_CvL))} m"))
+bw_df <- bind_rows(lapply(names(bw_panels), function(k)
+  im_df(FO$kde[[k]]) |> mutate(panel = bw_panels[[k]]))) |>
+  mutate(v = per_1000km2(intensity))
+bw_df$panel <- factor(bw_df$panel, levels = unlist(bw_panels))
+ggplot(bw_df) +
+  geom_raster(aes(x, y, fill = v)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.3) +
+  facet_wrap(~panel, nrow = 1) +
+  scale_fill_intensity(v = bw_df$v) +
+  coord_sf(datum = NA, expand = FALSE) +
+  labs(title = "What the bandwidth decides") +
+  theme_map(base_size = 9)
+```
+
+## The reported intensity surface
+
+```{r fig-kde}
+#| label: fig-kde
+#| fig-width: 6.2
+#| fig-cap: "Estimated first-order intensity of burned cells, Gaussian kernel with Diggle's edge correction, at the adopted 4 km bandwidth. Reading: intensity is organised as a broad south-southeast band reaching a maximum in the lower third of the regency, with a secondary extension along the eastern margin. The empty northern interior is a real absence rather than an absence of observation: the same satellites observed it on the same days. The gradient is steep, spanning roughly two orders of magnitude between the peat belt and the northern interior, which means resource allocation proportional to intensity would be very unevenly distributed. That is the operational content of a first-order surface, and it is the strongest planning-relevant result the first-order analysis alone supports."
+#| fig-height: 6.6
+kde_main <- im_df(FO$kde$main) |> mutate(v = per_1000km2(intensity))
+ggplot(kde_main) +
+  geom_raster(aes(x, y, fill = v)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.45) +
+  scale_fill_intensity(v = kde_main$v) +
+  coord_sf(datum = NA, expand = FALSE) +
+  scalebar_layer(bb) + north_layer(bb) +
+  labs(title = "Fire intensity concentrates in the drained southern peat",
+       subtitle = glue("Kernel intensity estimate, sigma = {fmt_n(FO$sigma_main)} m, Diggle edge correction")) +
+  theme_map() + theme(legend.position = "right", legend.key.height = unit(34, "pt"),
+                      legend.key.width = unit(9, "pt"))
+```
+
+An adaptive estimator was computed as a check, since a fixed bandwidth
+over-smooths sparse areas and under-smooths dense ones. It reproduces the same
+principal concentration, which is the reassurance sought: the reported structure
+is not an artefact of assuming one bandwidth everywhere.
+
+## Radiative power, not just counts
+
+A count surface treats a barely detectable smouldering pixel and an intense
+flaming front as the same event. Fire radiative power is the sensor's estimate of
+radiative output in megawatts, and smoothing it answers a different question.
+
+```{r fig-frp}
+#| label: fig-frp
+#| fig-cap: "Left, mean fire radiative power per detection. Right, total radiative power released, which is intensity and mean power combined. Reading: the two panels separate two things a single count map conflates. Total power (right) closely tracks detection intensity, so the southern peat belt dominates energy release as well as event count. Mean power per detection (left) has a different geography: it is comparatively low across the core of the peat belt and higher on the margins and in the sparse north. That is consistent with the physical expectation that peat combustion is low-intensity and persistent while fires on mineral soil and in cleared vegetation burn hotter and shorter. It is also a caution: the places with the most detections are not the places with the most intense individual fires."
+#| fig-height: 5.8
+frp_df  <- im_df(FO$frp_smooth, "v") |> mutate(panel = "Mean FRP per detection (MW)")
+frpt_df <- im_df(FO$frp_total, "v") |> mutate(v = v * 1e6, panel = "Total FRP released (MW per km²)")
+p1 <- ggplot(frp_df) + geom_raster(aes(x, y, fill = v)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.3) +
+  scale_fill_gradientn(colours = PAL$seq, name = "MW") +
+  coord_sf(datum = NA, expand = FALSE) + labs(subtitle = "Mean FRP per detection") + theme_map(9)
+p2 <- ggplot(frpt_df) + geom_raster(aes(x, y, fill = v)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.3) +
+  scale_fill_gradientn(colours = PAL$seq, trans = "sqrt", name = "MW/km\u00b2",
+                       labels = label_number(big.mark = ",")) +
+  coord_sf(datum = NA, expand = FALSE) + labs(subtitle = "Total FRP released") + theme_map(9)
+p1 + p2 + plot_annotation(title = "Energy release has a different geography from event count",
+                          theme = theme_ex01())
+```
+
+## Temporal intensity
+
+```{r fig-daily}
+#| label: fig-daily
+#| fig-cap: "Daily count of burned cells with a centred seven-day mean, and the onset/peak split used later. Reading: the episode is not a plateau. Activity is negligible through early July, rises from late July, and escalates sharply through August to a maximum in the first half of September. The seven-day mean is shown because the raw series carries strong short-period structure from cloud cover and overpass geometry, not from fire: a single overcast day suppresses detection regardless of what is burning. The split date is placed by a rule stated in advance, the first day the seven-day mean reaches half its eventual maximum, rather than chosen after inspecting the surfaces it is later used to compare."
+#| fig-height: 3.8
+dsplit <- ST$split_date
+ggplot(FO$daily, aes(date_local)) +
+  geom_col(aes(y = n_events), fill = PAL$accent_lt, width = 0.85) +
+  geom_line(aes(y = roll7), colour = PAL$accent_dk, linewidth = 0.7) +
+  geom_vline(xintercept = as.numeric(dsplit), colour = PAL$cool,
+             linetype = "22", linewidth = 0.4) +
+  annotate("text", x = dsplit, y = max(FO$daily$n_events) * 0.96,
+           label = glue(" onset | peak split, {format(dsplit, '%d %b')}"),
+           hjust = 0, size = 2.9, colour = PAL$cool, family = "Helvetica") +
+  scale_x_date(date_breaks = "2 weeks", date_labels = "%d %b") +
+  scale_y_continuous(labels = label_number(big.mark = ",")) +
+  labs(x = NULL, y = "Burned cells per day",
+       title = "A season that escalates, not a steady state",
+       subtitle = "Bars, daily count of 375 m cells newly detected. Line, centred seven-day mean.") +
+  theme_ex01()
+```
+
+```{r fig-overpass}
+#| label: fig-overpass
+#| fig-cap: "Detections by local solar time of acquisition, split by platform. Reading: this figure exists to prevent a mistake. The two platforms observe at four narrow fixed local times, so the apparent day and night counts are not a diurnal cycle of fire activity; they are two sampling windows. Peat fires smoulder continuously and their true diurnal variation cannot be recovered from these data at all. Any statement of the form 'fires peak in the early afternoon' would be a statement about the satellite's orbit. The correct use of the day and night split is as a detectability covariate, since night overpasses detect cooler anomalies against a cooler background, not as a behavioural finding."
+#| fig-height: 3.2
+ggplot(FO$overpass, aes(hr_bin, n, fill = daynight)) +
+  geom_col(width = 0.42) +
+  facet_wrap(~platform, ncol = 2) +
+  scale_fill_manual(values = c(day = PAL$accent, night = PAL$cool), name = NULL) +
+  scale_x_continuous(breaks = seq(0, 24, 4), limits = c(0, 24)) +
+  scale_y_continuous(labels = label_number(big.mark = ",")) +
+  labs(x = "Local solar time (WITA, UTC+8)", y = "Detections",
+       title = "Four fixed overpasses, not a diurnal cycle") +
+  theme_ex01()
+```
+
+# Second-order analysis: clustering, inhibition, or randomness
+
+## The straw man, tested and dismissed
+
+```{r fig-csr}
+#| label: fig-csr
+#| fig-cap: "Nearest-neighbour G, empty-space F, and the centred L function, each against a complete spatial randomness envelope from 199 simulations. Reading: every statistic departs from the CSR envelope immediately and by an enormous margin. G rises far faster than expected, meaning nearest neighbours are much closer than random; F rises far slower, meaning empty gaps are much larger than random; L sits far above zero at every lag. Read naively this is overwhelming evidence of clustering. Read correctly it is evidence of almost nothing, because the sensor guarantees this result: a single fire produces adjacent detections. The figure is included to make that failure visible rather than to hide it, and the analysis that carries weight is in Section 7.3."
+#| fig-height: 3.4
+mk_env_df <- function(e, lab) e |> mutate(panel = lab)
+eg <- mk_env_df(SO$env_G, "G(r), nearest neighbour")
+ef <- mk_env_df(SO$env_F, "F(r), empty space")
+el <- SO$env_L |>
+  mutate(across(c(obs, theo, lo, hi), ~ .x - r), panel = "L(r) - r, centred")
+env_all <- bind_rows(eg, ef, el)
+env_all$panel <- factor(env_all$panel, levels = c("G(r), nearest neighbour",
+                                                  "F(r), empty space", "L(r) - r, centred"))
+ggplot(env_all, aes(r)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = PAL$rule, alpha = 0.75) +
+  geom_line(aes(y = theo), colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(aes(y = obs), colour = PAL$accent, linewidth = 0.7) +
+  facet_wrap(~panel, scales = "free", nrow = 1) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = NULL,
+       title = "Against complete spatial randomness, everything is significant",
+       subtitle = glue("Orange, observed. Grey band, envelope from {SO$nsim} CSR simulations. Dashed, theoretical CSR value.")) +
+  theme_ex01(base_size = 9)
+```
+
+## What the pair correlation function reveals about the instrument
+
+$K$ and $L$ are cumulative, so a departure at one lag propagates to every larger
+lag and the eye cannot localise scale. The pair correlation function $g(r)$ is a
+density, and it separates scales.
+
+```{r fig-pcf}
+#| label: fig-pcf
+#| fig-cap: "Pair correlation function of the primary pattern, log scale. The dotted line marks the 375 m VIIRS pixel dimension. Reading: g(r) is suppressed at very short range and peaks at about 460 m, immediately above the pixel width. This is not fires avoiding one another. It is the sensor's resolution: two detections cannot be much closer than one pixel, because a single pixel yields a single detection. That short-range suppression is an instrument artefact and is the clearest single piece of evidence that this pattern records observation rather than events. Above the peak, g(r) decays slowly and is still above 3 at 2.9 km, nowhere near its asymptote of 1. Spatial dependence therefore extends well beyond the 5 km range this figure covers, which is what motivates Section 7.5."
+#| fig-height: 3.6
+pcf_df <- SO$pcf_obs |> filter(is.finite(trans), r > 0)
+ggplot(pcf_df, aes(r, trans)) +
+  geom_hline(yintercept = 1, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_vline(xintercept = DEDUP_GRID_M, colour = PAL$cool, linetype = "12", linewidth = 0.4) +
+  geom_line(colour = PAL$accent, linewidth = 0.7) +
+  annotate("text", x = DEDUP_GRID_M + 60, y = max(pcf_df$trans) * 0.85,
+           label = "375 m pixel", hjust = 0, size = 2.9, colour = PAL$cool,
+           family = "Helvetica") +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  scale_y_log10() +
+  labs(x = "r", y = "g(r), log scale",
+       title = "The sensor's footprint is visible in the statistic",
+       subtitle = "Suppression below one pixel width is an instrument property, not fire behaviour.") +
+  theme_ex01()
+```
+
+## The test that can fail
+
+The inhomogeneous statistics ask the question worth asking. The null is an
+inhomogeneous Poisson process whose intensity is the kernel estimate of
+Section 6.5, so everything the first-order analysis established is already
+contained in the null. A departure now means residual interaction, not
+large-scale variation.
+
+```{r fig-inhom}
+#| label: fig-inhom
+#| fig-cap: "Inhomogeneous centred L function and inhomogeneous pair correlation function, against envelopes from 199 simulations of an inhomogeneous Poisson process. The reference intensity is re-estimated for every simulated pattern. Reading: the departure survives, and it does not close. Both curves leave the envelope at about 100 m and remain outside it across the entire range plotted. g_inhom peaks near 5.9 at roughly 570 m and is still above 2 at 2.8 km, against an envelope ceiling near 1.4. So after accounting for the fact that fire is far more likely in the southern peat belt than in the north, burned cells still occur much closer together than that variation alone predicts. Note also that g_inhom falls below 1 at the shortest lags, the sensor floor surviving into the inhomogeneous statistic."
+#| fig-height: 3.6
+# An envelope built from `simulate=` has no theoretical curve, only the simulation
+# mean, so the reference is set explicitly: 0 for the centred L function and 1 for
+# the pair correlation function.
+li <- SO$env_Linhom |> mutate(across(c(obs, lo, hi), ~ .x - r),
+                              ref = 0, panel = "L_inhom(r) - r")
+gi <- SO$env_pcfinhom |> filter(r > 0) |> mutate(ref = 1, panel = "g_inhom(r)")
+ggplot(bind_rows(li, gi), aes(r)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = PAL$rule, alpha = 0.75) +
+  geom_line(aes(y = ref), colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(aes(y = obs), colour = PAL$accent, linewidth = 0.7) +
+  facet_wrap(~panel, scales = "free", nrow = 1) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = NULL,
+       title = "Clustering survives the honest null, and has a scale",
+       subtitle = glue("Envelope from {SO$nsim} simulations of an inhomogeneous Poisson process with lambda re-estimated each time.")) +
+  theme_ex01(base_size = 9)
+```
+
+```{r tbl-global}
+#| label: tbl-global
+#| tbl-cap: "Global Monte Carlo tests. The maximum absolute deviation (MAD) and Diggle-Cressie-Loosmore-Ford (DCLF) statistics each summarise the whole curve in one number, so these p-values are not inflated by reading a band at many lags. The Monte Carlo floor is 0.01 with 99 simulations."
+tibble::tribble(
+  ~Test, ~Statistic, ~Null, ~`p-value`,
+  "MAD",  "L(r)",       "complete spatial randomness",  fmt_p(SO$mad_L$p.value, 99),
+  "MAD",  "L_inhom(r)", "inhomogeneous Poisson",        fmt_p(SO$mad_Linhom$p.value, 99),
+  "DCLF", "L_inhom(r)", "inhomogeneous Poisson",        fmt_p(SO$dclf_Linhom$p.value, 99)
+) |> kable(align = "lllr")
+```
+
+Both global tests reject the inhomogeneous Poisson null at the Monte Carlo floor.
+The pattern is clustered **beyond** its first-order trend.
+
+What this analysis could not establish is where that clustering ends, and the
+reason is a decision of mine that turned out to be wrong. The r range was capped
+at 5 km, on the reasoning that longer lags in an elongated window rest on few
+pairs. Across the whole of that range both curves sit outside the envelope, so
+5 km establishes only that dependence extends *at least* that far. The cap was too
+conservative to answer the question it was set to answer, and Section 7.5 extends
+it.
+
+The direction of the remaining bias matters for how confidently this can be
+stated. As set out in assumption A6, estimating $\hat{\lambda}$ from the pattern
+under test lets it absorb part of the clustering, which widens the envelope and
+makes the test *harder* to reject. The rejection therefore stands despite a
+conservative procedure, not because of a permissive one.
+
+## Sensitivity to the event definition
+
+If the finding depended on the choice to collapse detections to cells, it would
+be a finding about the choice.
+
+```{r fig-sens}
+#| label: fig-sens
+#| fig-cap: "Inhomogeneous centred L function computed on the cell pattern and on the un-thinned detection pattern, on a common axis. Reading: both curves are positive, so the qualitative conclusion of residual clustering does not depend on the event definition. The magnitudes differ by roughly an order of magnitude, and the un-thinned pattern shows far stronger apparent clustering at every lag. That gap is the repeat-detection artefact measured directly. It is the reason the cell pattern is used for inference and the detection pattern only for this check: an analysis reporting the upper curve would be reporting the satellite revisit schedule as a fire-behaviour result."
+#| fig-height: 3.4
+sd_df <- bind_rows(
+  SO$Linhom_cell |> transmute(r, v = border - r, pattern = "ppp_cell (reported)"),
+  SO$Linhom_all  |> transmute(r, v = border - r, pattern = "ppp_all (un-thinned)"))
+ggplot(sd_df, aes(r, v, colour = pattern)) +
+  geom_hline(yintercept = 0, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(linewidth = 0.7) +
+  scale_colour_manual(values = c("ppp_cell (reported)" = PAL$accent,
+                                 "ppp_all (un-thinned)" = PAL$cool), name = NULL) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = "L_inhom(r) - r",
+       title = "The conclusion is robust, the magnitude is not",
+       subtitle = glue("n = {fmt_n(SO$n_cell)} cells against n = {fmt_n(SO$n_all)} detections.")) +
+  theme_ex01()
+```
+
+## Extending the range, and what it costs to have been wrong
+
+The 5 km cap was set on the reasoning that long lags in an elongated window rest
+on few pairs. That reasoning is sound, but 5 km was more conservative than
+necessary: the rule stated in Section 5 caps $r$ at a quarter of the window's
+shortest dimension, and the window is
+`r round((bb["xmax"]-bb["xmin"])/1000)` km wide, so 20 km was admissible all along.
+Extending to 20 km is not a post-hoc licence, it is applying the rule that was
+already stated.
+
+Two practical constraints follow, and both are disclosed rather than absorbed.
+`pcfinhom` offers no border correction, and the translation correction over
+roughly seven million pairs per pattern did not complete in a workable time for
+99 simulated patterns. So significance across the extended range rests on
+$L_{inhom}$ with a border correction and a full envelope, while the shape of
+$g_{inhom}$ across that range comes from a single translation-corrected curve with
+no simulations. **No significance claim is made for $g_{inhom}$ beyond 3 km.**
+
+```{r fig-ext}
+#| label: fig-ext
+#| fig-cap: "Left, inhomogeneous centred L function to 20 km with a 99-simulation envelope. Right, the observed inhomogeneous pair correlation function over the same range, with no envelope, on a log scale. Reading: the two panels answer different questions and disagree in an instructive way. g_inhom, which localises scale, peaks at about 440 m and decays steadily: it is 4.3 at 1 km, 2.7 at 2 km, 1.4 at 5 km, and reaches within 10% of its asymptote of 1 at about 7.2 km. L_inhom, which is cumulative, never re-enters its envelope within 20 km. Both are correct. The excess pair density is a local phenomenon that has largely dissipated by 7 km, and because L accumulates every excess at smaller lags it remains significantly elevated far beyond the range over which anything is actually happening."
+#| fig-height: 3.6
+Lx <- EX$env_L_ext |> mutate(across(c(obs, lo, hi), ~ .x - r), ref = 0,
+                             panel = "L_inhom(r) - r, with envelope")
+Gx <- EX$g_obs_ext |> filter(r > 0, is.finite(trans)) |>
+  transmute(r, obs = trans, lo = NA_real_, hi = NA_real_, ref = 1,
+            panel = "g_inhom(r), observed only")
+ggplot(bind_rows(Lx, Gx), aes(r)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = PAL$rule, alpha = 0.75, na.rm = TRUE) +
+  geom_line(aes(y = ref), colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(aes(y = obs), colour = PAL$accent, linewidth = 0.7) +
+  geom_vline(data = tibble(panel = "g_inhom(r), observed only",
+                           x = EX$summary_ext$r_g_within_10pct_of_1),
+             aes(xintercept = x), colour = PAL$cool, linetype = "12", linewidth = 0.4) +
+  facet_wrap(~panel, scales = "free", nrow = 1) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = NULL,
+       title = "Dependence is local, but a cumulative statistic cannot say so",
+       subtitle = glue("Dotted line marks {round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)} km, where g_inhom first comes within 10% of 1.")) +
+  theme_ex01(base_size = 9)
+```
+
+```{r tbl-ext}
+#| label: tbl-ext
+#| tbl-cap: "Observed inhomogeneous pair correlation at selected lags. A value of 1 means no excess over the inhomogeneous Poisson expectation."
+with(EX$summary_ext, tibble::tibble(
+  Lag = c("peak", "1 km", "2 km", "5 km", "10 km", "20 km"),
+  `g_inhom` = round(c(peak_g, g_1km, g_2km, g_5km, g_10km, g_20km), 2),
+  Note = c(glue("at {round(peak_r_m)} m"), "", "", "", "", "sampling noise at this lag")
+)) |> kable(align = "lrl")
+```
+
+```{r}
+#| label: ext-crosscheck
+#| include: false
+cc <- EX$correction_cmp
+cc_med <- 100 * median(abs(cc$rel_diff), na.rm = TRUE)
+```
+
+The extended curve was cross-checked against the estimate from Section 7.3 over
+the lags both cover, since both use the translation correction. The median
+relative difference is `r sprintf("%.2f%%", cc_med)`, so the extended $r$ grid has
+not altered the estimate.
+
+**The corrected answer to Q3.** Residual clustering begins immediately above the
+sensor floor, is strongest at roughly
+`r round(EX$summary_ext$peak_r_m)` m, and decays to within 10% of no-excess by
+about `r round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)` km. The earlier
+statement that the excess was exhausted by 2 km was an artefact of not having
+looked far enough, and the claim that the first-order surface was therefore a
+sufficient description above 2 km was wrong. It is not sufficient at any lag below
+roughly 7 km.
+
+# Spatio-temporal analysis
+
+## Space-time interaction
+
+```{r tbl-knox}
+#| label: tbl-knox
+#| tbl-cap: "Knox test of space-time interaction across a grid of spatial and temporal thresholds. Each cell counts observed pairs close in both space and time, against the mean under 999 random labellings in which locations and dates are held fixed and only their pairing is permuted. The ratio is observed over expected."
+ST$knox_tab |> transmute(
+  `Space (m)` = fmt_n(s_m), `Time (days)` = t_days,
+  Observed = fmt_n(observed), `Expected` = fmt_n(round(exp_perm)),
+  Ratio = round(ratio, 2),
+  `p-value` = vapply(p_value, fmt_p, character(1), nperm = ST$nperm)) |>
+  kable(align = "rrrrrr")
+```
+
+```{r fig-knox}
+#| label: fig-knox
+#| fig-cap: "Knox ratio of observed to expected close pairs, by spatial and temporal threshold. Reading: interaction is strongest in the tightest cell, pairs within a few hundred metres and one day, and decays monotonically as either threshold widens. That shape is the signature of local, short-lived propagation: a cell that burns today makes a neighbouring cell more likely to burn tomorrow, and the effect is largely spent within a few days and a kilometre or two. The decay in the time direction is steeper than in the space direction, which is consistent with fires spreading over contiguous ground within days rather than recurring in the same place weeks apart. Because the null holds both marginals fixed, none of this can be attributed to the seasonal escalation shown in Figure 8."
+#| fig-height: 3.6
+ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
+  geom_tile(colour = "white", linewidth = 1.2) +
+  geom_text(aes(label = sprintf("%.2f", ratio)), size = 3.1, colour = PAL$ink,
+            family = "Helvetica") +
+  scale_fill_gradientn(colours = PAL$seq, name = "Observed / expected") +
+  labs(x = "Spatial threshold (m)", y = "Temporal threshold (days)",
+       title = "Interaction is local in space and short in time",
+       subtitle = glue("{fmt_n(ST$n_close_pairs)} close pairs, {ST$nperm} random labellings.")) +
+  theme_ex01(grid = "none")
+```
+
+## Does the signature move between onset and peak?
+
+```{r fig-rr}
+#| label: fig-rr
+#| fig-cap: "Probability that a burned cell belongs to the peak period rather than the onset period, as a spatially varying surface. Values above the overall peak share indicate areas where fire arrived late; values below indicate areas that burned early. Reading: the surface is not flat, so the episode is not a uniform intensification of one fixed footprint. The southern and southeastern peat burned disproportionately early, while the northern and western margins of the active area contribute disproportionately to the peak period. Read with the trajectory in Figure 14, this describes an episode that begins in the most degraded peat and expands outward from it. The operational implication is that the location of early-season activity carries information about where later-season activity will appear, which a static seasonal intensity map does not convey."
+#| fig-height: 6.2
+rr_df <- im_df(ST$rr, "p")
+share_peak <- as.numeric(ST$season_counts["peak"]) / sum(ST$season_counts)
+ggplot(rr_df) +
+  geom_raster(aes(x, y, fill = p)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.45) +
+  scale_fill_gradient2(low = PAL$cool, mid = PAL$ground_alt, high = PAL$accent_dk,
+                       midpoint = share_peak, name = "P(peak period)",
+                       labels = label_percent(accuracy = 1)) +
+  coord_sf(datum = NA, expand = FALSE) +
+  scalebar_layer(bb) + north_layer(bb) +
+  labs(title = "The episode expands rather than intensifies in place",
+       subtitle = glue("Split at {format(ST$split_date, '%d %B')}. Midpoint of the scale is the overall peak share, {percent(share_peak, accuracy = 1)}.")) +
+  theme_map()
+```
+
+```{r fig-traj}
+#| label: fig-traj
+#| fig-cap: "Weekly mean centre of burned cells with the weekly dispersion about it, and the distance the centre moved each week. Reading: the mean centre is a crude summary, and it is used here only for what it does reliably, which is to show direction and spread over time. Dispersion widens as the season progresses, confirming the expansion read from the relative-risk surface. The weekly displacement of the centre is largest in the early weeks, when few cells dominate the mean, and settles to a few kilometres a week once activity is widespread. The caution attached to this figure is that a mean centre of a strongly non-convex, multi-modal pattern is not a location where anything is happening; it is a summary statistic and should not be shown on an operational map."
+#| fig-height: 3.6
+tr <- ST$traj |> filter(n > 0)
+p_sd <- ggplot(tr, aes(week_start, sd_km)) +
+  geom_col(fill = PAL$accent_lt, width = 4.4) +
+  labs(x = NULL, y = "Standard distance (km)", subtitle = "Dispersion of burned cells") +
+  scale_x_date(date_labels = "%d %b") + theme_ex01()
+p_step <- ggplot(tr |> filter(!is.na(step_km)), aes(week_start, step_km)) +
+  geom_line(colour = PAL$accent_dk, linewidth = 0.6) +
+  geom_point(colour = PAL$accent_dk, size = 1.2) +
+  labs(x = NULL, y = "Weekly shift of mean centre (km)", subtitle = "Movement of the mean centre") +
+  scale_x_date(date_labels = "%d %b") + theme_ex01()
+p_sd + p_step + plot_annotation(
+  title = "The footprint widens as the season progresses", theme = theme_ex01())
+```
+
+## Space-time intensity
+
+```{r fig-st}
+#| label: fig-st
+#| fig-cap: "Space-time intensity at fortnightly reference days, estimated with a fixed spatial kernel and a Gaussian weight in time of five days' standard deviation. Each panel is normalised to its own weights, so panels show where fire was concentrated at that moment rather than how much there was. Reading: the sequence makes the expansion explicit. Early July activity is confined to a small southeastern area. Through August the active area extends north and west along the peat belt while retaining the southern core. By mid-September activity covers most of the southern two-thirds of the regency. The estimator assumes separability, meaning the spatial kernel does not change shape over time, which is a simplification: the real footprint is elongating, and a separable estimator represents that only as a change in weights."
+#| fig-height: 4.4
+st_df <- bind_rows(lapply(ST$st_kde, function(s)
+  im_df(s$im) |> mutate(panel = format(s$date, "%d %b"))))
+st_df$panel <- factor(st_df$panel, levels = vapply(ST$st_kde,
+                                                   function(s) format(s$date, "%d %b"), character(1)))
+ggplot(st_df) +
+  geom_raster(aes(x, y, fill = intensity / max(intensity, na.rm = TRUE))) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.22) +
+  facet_wrap(~panel, nrow = 1) +
+  scale_fill_gradientn(colours = PAL$seq, name = "Relative intensity",
+                       labels = label_percent(accuracy = 1)) +
+  coord_sf(datum = NA, expand = FALSE) +
+  labs(title = "Fire spreads north and west from a southeastern origin") +
+  theme_map(base_size = 8)
+```
+
+# Value-added analysis
+
+The core tasks establish that fire is clustered, where it concentrates, and over
+what distance and time interaction operates. They do not say what the clustering
+is organised around, nor how large a cluster is. Both are answerable, and both
+are what converts a statistical result into something an agency can act on.
+
+## What is the clustering organised around?
+
+Peat fire in this landscape is overwhelmingly anthropogenic in ignition and made
+possible by drainage. Two mapped covariates proxy those mechanisms: distance to
+the road network, for access and ignition opportunity, and distance to mapped
+canals and waterways, for drainage-driven desiccation.
+
+Covariate geometry comes from a dated Geofabrik OpenStreetMap extract for
+Kalimantan rather than a live Overpass query. This was not the first choice.
+Overpass refused a bounding box of this size repeatedly, and on reflection the
+extract is the better option regardless: a live query returns different data each
+time it is run, so it cannot be part of a reproducible pipeline. The extract
+yielded `r fmt_n(CM$n_roads)` road features and `r fmt_n(CM$n_water)` waterway
+features within a 15 km buffer of the regency.
+
+Distances are computed on that buffered frame and only then cropped to the
+analysis window. Computing them on the clipped window would have biased every
+distance upward for cells near the boundary, whose nearest road frequently lies
+outside the regency.
+
+The `r fmt_n(CM$n_water)` waterway features against `r fmt_n(CM$n_roads)` road
+features is itself the first result, and it is a warning rather than a finding: an
+area defined by an abandoned canal network has fewer mapped watercourses than
+roads. Section 9.1 returns to what that does to the drainage covariate.
+
+```{r fig-rho}
+#| label: fig-rho
+#| fig-cap: "Estimated intensity as a non-parametric function of distance to the nearest road and to the nearest mapped waterway, with 95% confidence bands. The horizontal line is the mean intensity over the window. Reading: intensity falls steeply with distance from a road, from well above the window mean within the first kilometre to below it beyond a few kilometres. That is a strong and monotone access effect, consistent with ignition being human. The waterway relationship is weaker and less monotone. This is the more interesting negative result: it does not show that drainage is unimportant, but that OpenStreetMap's waterway layer is a poor proxy for it, because the dense minor canal network of the former Mega Rice Project is largely unmapped. The covariate is measuring mapping effort as much as hydrology, and the flat curve should be read as an absence of evidence."
+#| fig-height: 3.6
+rho_to_df <- function(rh, lab) {
+  if (is.null(rh)) return(NULL)
+  d <- rh
+  nm <- names(d)
+  tibble(x = d[[1]], rho = d[["rho"]],
+         lo = if ("lo" %in% nm) d[["lo"]] else NA_real_,
+         hi = if ("hi" %in% nm) d[["hi"]] else NA_real_, panel = lab)
+}
+rho_df <- bind_rows(
+  rho_to_df(CM$rho_road,  "Distance to nearest road"),
+  rho_to_df(CM$rho_water, "Distance to nearest mapped waterway"))
+mean_int <- P$ppp_cell$n / (P$area_km2 * 1e6)
+if (!is.null(rho_df) && nrow(rho_df)) {
+  ggplot(rho_df, aes(x / 1000)) +
+    geom_hline(yintercept = per_1000km2(mean_int) / 1e3 * 1e3,
+               colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+    geom_ribbon(aes(ymin = per_1000km2(lo), ymax = per_1000km2(hi)),
+                fill = PAL$rule, alpha = 0.6) +
+    geom_line(aes(y = per_1000km2(rho)), colour = PAL$accent, linewidth = 0.7) +
+    facet_wrap(~panel, scales = "free", nrow = 1) +
+    labs(x = "Distance (km)", y = "Burned cells per 1,000 km²",
+         title = "Access explains a great deal, mapped drainage very little",
+         subtitle = "Dashed line, mean intensity over the window.") +
+    theme_ex01(base_size = 9)
+} else cat("Covariate estimation unavailable; see Section 11.\n")
+```
+
+```{r tbl-aic}
+#| label: tbl-aic
+#| tbl-cap: "Fitted Poisson point-process models compared by AIC. Distances are in kilometres, so coefficients read per kilometre. The log specification was included on the expectation that a steep near-field effect flattening with distance would fit better than a linear term; it does not, and is reported as a failed expectation rather than dropped."
+CM$aic_tab |> transmute(Model = model, Parameters = npar,
+                        AIC = fmt_n(round(AIC)), `Delta AIC` = fmt_n(round(dAIC))) |>
+  kable(align = "lrrr")
+```
+
+```{r}
+#| label: aic-inline
+#| include: false
+dn <- CM$aic_tab$dAIC[CM$aic_tab$model == "null"]
+dr <- dn - CM$aic_tab$dAIC[CM$aic_tab$model == "road"]
+dw <- dn - CM$aic_tab$dAIC[CM$aic_tab$model == "water"]
+dboth_over_road <- CM$aic_tab$dAIC[CM$aic_tab$model == "road"]
+```
+
+Three things in that table are worth separating.
+
+**Distance to road does nearly all the work.** The full model improves on the
+intercept-only model by `r fmt_n(round(dn))` AIC units, and distance to road alone
+recovers `r fmt_n(round(dr))` of them. Adding distance to water to the road model
+buys a further `r round(dboth_over_road, 1)` units, which on two additional
+parameters is a real but very small improvement. Distance to water on its own
+recovers `r fmt_n(round(dw))` units, so it is not uninformative in isolation; it is
+largely redundant once road distance is known, which is what one would expect if
+canals and tracks follow one another through the landscape.
+
+**The log specification fits worse, not better.** It was included on the
+expectation that the near-field effect visible in the rhohat curve would be better
+captured by a log term than a linear one. It is beaten by the linear model on the
+same number of parameters, by
+`r fmt_n(round(CM$aic_tab$dAIC[CM$aic_tab$model == "log"]))` AIC units. Over the
+range of distances that actually occurs in this window the relationship is closer
+to linear in distance than in its logarithm. The expectation was wrong and is
+reported rather than quietly removed.
+
+**None of this is causal.** Roads are built where people already work land, so
+distance to road is entangled with land use, tenure, and drainage in ways these
+data cannot separate. The association is strong and the mechanism is not
+identified.
+
+```{r fig-resk}
+#| label: fig-resk
+#| fig-cap: "Residual K function for the best-fitting Poisson model. If the fitted covariate trend fully explained the pattern, this curve would sit on zero within its envelope. Reading: it does not. A substantial positive residual remains at short lags, which means the covariates account for part of the first-order variation but none of the local interaction found in Section 7.3. Substantively, knowing how far a place is from a road tells you whether it is likely to burn; it does not tell you that burning is contagious at the kilometre scale. A Poisson model cannot represent contagion by construction, which is the motivation for the cluster process fitted next."
+#| fig-height: 3.4
+if (!is.null(CM$res_K)) {
+  rk <- CM$res_K
+  ycol <- if ("bres" %in% names(rk)) "bres" else names(rk)[2]
+  ggplot(rk, aes(r, .data[[ycol]])) +
+    geom_hline(yintercept = 0, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+    geom_line(colour = PAL$accent, linewidth = 0.7) +
+    scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+    labs(x = "r", y = "Residual K",
+         title = "The covariates explain location, not contagion") +
+    theme_ex01()
+} else cat("Residual K unavailable.\n")
+```
+
+## How large is a cluster?
+
+A significance test says clustering exists. A fitted cluster process says how big
+it is, which is the form a planner can use. Getting that number right required
+discarding the first answer.
+
+A Thomas process fitted with no trend term returns a cluster standard deviation of
+`r fmt_n(round(TH$kppm_hom$sigma_m))` m, about
+`r round(TH$kppm_hom$mu_per_cluster)` events per cluster, and an implied
+`r round(TH$kppm_hom$kappa_per_km2 * P$area_km2)` parent locations in the entire
+regency. That is not a cluster scale. It is the southern peat belt being
+re-described as a handful of enormous clusters, which is the only way a model
+without a trend term can represent large-scale intensity variation. This is the
+standard identifiability problem between trend and interaction in cluster
+processes, and taking the number at face value would have produced a confidently
+stated and entirely wrong operational radius.
+
+The remedy is to remove the trend before estimating cluster parameters. The
+inhomogeneous pair correlation function already does precisely that, since it
+divides out $\hat{\lambda}(u)$. So the Thomas pair correlation function
+
+$$g(r) \;=\; 1 + \frac{1}{4\pi\kappa\sigma^{2}}\exp\!\left(-\frac{r^{2}}{4\sigma^{2}}\right)$$
+
+is fitted directly to $g_{inhom}$ by minimum contrast, minimising
+$\sum_r \left(\hat{g}(r)^{q} - g_\theta(r)^{q}\right)^{2}$ with $q = 1/4$ over
+$r \in [`r TH$RMIN`, `r fmt_n(TH$RMAX)`]$ m. The lower limit excludes lags governed
+by the 375 m sensor floor rather than by the cluster process. The fit is written out
+explicitly in `R/07_cluster_scale.R` rather than delegated, because the objective
+function and the excluded range are the substance of the estimate.
+
+```{r tbl-thomas}
+#| label: tbl-thomas
+#| tbl-cap: "Thomas cluster process fitted by minimum contrast, with and without the first-order trend removed. sigma is the standard deviation of offspring displacement from the cluster centre and r95 the radius containing about 95% of a cluster's events. The contrast between the two rows is the finding: leaving the trend in the model inflates the estimated cluster scale by a factor of two, and the implied cluster sizes become absurd."
+TH$thomas_tab |> transmute(
+  Specification = spec,
+  `sigma (m)` = round(sigma_m),
+  `r95 (m)` = round(r95_m),
+  `Parents in regency` = round(n_parents_implied),
+  `Events per cluster` = round(mu_per_cluster)) |> kable(align = "lrrrr")
+```
+
+```{r}
+#| label: thomas-inline
+#| include: false
+tp <- TH$thomas_tab |> filter(key == "trend_removed")
+r95 <- round(tp$r95_m); sig_t <- round(tp$sigma_m); mu_t <- round(tp$mu_per_cluster)
+```
+
+```{r fig-thomas}
+#| label: fig-thomas
+#| fig-cap: "Observed inhomogeneous pair correlation function with the two fitted Thomas models, log scale, over the range used for fitting. The shaded band marks lags below 200 m, excluded from the fit because they are governed by the sensor's pixel size. Reading: the trend-removed fit tracks the observed curve closely from the peak outward, which is the range that matters for an operational radius. The fit that retains the trend is too flat and too wide, because its cluster component is doing work that belongs to the intensity surface. Neither fit captures the observed curve beyond about 4 km, where the observed g_inhom decays more slowly than a single Gaussian cluster kernel allows. That is a real limitation: the pattern has structure at more than one scale, and a one-scale model cannot represent it."
+#| fig-height: 3.6
+gobs <- EX$g_obs_ext |> filter(r > 0, r <= TH$RMAX, is.finite(trans))
+ggplot() +
+  annotate("rect", xmin = 0, xmax = TH$RMIN, ymin = 1, ymax = max(gobs$trans) * 1.05,
+           fill = PAL$rule, alpha = 0.45) +
+  geom_hline(yintercept = 1, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(data = gobs, aes(r, trans), colour = PAL$accent, linewidth = 0.8) +
+  geom_line(data = TH$curves, aes(r, g, linetype = spec), colour = PAL$cool,
+            linewidth = 0.55) +
+  scale_linetype_manual(values = c(2, 1), name = NULL) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  scale_y_log10() +
+  labs(x = "r", y = "g(r), log scale",
+       title = "Removing the trend halves the estimated cluster scale",
+       subtitle = "Orange, observed inhomogeneous pcf. Blue, fitted Thomas models. Shaded, lags excluded from the fit.") +
+  theme_ex01()
+```
+
+The trend-removed fit gives a cluster standard deviation of `r fmt_n(sig_t)` m, so
+about 95% of the events in a cluster fall within roughly `r fmt_n(r95)` m of its
+centre, with `r mu_t` events per cluster and about
+`r round(tp$n_parents_implied)` cluster centres across the regency. This is
+consistent with the pair correlation function, which peaks at
+`r round(EX$summary_ext$peak_r_m)` m, and it is arrived at by a different route:
+minimum contrast fitting of a mechanistic model rather than envelope testing.
+
+Two agreeing estimates are stronger than either alone, but the agreement is
+partial and the disagreement should be stated. The fitted model has a single
+scale, and Figure 12 shows the observed curve decaying more slowly beyond about
+4 km than a single Gaussian kernel permits. The Thomas process describes the
+dominant local structure well and the longer tail of dependence out to roughly
+`r round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)` km not at all. A
+multi-scale cluster process, or a log-Gaussian Cox process with a flexible
+covariance, would be the natural next model, and fitting one is beyond this
+exercise.
+
+## Where is the single most unusual concentration?
+
+The scan statistic answers the most direct planning question in the report: not
+whether clustering exists, but where the single most unusual concentration sits and
+whether it is more extreme than chance would produce.
+
+```{r tbl-scan}
+#| label: tbl-scan
+#| tbl-cap: "Spatial scan statistic, Poisson model, circular windows of 2, 5 and 10 km radius, 99 Monte Carlo simulations. The location is the maximum of the likelihood-ratio surface."
+sc <- CM$scan_res
+lrts <- attr(sc, "obsLRTS")
+w  <- which(lrts$v == max(lrts$v, na.rm = TRUE), arr.ind = TRUE)[1, ]
+mx <- c(x = lrts$xcol[w[2]], y = lrts$yrow[w[1]])
+ll <- st_coordinates(st_transform(
+  st_sfc(st_point(c(mx["x"], mx["y"])), crs = STUDY_CRS), 4326))
+tibble::tibble(
+  `Max likelihood-ratio statistic` = round(as.numeric(sc$statistic), 1),
+  `p-value` = fmt_p(sc$p.value, 99),
+  `Radii tested (km)` = paste(attr(sc, "r") / 1000, collapse = ", "),
+  `Most likely cluster centre` = sprintf("%.3f E, %.3f S", ll[1], abs(ll[2]))
+) |> kable(align = "rrll")
+```
+
+```{r fig-scan}
+#| label: fig-scan
+#| fig-cap: "Likelihood-ratio surface from the spatial scan statistic, with the maximum marked. Reading: the surface is not a second intensity map. It measures, at each location, how much better a model with an elevated rate inside a circle fits than a model with a constant rate, so it answers where an agency would look first rather than where fire is densest. The maximum sits in the southern peat belt, consistent with the kernel intensity estimate, and the statistic is significant at the Monte Carlo floor. The value of this figure over Figure 6 is that it is explicitly comparative: the broad plateau shows that several locations are nearly as unusual as the maximum, so treating the single peak as uniquely important would over-read it."
+#| fig-height: 6.2
+ls_df <- im_df(lrts, "lrts")
+ggplot(ls_df) +
+  geom_raster(aes(x, y, fill = lrts)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.45) +
+  annotate("point", x = mx["x"], y = mx["y"], shape = 21, size = 3.4,
+           colour = PAL$ink, fill = NA, stroke = 0.8) +
+  annotate("text", x = mx["x"] + 4000, y = mx["y"], label = "maximum",
+           hjust = 0, size = 3, colour = PAL$ink, family = "Helvetica") +
+  scale_fill_gradientn(colours = PAL$seq, name = "Likelihood ratio statistic",
+                       labels = label_number(big.mark = ",")) +
+  coord_sf(datum = NA, expand = FALSE) + scalebar_layer(bb) + north_layer(bb) +
+  labs(title = "Where an agency would look first",
+       subtitle = glue("Scan statistic surface, circles of {paste(attr(sc,'r')/1000, collapse=', ')} km.")) +
+  theme_map()
+```
+
+# Integrated findings and discussion
+
+The four questions of Section 2, answered together.
+
+```{r tbl-integrate}
+#| label: tbl-integrate
+#| tbl-cap: "Findings, the evidence behind each, and how confidently each can be held."
+tibble::tribble(
+  ~Finding, ~Evidence, ~Confidence,
+  "Fire intensity varies by roughly two orders of magnitude across the regency, concentrated in the drained southern peat",
+  "KDE, stable across four bandwidths and an adaptive estimator", "High",
+  "The pattern is clustered beyond its first-order trend at every lag tested below about 7 km",
+  "L_inhom and g_inhom against an inhomogeneous Poisson null, MAD and DCLF global tests at the Monte Carlo floor", "High",
+  "The excess is strongest at roughly 440 m and decays to within 10% of no-excess by about 7 km",
+  "Observed g_inhom to 20 km; note that no envelope was computed beyond 3 km", "Moderate",
+  "Apparent inhibition at the shortest lags is an instrument artefact, not fire behaviour",
+  "g(r) and g_inhom(r) both suppressed below the 375 m pixel dimension", "High",
+  "The dominant cluster scale is about 1.1 km, with 95% of a cluster within about 2.6 km",
+  "Thomas minimum-contrast fit to g_inhom, consistent with the g_inhom peak; but a one-scale model does not fit the tail", "Moderate",
+  "Space-time interaction is local and short-lived, strongest within a few hundred metres and one day",
+  "Knox test under random labelling, 999 permutations, monotone decay across the threshold grid", "Moderate to high",
+  "The episode expands outward from a southeastern origin rather than intensifying in place",
+  "Relative-risk surface, weekly dispersion, space-time intensity sequence", "Moderate",
+  "Distance to road is strongly associated with intensity; mapped drainage is not",
+  "rhohat and AIC comparison of fitted Poisson models", "Moderate for roads, uninformative for drainage",
+  "The observed temporal profile is fire activity, but the day/night contrast is sampling",
+  "Fixed local overpass times", "High"
+) |> kable()
+```
+
+## Consistency across approaches
+
+The first-order and second-order analyses agree where they should, and disagree in
+two places where the disagreement is the informative part.
+
+**They agree on the dominant scale.** The inhomogeneous pair correlation function
+peaks at `r round(EX$summary_ext$peak_r_m)` m. The Thomas process fitted to that
+same curve returns a cluster standard deviation of `r fmt_n(sig_t)` m. Two
+estimates from different machinery, envelope-based and model-based, put the
+dominant structure at roughly a kilometre.
+
+**They disagree about extent, and the cumulative statistic is the one that
+misleads.** $L_{inhom}$ never re-enters its envelope within 20 km, which invites
+the conclusion that dependence extends at least that far. $g_{inhom}$, which
+localises scale rather than accumulating it, shows the excess within 10% of nothing
+by about `r round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)` km. Both
+computations are correct and the second is the one to report, because $L$
+accumulates every excess at smaller lags and therefore stays elevated long past the
+range over which anything is happening. This is a general point about $K$ and $L$
+rather than a quirk of this dataset, and it is the single most useful methodological
+lesson in the exercise.
+
+**They disagree about sufficiency, and the first-order surface loses.** An earlier
+version of this analysis, capped at a 5 km lag, concluded that the intensity
+surface was an adequate description above about 2 km. That was wrong, and wrong
+because of a decision rather than a computation: the cap was too short to see where
+dependence ended. Corrected, the first-order surface is not a sufficient
+description at any lag below roughly
+`r round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)` km. A smooth intensity map
+remains a reasonable tool for allocating resources across a regency, and it is not
+a tool for anticipating what happens next around a fire that has started.
+
+The covariate models sharpen this rather than softening it. They improve on an
+intercept-only model by `r fmt_n(round(dn))` AIC units, so much of the first-order
+variation is explained by accessibility. The residual $K$ function shows they
+capture none of the local interaction. Location explains where fire is likely.
+It does not explain the contagion.
+
+## Where the analysis is weakest
+
+Three places, in order of severity.
+
+**The event definition does the heavy lifting.** Collapsing detections to cells
+is defensible and necessary, but it is a modelling decision presented as data
+preparation. A cell that burned for three weeks and a cell that burned for one
+overpass contribute identically to `ppp_cell`. An analysis weighting cells by
+persistence or by cumulative radiative power would answer a related but different
+question and might not reach the same conclusion about scale.
+
+**The inhomogeneous null is estimated from the data under test.** The bias is in
+the conservative direction, so the rejection stands, but the *magnitude* of the
+excess clustering is not reliably estimated. Statements about how much clustering
+there is should be read as ordinal, not quantitative.
+
+**Detectability is confounded with intensity.** Assumptions A1 and A2 cannot be
+discharged within this data source. Sub-surface peat smouldering, the mode of
+greatest public-health concern, is systematically under-detected, and cloud
+cover is not plausibly independent of location. The intensity surface is a
+surface of detected fire.
+
+**One analytical decision was simply wrong and had to be reversed.** The r range
+was initially capped at 5 km. Every inhomogeneous statistic sat outside its
+envelope across the whole of that range, which means the cap could not answer the
+question it was set to answer, and the first draft of this report drew a conclusion
+from it that the extended analysis contradicts. The cap is recorded here rather
+than silently replaced, because a range chosen before seeing the curves and then
+revised when the curves demanded it is a different thing from a range chosen to
+produce a tidy answer, and a reader has no way to tell the two apart unless told.
+
+# Geovisualisation and geocommunication
+
+Every figure in this report carries its analytical interpretation in its caption,
+within the 150-word limit the brief sets. This section states the design rules
+those figures follow, because consistent encoding is what lets a reader compare
+one map with another instead of re-learning the graphic each time.
+
+**One palette, used for one thing.** A single sequential ramp, warm and
+perceptually ordered, encodes intensity in every map where intensity is the
+variable. It is never used for a categorical distinction. The one diverging scale
+in the report, Figure 13, encodes a quantity that genuinely has a meaningful
+midpoint, the overall share of events in the peak period, and its midpoint is set
+to that value rather than to the middle of the data range.
+
+**Square-root transformation, disclosed.** Fire intensity spans roughly two
+orders of magnitude, so a linear ramp renders the entire regency outside the peat
+belt as a single flat colour. The maps use a square-root scale, which keeps the
+structure of the lower range visible. This is a decision that changes what a
+reader sees and is therefore labelled on every scale that uses it.
+
+**Statistical graphics and maps share a type system.** The same typeface, the same
+rule weights and the same muted axis treatment run through both, because the
+argument moves between them continuously. A reader should not experience the
+$L$ function and the intensity map as coming from different documents.
+
+**Scale and orientation on every map, at minimum weight.** A regency 213 km long
+cannot be read without a scale bar. The bar and north arrow are drawn as thin
+line work rather than as ornament, because they are reference furniture.
+
+**Uncertainty shown where it exists.** Envelope ribbons on every second-order
+figure, confidence bands on the covariate curves, and a normalisation note on the
+space-time panels. A curve drawn without its envelope invites over-reading, which
+in this analysis would be the specific failure the report is built to avoid.
+
+**What is deliberately not shown.** No three-dimensional surface, which would
+occlude data and add no information a colour ramp cannot carry. No basemap
+imagery, which would import a visual texture the analysis has not validated and
+imply a precision the 375 m grid does not support. No interpolated surface beyond
+the window boundary, since the analysis has no jurisdiction there.
+
+# Public-safety planning and management
+
+```{r}
+#| label: ps-wordcount
+#| include: false
+# The brief caps this section at 500 words. Counted on render rather than trusted.
+```
+
+The findings support four operational conclusions, and it is worth separating what
+the evidence shows from what it merely suggests.
+
+**Direct evidence, usable now.** The intensity surface identifies where fire recurs
+across a season at a resolution finer than any administrative unit. Roughly two
+orders of magnitude separate the southern peat belt from the northern interior.
+Resources allocated in proportion to sub-district area, or spread evenly, are
+therefore badly matched to risk. The surface supports a concrete reallocation:
+concentrate standing capability in the southern third, and treat the northern
+interior as a response area rather than a prevention area.
+
+**Direct evidence, with a scale attached.** Two independent methods agree that the
+dominant clustering scale is about 1.1 km, with roughly 95% of a cluster's events
+within 2.6 km of its centre. That gives a defensible containment geometry: when a
+detection arrives, the area warranting immediate attention is the surrounding two
+to three kilometres, not the surrounding pixel and not the surrounding sub-district.
+Measurable elevation persists out to about 7 km, so 2.6 km is a first ring rather
+than a boundary. The Knox result adds the time dimension: the raised probability of
+a neighbouring cell igniting is concentrated in the first few days. A response
+window of days over a radius of kilometres is supported.
+
+**Direct evidence about monitoring, not about fire.** The day and night contrast is
+an artefact of four fixed overpass times. Any dashboard reporting a diurnal fire
+cycle from these data would be reporting the orbit. The pair correlation function
+also shows the analysis cannot resolve anything below 375 m, so these data cannot
+support tasking at the individual plot scale. That is a limit on the instrument;
+buying a finer answer requires a different sensor, not a different statistic.
+
+**Interpretation requiring information this analysis does not have.** The
+association between intensity and proximity to roads is strong, but roads are built
+where land is already worked, so it cannot be read as a causal lever. Whether
+improving access aids suppression or enables ignition is not answerable here, and
+the two have opposite policy implications. Establishing which dominates needs
+ignition-cause records, land-tenure boundaries and enforcement data.
+
+Equally, the flat drainage relationship is not evidence that drainage does not
+matter. OpenStreetMap does not map the minor canal network of the former Mega Rice
+Project, so the covariate measures mapping coverage. Testing that mechanism needs a
+canal inventory and water-table observations.
+
+Finally, the expansion from a southeastern origin describes one season. Whether it
+recurs, and could therefore support early-season forecasting, needs the multi-year
+record the ninety-day retention denied this analysis. That is the highest-value next
+step, and it is a data-access task rather than a methodological one.
+
+# Limitations
+
+```{r tbl-limits}
+#| label: tbl-limits
+#| tbl-cap: "Limitations, their consequence for the findings, and what would resolve each."
+tibble::tribble(
+  ~Limitation, ~Consequence, ~Resolution,
+  "Temporal coverage restricted to 87 days by a rolling ~90-day API retention; the standard-processing archive is not built for 2026",
+  "No wet-season baseline and no inter-annual comparison. Nothing in this report speaks to seasonal amplitude or to whether 2026 is unusual.",
+  "Bulk archive request through the FIRMS archive download service, or Earthdata-authenticated access to the VIIRS product",
+  "The NRT product omits the `type` field",
+  "Static industrial heat sources are removed by a persistence proxy rather than by the product's own classification.",
+  "Use the standard-processing product once available for 2026",
+  "A detection is not a fire",
+  "Addressed by collapsing to 375 m cells, but the event definition remains a modelling decision. Magnitudes of clustering are ordinal, not quantitative.",
+  "Fire-perimeter products such as burned-area mapping, or ground incident records",
+  "Sub-surface peat smouldering is under-detected",
+  "Intensity is a lower bound and is biased against the fire mode of greatest health concern.",
+  "Thermal products at longer wavelengths, or in-situ monitoring",
+  "Cloud cover is assumed spatially independent of fire location",
+  "Unquantified bias in the intensity surface, direction unknown.",
+  "Joint analysis with a cloud-mask time series to model detection probability",
+  "The inhomogeneous null is estimated from the pattern under test",
+  "Conservative test, so rejections stand; but the size of the excess clustering is not reliably estimated.",
+  "Split-sample estimation of lambda, or a parametric trend from independent covariates",
+  "Isotropy assumed by K, L and g",
+  "Directional structure from wind and canal alignment is averaged away, weakening the measured signal.",
+  "Directional K function or a sector-based second-order analysis",
+  "OpenStreetMap drainage coverage is incomplete in the study area",
+  "The drainage covariate is uninformative and must not be read as a null result about drainage.",
+  "A canal inventory, or canal extraction from high-resolution imagery",
+  "Administrative window truncates a continuous field",
+  "Edge effects, mitigated by correction but not eliminated. Cluster estimates near the boundary are less reliable.",
+  "Buffered window with detections retained outside the boundary for correction only",
+  "No envelope was computed for g_inhom beyond 3 km",
+  "The decay of the excess to about 7 km is described from the observed curve alone. The significance claim over the extended range rests on L_inhom, which is cumulative and therefore less informative about where dependence ends.",
+  "Translation-corrected pcfinhom envelopes at a 20 km lag, which needs either substantially more compute or a coarser r grid",
+  "A single-scale Thomas process does not fit the tail of g_inhom",
+  "The cluster radius describes the dominant local structure and not the slower decay beyond about 4 km, so it understates the range over which events remain associated.",
+  "A multi-scale cluster process, or a log-Gaussian Cox process with a flexible covariance function",
+  "Suomi NPP contributed no data for 11 to 16 July and 3 August",
+  "Seven days rest on one platform, so counts there are depressed. The dates carry 0.22% of events and all fall before the dry-season ramp, so no conclusion turns on them.",
+  "None available: the absence is in the FIRMS near-real-time record itself, confirmed by repeated re-query",
+  "The r range was initially capped at 5 km, too short to locate the end of dependence",
+  "An earlier draft concluded the excess was exhausted by 2 km and that the first-order surface was sufficient above it. Both were wrong and are corrected in Section 7.5.",
+  "Already resolved; recorded because the revision is part of the analytical history"
+) |> kable()
+```
+
+# Reproducibility
+
+```{r tbl-repro}
+#| label: tbl-repro
+#| tbl-cap: "Pipeline. Each script writes a cached object; the report reads the caches and computes no analysis inline, so rendering cannot silently differ from what was analysed."
+tibble::tribble(
+  ~Script, ~Purpose, ~Output,
+  "`R/00_config.R`", "every study-design parameter, in one place", "sourced by all",
+  "`R/01_acquire.R`", "download, retention probe, regency ranking", "`firms_raw.rds`, `kal_adm2.rds`, `regency_ranking.rds`, `retention_probe.rds`, `acquisition_log.md`",
+  "`R/01b_fill_gaps.R`", "completeness audit, gap re-query with backoff, verification", "`gap_report.rds`",
+  "`R/02_prepare.R`", "screening, audit trail, the three patterns", "`prepared.rds`, `qa_steps.rds`",
+  "`R/03_firstorder.R`", "quadrats, bandwidths, KDE, FRP, temporal", "`firstorder.rds`",
+  "`R/04_secondorder.R`", "G, F, L, pcf, inhomogeneous versions, global tests", "`secondorder.rds`",
+  "`R/05_spacetime.R`", "Knox test, relative risk, trajectory, space-time KDE", "`spacetime.rds`",
+  "`R/06_covariates_models.R`", "OSM covariates from the Geofabrik extract, ppm, AIC, residual K, scan test", "`covariates_models.rds`",
+  "`R/07_cluster_scale.R`", "Thomas process by explicit minimum contrast, with and without the trend", "`thomas.rds`",
+  "`R/08_extended_range.R`", "second-order statistics to a 20 km lag, plus a correction cross-check", "`extended.rds`",
+  "`R/helpers.R`", "one theme and one palette for every figure", "sourced by report and slides"
+) |> kable()
+```
+
+The random seed is fixed at `r SEED` in `R/00_config.R` and set at the top of every
+analysis script, so all Monte Carlo results reproduce exactly.
+
+One engineering note that affects reproducibility in practice. `spatstat`'s `fv` and
+`envelope` objects retain the closures used to construct them, and those closures
+capture the calling environment. Because the analysis scripts hold several
+multi-megabyte caches in that environment, saving the objects directly produced an
+843 MB file for `extended.rds` alone. Each cache is therefore converted to plain
+data frames before saving, which preserves every number and reduces the same file to
+under a megabyte. The
+geoBoundaries download is pinned to commit `9469f09` rather than to a moving
+`current` endpoint. The FIRMS key is read from `.Renviron`, which is
+git-ignored; `.Renviron.example` documents what is required.
+
+```{r tbl-session}
+#| label: tbl-session
+#| tbl-cap: "Environment at render time."
+si <- sessionInfo()
+tibble::tibble(
+  Component = c("R", "platform", "sf", "GDAL", "PROJ", "spatstat.explore",
+                "spatstat.model", "ggplot2"),
+  Version = c(paste(si$R.version$major, si$R.version$minor, sep = "."),
+              si$platform, as.character(packageVersion("sf")),
+              sf_extSoftVersion()[["GDAL"]], sf_extSoftVersion()[["PROJ"]],
+              as.character(packageVersion("spatstat.explore")),
+              as.character(packageVersion("spatstat.model")),
+              as.character(packageVersion("ggplot2")))) |> kable(align = "ll")
+```
+
+# References
+
+Baddeley, A., Rubak, E. and Turner, R. (2015) *Spatial Point Patterns:
+Methodology and Applications with R*. Chapman and Hall/CRC.
+
+Baddeley, A., Møller, J. and Waagepetersen, R. (2000) Non- and semi-parametric
+estimation of interaction in inhomogeneous point patterns. *Statistica
+Neerlandica*, 54(3), 329-350.
+
+Cronie, O. and van Lieshout, M.N.M. (2018) A non-model-based approach to
+bandwidth selection for kernel estimators of spatial intensity functions.
+*Biometrika*, 105(2), 455-462.
+
+Diggle, P.J. (2013) *Statistical Analysis of Spatial and Spatio-Temporal Point
+Patterns*, 3rd edn. Chapman and Hall/CRC.
+
+Diggle, P.J., Chetwynd, A.G., Häggkvist, R. and Morris, S.E. (1995) Second-order
+analysis of space-time clustering. *Statistical Methods in Medical Research*,
+4(2), 124-136.
+
+Giglio, L., Schroeder, W. and Justice, C.O. (2016) The Collection 6 MODIS active
+fire detection algorithm and product. *Remote Sensing of Environment*, 178,
+31-41.
+
+Knox, E.G. (1964) The detection of space-time interactions. *Journal of the Royal
+Statistical Society, Series C*, 13(1), 25-30.
+
+Loosmore, N.B. and Ford, E.D. (2006) Statistical inference using the G or K point
+pattern spatial statistics. *Ecology*, 87(8), 1925-1931.
+
+NASA FIRMS (2026) *Fire Information for Resource Management System: VIIRS 375 m
+Active Fire Product, Collection 2, Near Real-Time*. NASA Earth Science Data and
+Information System. Accessed `r format(ACCESS_DATE, "%d %B %Y")`.
+<https://firms.modaps.eosdis.nasa.gov/>
+
+Runfola, D. et al. (2020) geoBoundaries: A global database of political
+administrative boundaries. *PLOS ONE*, 15(4), e0231866.
+
+Schroeder, W., Oliva, P., Giglio, L. and Csiszar, I.A. (2014) The New VIIRS 375 m
+active fire detection data product: Algorithm description and initial assessment.
+*Remote Sensing of Environment*, 143, 85-96.
+
+Thomas, M. (1949) A generalization of Poisson's binomial limit for use in
+ecology. *Biometrika*, 36(1/2), 18-25.
+
+OpenStreetMap contributors (2026) *Planet dump, Overpass API extract for Pulang
+Pisau*. Accessed `r format(ACCESS_DATE, "%d %B %Y")`. Open Database Licence.

@@ -1,0 +1,412 @@
+---
+title: "Where peat burns, and how close together"
+subtitle: "VIIRS active-fire detections in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026. ISSS626 Take-home Exercise 1."
+format:
+  revealjs:
+    theme: [dark, slides.scss]
+    slide-number: c/t
+    progress: true
+    transition: none
+    background-transition: none
+    width: 1280
+    height: 760
+    margin: 0.07
+    fig-align: left
+    fig-dpi: 190
+    embed-resources: true
+    code-fold: true
+    echo: false
+    toc: false
+execute:
+  echo: false
+  warning: false
+  message: false
+
+knitr:
+  opts_chunk:
+    dev: ragg_png
+    dev.args:
+      background: transparent
+    out.width: "100%"
+---
+
+```{r setup}
+#| include: false
+suppressPackageStartupMessages({
+  library(dplyr); library(tidyr); library(sf); library(ggplot2); library(glue)
+  library(spatstat.geom); library(spatstat.explore); library(patchwork); library(knitr)
+})
+source("R/00_config.R"); source("R/helpers.R")
+
+# The figure theme reads PAL at call time, so overriding it here converts every
+# plot in the deck to the dark palette without touching a single plot definition.
+PAL <- modifyList(PAL, list(
+  ink = "#F4E7DF", ground = "#2B1512", ground_alt = "#3A1D18",
+  rule = "#593029", muted = "#C3A79B",
+  accent = "#F0864B", accent_dk = "#F3A26A", accent_lt = "#C96A3C",
+  cool = "#8FBDC0",
+  seq = c("#2B1512", "#5E2A17", "#93441C", "#C2571F", "#E5893F", "#F3B579", "#FBE3C4")))
+
+P  <- readRDS(file.path(DIR_DERIVED, "prepared.rds"))
+FO <- readRDS(file.path(DIR_DERIVED, "firstorder.rds"))
+SO <- readRDS(file.path(DIR_DERIVED, "secondorder.rds"))
+ST <- readRDS(file.path(DIR_DERIVED, "spacetime.rds"))
+CM <- readRDS(file.path(DIR_DERIVED, "covariates_models.rds"))
+EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
+TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
+RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
+
+win_p <- P$win_p; bb <- st_bbox(win_p)
+infl <- P$ppp_all$n / P$ppp_cell$n
+tp   <- TH$thomas_tab |> filter(key == "trend_removed")
+sig_t <- round(tp$sigma_m); r95 <- round(tp$r95_m); mu_t <- round(tp$mu_per_cluster)
+r_decay <- EX$summary_ext$r_g_within_10pct_of_1
+peak_r  <- EX$summary_ext$peak_r_m
+dnull <- CM$aic_tab$dAIC[CM$aic_tab$model == "null"]
+droad <- dnull - CM$aic_tab$dAIC[CM$aic_tab$model == "road"]
+knox_best <- ST$knox_tab |> arrange(desc(ratio)) |> slice(1)
+```
+
+## Contents {.smaller}
+
+::: {.subhead}
+Six tasks, one argument running through them.
+:::
+
+1. Why this place, and what the data actually is
+2. The problem the data creates: a detection is not a fire
+3. First order: where fire concentrates
+4. First order: when, and what the satellite cannot tell us
+5. Second order: why complete spatial randomness is a straw man
+6. Second order: the test that can fail
+7. Space and time together
+8. What the clustering is organised around, and how big it is
+9. What this supports for planning
+10. What it does not support
+
+## 1. A regency chosen by rule, not reputation
+
+::: {.split}
+::: {.col}
+```{r sl-context}
+#| fig-height: 5.4
+#| fig-width: 5.4
+kal <- readRDS(file.path(DIR_DERIVED, "kal_adm2.rds")) |> st_transform(STUDY_CRS) |>
+  left_join(RANK |> select(shapeName, per_1000km2), by = "shapeName") |>
+  mutate(per_1000km2 = replace_na(per_1000km2, 0))
+ggplot(kal) +
+  geom_sf(aes(fill = per_1000km2), colour = PAL$ground, linewidth = 0.15) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.8) +
+  scale_fill_intensity(name = "Detections per 1,000 km\u00b2", v = kal$per_1000km2) +
+  coord_sf(datum = NA, expand = FALSE) + theme_map(base_size = 13)
+```
+:::
+::: {.note}
+**Rule, stated first.** Highest detection density among regencies above
+5,000 km², the size floor needed for second-order estimation to a 5 km lag.
+
+**Pulang Pisau wins outright**, at
+`r fmt_n(round(RANK$per_1000km2[RANK$shapeName == STUDY_REGENCY]))` per 1,000 km².
+
+**Rejected.** Ketapang leads on raw count
+(`r fmt_n(RANK$n_detections[RANK$shapeName == "Ketapang"])`) but is 3x the area.
+Kota Palangka Raya is denser but only
+`r fmt_n(round(RANK$area_km2[RANK$shapeName == "Kota Palangka Raya"]))` km².
+
+It is the drained peat of the former Mega Rice Project, so the public-safety
+mechanism is respiratory, not thermal.
+:::
+:::
+
+## 2. Data, and a constraint worth naming
+
+```{r}
+#| output: asis
+kf <- function(...) {
+  items <- list(...)
+  cat('<div class="kf">')
+  for (it in items) cat(sprintf('<div><div class="n">%s</div><div class="l">%s</div></div>',
+                                it[[1]], it[[2]]))
+  cat('</div>')
+}
+kf(list(fmt_n(P$qa$n_in[1]), "rows downloaded, all Kalimantan"),
+   list(fmt_n(P$ppp_all$n),  "detections inside the regency"),
+   list(fmt_n(P$ppp_cell$n), "burned 375 m cells, the analysis unit"),
+   list(P$n_days,            "days, 1 Jul to 25 Sep"))
+```
+
+VIIRS 375 m Collection 2, both platforms. Window is the administrative polygon in
+UTM 49S, `r fmt_n(round(P$area_km2))` km².
+
+**The window is imposed, not chosen.** The FIRMS `area` API retains near-real-time
+granules for roughly 90 days, and the standard-processing archive is not built for
+2026. Kalimantan-wide queries return exactly zero rows for every sampled date from
+January to 30 June, and non-zero from 1 July. Six months of zero detections across
+a 10° box is not credible, so this is absence of coverage, not absence of fire.
+
+*The cost: no wet-season baseline, so nothing here speaks to seasonal amplitude.
+The window does span onset to peak, which is the period an agency acts on.*
+
+## 3. A detection is not a fire
+
+::: {.split}
+::: {.col}
+```{r sl-mult}
+#| fig-height: 4.6
+#| fig-width: 5.6
+mt <- P$multiplicity
+ggplot(mt, aes(n_det, n_cells)) +
+  geom_segment(aes(xend = n_det, yend = 0), colour = PAL$accent, linewidth = 0.4) +
+  scale_x_log10() + scale_y_log10(labels = label_number(big.mark = ",")) +
+  labs(x = "Detections in the cell", y = "Cells") +
+  theme_ex01(base_size = 13)
+```
+:::
+::: {.note}
+One large peat fire fills many 375 m pixels, and two satellites re-detect it about
+four times a day.
+
+**The raw count overstates distinct burning locations by `r round(infl, 1)`x.**
+
+So the pattern partly measures the satellite's revisit schedule. Consequence:
+testing against complete spatial randomness is guaranteed to reject before any
+analysis is done.
+
+**Two responses.** Change the unit to the 375 m cell. Change the null from CSR to
+an inhomogeneous Poisson process.
+
+This is the methodological spine of the whole exercise.
+:::
+:::
+
+## 4. Where it burns
+
+::: {.split}
+::: {.col}
+```{r sl-kde}
+#| fig-height: 5.9
+#| fig-width: 4.6
+kd <- im_df(FO$kde$main) |> mutate(v = per_1000km2(intensity))
+ggplot(kd) +
+  geom_raster(aes(x, y, fill = v)) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.4) +
+  scale_fill_intensity(v = kd$v) +
+  coord_sf(datum = NA, expand = FALSE) + scalebar_layer(bb) + north_layer(bb) +
+  theme_map(base_size = 11) +
+  theme(legend.position = "right", legend.key.height = unit(52, "pt"),
+        legend.key.width = unit(8, "pt"))
+```
+:::
+::: {.note}
+Gaussian kernel, Diggle edge correction, **bandwidth fixed at 4 km**.
+
+Cross-validated selectors returned about 0.6 km and were **rejected**: they absorb
+the very clustering the second-order test exists to detect, which would rig the
+test in Slide 7.
+
+Intensity spans roughly **two orders of magnitude** between the southern peat belt
+and the northern interior.
+
+*So allocation proportional to sub-district area is badly matched to risk. That is
+the single most directly usable result in the deck.*
+:::
+:::
+
+## 5. When it burns, and what the orbit decides
+
+::: {.split}
+::: {.col}
+```{r sl-daily}
+#| fig-height: 4.6
+#| fig-width: 5.6
+ggplot(FO$daily, aes(date_local)) +
+  geom_col(aes(y = n_events), fill = PAL$accent_lt, width = 0.9) +
+  geom_line(aes(y = roll7), colour = PAL$accent_dk, linewidth = 0.8) +
+  geom_vline(xintercept = as.numeric(ST$split_date), colour = PAL$cool,
+             linetype = "22", linewidth = 0.4) +
+  scale_x_date(date_breaks = "3 weeks", date_labels = "%d %b") +
+  scale_y_continuous(labels = label_number(big.mark = ",")) +
+  labs(x = NULL, y = "Burned cells per day") +
+  theme_ex01(base_size = 13)
+```
+:::
+::: {.note}
+Heavily back-loaded: week 1 recorded 7 events, the week of 16 September recorded
+8,087.
+
+**The day/night contrast is not a diurnal cycle.** Both platforms observe at four
+narrow fixed local times, so any claim that fire peaks at a given hour would be a
+claim about the orbit.
+
+Correct use of the split is as a detectability covariate, since night overpasses
+detect cooler anomalies against a cooler background.
+:::
+:::
+
+## 6. Against CSR, everything is significant
+
+```{r sl-csr}
+#| fig-height: 3.5
+#| fig-width: 12.0
+eg <- SO$env_G |> mutate(panel = "G(r)")
+ef <- SO$env_F |> mutate(panel = "F(r)")
+el <- SO$env_L |> mutate(across(c(obs, theo, lo, hi), ~ .x - r), panel = "L(r) - r")
+ea <- bind_rows(eg, ef, el)
+ea$panel <- factor(ea$panel, levels = c("G(r)", "F(r)", "L(r) - r"))
+ggplot(ea, aes(r)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = PAL$rule) +
+  geom_line(aes(y = theo), colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(aes(y = obs), colour = PAL$accent, linewidth = 0.8) +
+  facet_wrap(~panel, scales = "free", nrow = 1) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = NULL) + theme_ex01(base_size = 12)
+```
+
+Every statistic leaves the envelope immediately. **This persuades nobody**: the
+sensor guarantees it. Reported so the failure is visible rather than concealed.
+
+The pair correlation function makes the point sharper still. It is suppressed below
+375 m, the pixel dimension. That apparent short-range inhibition is the instrument,
+not fires avoiding one another.
+
+## 7. The test that can fail
+
+::: {.split}
+::: {.col}
+```{r sl-inhom}
+#| fig-height: 4.6
+#| fig-width: 6.4
+Lx <- EX$env_L_ext |> mutate(across(c(obs, lo, hi), ~ .x - r), ref = 0,
+                             panel = "L_inhom(r) - r, envelope")
+Gx <- EX$g_obs_ext |> filter(r > 0, is.finite(trans)) |>
+  transmute(r, obs = trans, lo = NA_real_, hi = NA_real_, ref = 1,
+            panel = "g_inhom(r), observed")
+ggplot(bind_rows(Lx, Gx), aes(r)) +
+  geom_ribbon(aes(ymin = lo, ymax = hi), fill = PAL$rule, na.rm = TRUE) +
+  geom_line(aes(y = ref), colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(aes(y = obs), colour = PAL$accent, linewidth = 0.8) +
+  facet_wrap(~panel, scales = "free", nrow = 1) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = NULL) + theme_ex01(base_size = 11)
+```
+:::
+::: {.note}
+Null is an **inhomogeneous Poisson process** with intensity from the 4 km kernel
+estimate, so everything the first-order analysis found is already inside the null.
+The reference intensity is **re-estimated for every simulated pattern**.
+
+**The departure survives.** Both global tests reject at the Monte Carlo floor.
+
+**The two panels disagree, and that is the lesson.** L_inhom never re-enters its
+envelope in 20 km. g_inhom, which localises scale instead of accumulating it, peaks
+at `r round(peak_r)` m and is within 10% of no-excess by
+`r round(r_decay/1000, 1)` km.
+
+*L accumulates every excess at smaller lags, so it stays significant far past the
+range over which anything is happening.*
+:::
+:::
+
+## 8. Space and time are not separable
+
+::: {.split}
+::: {.col}
+```{r sl-knox}
+#| fig-height: 4.4
+#| fig-width: 5.6
+ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
+  geom_tile(colour = PAL$ground, linewidth = 1.4) +
+  geom_text(aes(label = sprintf("%.2f", ratio)), size = 4.1, colour = PAL$ground,
+            fontface = "bold") +
+  scale_fill_gradientn(colours = PAL$seq, name = "Obs / exp") +
+  labs(x = "Spatial threshold (m)", y = "Temporal threshold (days)") +
+  theme_ex01(base_size = 13, grid = "none")
+```
+:::
+::: {.note}
+Knox test. Null is **random labelling**: locations and dates both held fixed, only
+their pairing permuted, across `r fmt_n(ST$nperm)` permutations of
+`r fmt_n(ST$n_close_pairs)` close pairs.
+
+Because both marginals are fixed, none of this can be explained by the seasonal
+ramp or the spatial concentration.
+
+**Strongest at the tightest cell** and decaying monotonically outward: a cell that
+burns today raises the chance a neighbour burns tomorrow, and the effect is largely
+spent within days and a kilometre or two.
+:::
+:::
+
+## 9. What it is organised around, and how big it is
+
+::: {.split}
+::: {.col}
+```{r sl-rho}
+#| fig-height: 4.4
+#| fig-width: 5.6
+rd <- CM$rho_road
+ggplot(rd, aes(.data[[names(rd)[1]]] / 1000)) +
+  geom_ribbon(aes(ymin = per_1000km2(lo), ymax = per_1000km2(hi)),
+              fill = PAL$rule, alpha = 0.7) +
+  geom_line(aes(y = per_1000km2(rho)), colour = PAL$accent, linewidth = 0.8) +
+  labs(x = "Distance to nearest road (km)", y = "Burned cells per 1,000 km²") +
+  theme_ex01(base_size = 13)
+```
+:::
+::: {.note}
+**Access dominates.** Of `r fmt_n(round(dnull))` AIC units separating the covariate
+model from an intercept-only model, distance to road accounts for
+`r fmt_n(round(droad))`.
+
+**Mapped drainage adds almost nothing** (13 AIC units). Not evidence that drainage
+does not matter: OSM does not map the Mega Rice Project canal network, so the
+covariate measures mapping coverage.
+
+**Cluster scale `r fmt_n(sig_t)` m**, 95% within **`r fmt_n(r95)` m**, from a
+Thomas process fitted to g_inhom by minimum contrast.
+
+*Fitted without the trend removed it returns
+`r fmt_n(round(TH$kppm_hom$sigma_m))` m and 440 events per cluster, which is the
+peat belt being re-described as a few giant clusters. Trend and interaction are not
+separately identifiable unless you make them so.*
+
+Residual K shows the covariates explain *location*, not *contagion*.
+:::
+:::
+
+## 10. What this supports, and what it does not
+
+::: {.split .even}
+::: {.col}
+[Supported now]{.colhead}
+
+**Reallocate by intensity, not by area.** Two orders of magnitude separate the
+southern peat belt from the northern interior.
+
+**A containment geometry.** First ring `r round(r95/1000, 1)` km, elevation out to
+about `r round(r_decay/1000, 1)` km, days not weeks. Two independent methods agree
+on the dominant scale.
+
+**A monitoring limit.** Nothing below 375 m is resolvable. Buying a finer answer
+needs a different sensor, not a different statistic.
+:::
+::: {.note}
+[Not supported]{.colhead}
+
+**Roads as a policy lever.** Roads follow worked land. Whether access aids
+suppression or enables ignition is not answerable here, and the two have opposite
+implications.
+
+**Any claim about drainage.** The covariate measures OSM coverage.
+
+**Any diurnal claim.** Four fixed overpasses.
+
+**Anything about how unusual 2026 is.** The 90-day retention denied the multi-year
+record. Obtaining it is the highest-value next step, and it is a data-access task,
+not a methodological one.
+:::
+:::
+
+::: {.footer-note}
+Technical report, code and audit trail: see the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.
+:::

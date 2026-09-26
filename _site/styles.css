@@ -619,3 +619,34 @@ figcaption, .figure-caption {
 .geo-node { fill: var(--accent); }
 .geo-node-muted { fill: var(--text-secondary); opacity: 0.5; }
 .geo-line { stroke: var(--text-secondary); stroke-width: 1; opacity: 0.4; stroke-dasharray: 2 3; }
+
+/* ---------- Take-home Exercise 1 ---------- */
+/* A definition list used for stating analytical assumptions, each with the reason
+   it might fail. Styled as a ruled list rather than a boxed callout, so a long run
+   of them does not turn the page into a stack of cards. */
+
+.assump {
+  font-size: 0.92rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+  margin: 2rem 0;
+}
+
+.assump dt {
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-top: 1.1rem;
+}
+
+.assump dd {
+  margin-left: 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Figures in this report are wider than the 780px body column; they are allowed
+   to breathe without forcing the page to scroll horizontally. */
+.quarto-figure, .cell-output-display { overflow-x: auto; }

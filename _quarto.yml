@@ -45,6 +45,12 @@ website:
         contents:
           - text: "Spatial Weights and Applications"
             href: Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd
+      - section: "Take-home Exercise 1"
+        contents:
+          - text: "Technical Report"
+            href: Take-home_Ex/Take-home_Ex01/index.qmd
+          - text: "Executive Summary"
+            href: Take-home_Ex/Take-home_Ex01/slides.qmd
   page-footer:
     border: true
     left: |

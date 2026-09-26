@@ -1,0 +1,127 @@
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&display=swap');
+
+$body-bg: #2B1512;
+$body-color: #F4E7DF;
+$link-color: #F0864B;
+$font-family-sans-serif: Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+$presentation-font-size-root: 30px;
+$presentation-heading-font: Newsreader, Georgia, serif;
+$presentation-heading-color: #F4E7DF;
+$code-block-bg: #3A1D18;
+
+/*-- scss:rules --*/
+:root {
+  --ink: #F4E7DF;
+  --ground: #2B1512;
+  --ground-alt: #3A1D18;
+  --rule: #593029;
+  --muted: #C3A79B;
+  --accent: #F0864B;
+  --accent-dk: #F3A26A;
+  --cool: #8FBDC0;
+}
+
+.reveal { background: var(--ground); }
+.reveal .slides { text-align: left; }
+.reveal section { text-align: left; }
+
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -0.012em;
+  line-height: 1.06;
+}
+.reveal h1 { font-size: 2.4em; }
+.reveal h2 {
+  font-size: 1.5em;
+  margin-bottom: 0.15em;
+  max-width: 26ch;
+}
+/* The one recurring device: a short accent rule under each slide title. */
+.reveal h2::after {
+  content: ""; display: block; width: 44px; height: 1px;
+  background: var(--accent); margin-top: 0.42em;
+}
+.reveal h3 { font-family: Inter, sans-serif; font-weight: 600; font-size: 0.82em;
+             color: var(--muted); letter-spacing: 0.02em; }
+
+.reveal p, .reveal li { color: var(--ink); line-height: 1.45; }
+.reveal .subhead {
+  color: var(--muted); font-size: 0.72em; line-height: 1.4;
+  max-width: 58ch; margin-top: -0.1em;
+}
+.reveal ul { margin-left: 0; }
+.reveal li { margin-bottom: 0.35em; }
+.reveal li::marker { color: var(--accent); }
+
+.reveal strong { color: var(--accent-dk); font-weight: 600; }
+.reveal em { color: var(--muted); font-style: italic; }
+
+/* Figures sit on the dark ground; the plots are rendered with a transparent
+   background and light-on-dark palette so nothing needs a white card behind it. */
+.reveal img, .reveal figure { background: transparent; box-shadow: none; }
+.reveal figcaption { display: none; }
+
+/* Key-figure row. Numbers carry the argument on the summary slides. */
+.kf { display: flex; gap: 2.2rem; margin-top: 0.7em; flex-wrap: wrap; }
+.kf > div { min-width: 5.5em; }
+.kf .n { font-family: Newsreader, Georgia, serif; font-size: 1.85em; line-height: 1;
+         color: var(--accent); font-variant-numeric: tabular-nums; }
+.kf .l { font-size: 0.48em; text-transform: uppercase; letter-spacing: 0.07em;
+         color: var(--muted); margin-top: 0.35em; max-width: 13ch; line-height: 1.3; }
+
+/* Two-column split used where a figure needs its argument beside it, not under
+   it. Quarto emits no wrapper for a fenced div written as `::: {}` with an empty
+   attribute list, so both columns must carry an explicit class. */
+.split { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.8rem; align-items: start; }
+.split > .col, .split > .note { min-width: 0; }
+.split .note { font-size: 0.6em; color: var(--muted); line-height: 1.5; }
+.split .note strong { color: var(--accent-dk); }
+.colhead {
+  display: block; font-family: Inter, sans-serif; font-weight: 600;
+  font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--accent-dk); margin-bottom: 0.7em;
+  padding-bottom: 0.4em; border-bottom: 1px solid var(--rule);
+}
+.split .note .colhead { font-size: 1.05em; }
+.split .col p { font-size: 0.6em; line-height: 1.5; color: var(--muted); }
+.split .col p strong { color: var(--accent-dk); }
+/* The final slide sets two prose columns side by side rather than a figure and a
+   caption, so it is given equal weight. */
+.split.even { grid-template-columns: 1fr 1fr; }
+
+.reveal table { font-size: 0.55em; font-variant-numeric: tabular-nums; }
+.reveal table th { border-bottom: 1px solid var(--ink); color: var(--ink);
+                   font-family: Inter, sans-serif; font-weight: 600; }
+.reveal table td { border: none; border-bottom: 1px solid var(--rule); }
+
+.reveal .slide-number { color: var(--muted); background: transparent; font-size: 0.5em; }
+.reveal .progress { color: var(--accent); height: 2px; }
+
+.reveal .footer-note {
+  position: absolute; bottom: 0.5em; left: 0; font-size: 0.42em;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+
+/* Cover slide. Quarto centres the title block by default; the deck is
+   left-aligned throughout, so the cover is brought into line with the rest. */
+.reveal section.quarto-title-block,
+.reveal section.quarto-title-block.center > * { text-align: left !important; }
+.reveal .quarto-title-block h1.title {
+  font-size: 2.15em; max-width: 19ch; line-height: 1.04; margin-bottom: 0.32em;
+}
+.reveal .quarto-title-block h1.title::after {
+  content: ""; display: block; width: 56px; height: 1px;
+  background: var(--accent); margin-top: 0.38em;
+}
+.reveal .quarto-title-block .subtitle, .reveal .quarto-title-block p.subtitle {
+  color: var(--muted); font-size: 0.56em; max-width: 46ch; line-height: 1.45;
+  font-family: Newsreader, Georgia, serif; text-align: left !important;
+  margin-top: 0.7em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
