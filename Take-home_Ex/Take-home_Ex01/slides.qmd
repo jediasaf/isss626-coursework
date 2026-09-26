@@ -55,6 +55,7 @@ CM <- readRDS(file.path(DIR_DERIVED, "covariates_models.rds"))
 EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
 TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
 MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
+BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 
 win_p <- P$win_p; bb <- st_bbox(win_p)
@@ -65,6 +66,10 @@ r_decay <- EX$summary_ext$r_g_within_10pct_of_1
 peak_r  <- EX$summary_ext$peak_r_m
 a26 <- MY$annual |> filter(year == 2026)
 hist_med <- median(MY$annual$cells[MY$annual$year != 2026])
+gA <- function(m) BC$aic2$dAIC[BC$aic2$model == m]
+d_null <- gA("null"); d_cover <- d_null - gA("cover"); d_road2 <- d_null - gA("road")
+pb <- BC$boot_compare |> filter(key == "par")
+cfb <- as.data.frame(BC$best_coef2)
 dnull <- CM$aic_tab$dAIC[CM$aic_tab$model == "null"]
 droad <- dnull - CM$aic_tab$dAIC[CM$aic_tab$model == "road"]
 knox_best <- ST$knox_tab |> arrange(desc(ratio)) |> slice(1)
@@ -328,33 +333,40 @@ contiguous ground within days rather than recurring in the same place weeks apar
 ```{r sl-rho}
 #| fig-height: 4.4
 #| fig-width: 5.6
-rd <- CM$rho_road
-ggplot(rd, aes(.data[[names(rd)[1]]] / 1000)) +
+rc <- bind_rows(lapply(names(BC$rho_cover), function(nm) {
+  d <- BC$rho_cover[[nm]]; names(d)[1] <- "x"
+  d |> transmute(x, rho, lo, hi,
+                 panel = ifelse(nm == "forest", "to mapped forest", "to plantation"))
+}))
+ggplot(rc, aes(x / 1000)) +
   geom_ribbon(aes(ymin = per_1000km2(lo), ymax = per_1000km2(hi)),
               fill = PAL$rule, alpha = 0.7) +
   geom_line(aes(y = per_1000km2(rho)), colour = PAL$accent, linewidth = 0.8) +
-  labs(x = "Distance to nearest road (km)", y = "Burned cells per 1,000 km²") +
-  theme_ex01(base_size = 13)
+  facet_wrap(~panel, scales = "free", nrow = 2) +
+  labs(x = "Distance (km)", y = "Burned cells per 1,000 km\u00b2") +
+  theme_ex01(base_size = 12)
 ```
 :::
 ::: {.note}
-**Access dominates.** Of `r fmt_n(round(dnull))` AIC units separating my covariate
-model from an intercept-only model, distance to road accounts for
-`r fmt_n(round(droad))`.
+**Land cover, not access.** Of `r fmt_n(round(d_null))` AIC units over an
+intercept-only model, land cover recovers `r fmt_n(round(d_cover))` and roads
+`r fmt_n(round(d_road2))`. Same parameter count.
 
-**Mapped drainage adds almost nothing** (13 AIC units). That is not evidence
-drainage does not matter: OSM does not map the Mega Rice Project canal network, so
-my covariate is measuring mapping coverage.
+*My first version had only roads and waterways, and concluded access dominated.
+That was the thin covariate set talking.*
 
-**Cluster scale `r fmt_n(sig_t)` m**, 95% within **`r fmt_n(r95)` m**, from a Thomas
-process I fitted to g_inhom by minimum contrast.
+**The signs are an agricultural frontier.** Intensity climbs towards plantation and
+farmland (z = `r round(cfb["Dplantation_km","Zval"], 0)`) and falls towards mapped
+forest (z = `r round(cfb["Dforest_km","Zval"], 0)`). Fire on cleared ground, not in
+standing forest.
 
-*My first fit left the trend in and returned
-`r fmt_n(round(TH$kppm_hom$sigma_m))` m and 440 events per cluster, which is really
-the peat belt re-described as a few giant clusters. Trend and interaction are not
-separately identifiable unless I force them apart.*
+**Cluster scale `r round(pb$point_sigma_m)` m**, parametric bootstrap
+`r round(pb$lo95_m)` to `r round(pb$hi95_m)` m, with
+`r round(pb$r95_lo_m/1000, 1)` to `r round(pb$r95_hi_m/1000, 1)` km holding most of
+a cluster.
 
-Residual K shows my covariates explain *location*, not *contagion*.
+*Resampling points with replacement gave an interval that excluded its own point
+estimate. That is not a valid bootstrap for a point process.*
 :::
 :::
 
@@ -403,9 +415,9 @@ here.*
 **Reallocate by intensity, not by area.** Two orders of magnitude separate the
 southern peat belt from the northern interior.
 
-**A containment geometry.** First ring `r round(r95/1000, 1)` km, elevation out to
-about `r round(r_decay/1000, 1)` km, days not weeks. Two methods I ran independently
-agree on the dominant scale.
+**A containment geometry.** First ring `r round(pb$r95_lo_m/1000, 1)` to
+`r round(pb$r95_hi_m/1000, 1)` km, elevation out to about
+`r round(r_decay/1000, 1)` km, days not weeks.
 
 **A monitoring limit.** I cannot resolve anything below 375 m. A finer answer needs
 a different sensor, not a different statistic.
@@ -417,7 +429,8 @@ a different sensor, not a different statistic.
 whether access aids suppression or enables ignition, and the two point opposite
 ways.
 
-**Any claim about drainage.** My covariate measures OSM coverage.
+**Drainage, or land cover, as a lever.** Both covariates are limited by OSM
+coverage, and cleared land, roads and forest edges are jointly determined.
 
 **Any claim about time of day.** Four fixed overpasses.
 

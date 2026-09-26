@@ -1,0 +1,22 @@
+land-cover covariates rebuilt; checking coverage
+       group undefined_share
+1     forest               0
+2 plantation               0
+   model      AIC npar       dAIC
+1    all 301117.6    5    0.00000
+2  cover 301196.7    3   79.08266
+3 access 302663.1    3 1545.46402
+4   road 302676.5    2 1558.87995
+5   null 304667.8    1 3550.23939
+parametric bootstrap from the fitted Thomas process, 199 simulations
+  50/199
+  100/199
+  150/199
+Warning messages:
+1: Default settings for pcfinhom have changed in spatstat.explore 3.8-1 
+2: Default value of normpower has changed in pcfinhom 
+                                      method point_sigma_m median_m lo95_m
+1 parametric, from the fitted Thomas process          1055    965.2  901.5
+  hi95_m r95_point_m r95_lo_m r95_hi_m n_ok n_sim mean_n_sim
+1   1025        2581     2207     2509  199   199         NA
+corrected land cover and parametric bootstrap cached
