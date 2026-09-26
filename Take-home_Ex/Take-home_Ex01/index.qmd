@@ -1571,7 +1571,7 @@ clustering is organised around, or how big a cluster actually is. Both are
 answerable, and both are what turn a statistical result into something an agency
 could act on, so I went after them.
 
-## What is the clustering organised around?
+## What is the clustering organised around? {#sec-covariates}
 
 Peat fire here is human in ignition and made possible by drainage. Two mapped
 covariates proxy those mechanisms: distance to the road network for access and
@@ -1590,6 +1590,16 @@ I compute distances on that buffered frame and only then crop to the analysis
 window. If I had computed them on the clipped window I would have biased every
 distance upward for cells near the boundary, because their nearest road is often
 outside the regency entirely.
+
+The same reasoning caught a bug in my first land-cover attempt, and it is worth
+recording because it fails quietly. `distmap` returns distances on the enclosing
+frame of whatever you hand it. Handed the union of the landuse polygons, that frame
+is their own bounding box, so the covariate was undefined across 98% of the regency
+and `ppm` fitted on the 2% that remained. The AIC values it returned were in the
+hundreds against tens of thousands for the other models, which is the only reason I
+looked. Evaluating `distfun` over the analysis window fixes it. Nothing in the
+report rests on the broken version, but a less absurd set of numbers would have gone
+unnoticed.
 
 The `r fmt_n(CM$n_water)` waterway features against `r fmt_n(CM$n_roads)` road
 features is itself my first result here, and it is a warning rather than a finding.
@@ -2249,6 +2259,58 @@ produce thousands of burned cells, wet years single digits. Capability sized to 
 median would be overwhelmed this year; capability sized to 2026 would idle for
 years. That argues for a surge model keyed to drought forecasts, not a standing
 establishment sized to an average that never occurs.
+
+# What I got wrong {#sec-corrections}
+
+This report revises nine of its own conclusions. They are scattered through the
+sections where they happened, which is the right place for them but makes the
+pattern hard to see, so they are collected here.
+
+I am not presenting this as a virtue. Several were avoidable, and two of them
+(the distance cap and the covariate set) produced confidently stated results that
+stood for a while before I checked them. The reason they are all still in the text
+is that a reader cannot tell a robust result from a lucky one unless they can see
+which choices were tested and which were merely made.
+
+```{r tbl-corrections}
+#| label: tbl-corrections
+#| tbl-cap: "Every conclusion in this report that I reversed, what caused it, and where the corrected version sits."
+tibble::tribble(
+  ~`What I first concluded`, ~`Why it was wrong`, ~`Where the corrected version sits`,
+  "Pulang Pisau leads Kalimantan on detection count",
+  "Selected from a seven-day sample. Over the full window Ketapang leads; the selection rule was restated against the whole record",
+  "Choosing the regency",
+  "Residual clustering is exhausted by about 2 km",
+  "The r range was capped at 5 km, and every statistic sat outside its envelope across all of it. Extended to 20 km the excess decays by about 7 km",
+  "Extending the range",
+  "The pattern is isotropic at short range",
+  "R2 detects only a single preferred axis and is blind to four-fold structure. The rose diagram showed spikes it scored as nothing",
+  "Testing isotropy",
+  "Four-fold structure disappears beyond the shortest band",
+  "R4 is in turn blind to eight-fold structure, where the diagonals cancel the axes. R8 was needed",
+  "Testing isotropy",
+  "Anisotropy would follow wind and canal lines",
+  "The directional structure that exists is geometric, from the 375 m cell grid and the sensor scan grid, and its axis matches neither drainage nor roads",
+  "Testing isotropy",
+  "The cluster scale is about 3.3 km",
+  "A Thomas process with no trend term absorbs the first-order trend into the cluster component. Fitted to the inhomogeneous pcf it returns about 1.06 km",
+  "How large is a cluster",
+  "A bootstrap interval of 1,278 to 1,383 m for that scale",
+  "Resampling points with replacement is not a valid bootstrap for a point process. The interval excluded its own point estimate",
+  "How large is a cluster",
+  "Access does nearly all the explanatory work",
+  "The covariate set held only roads and waterways. Adding land cover, distance to plantation and forest recovers far more",
+  "What the clustering is organised around",
+  "The 90-day API retention makes 2026 impossible to place in context",
+  "The standard archive is empty for 2026 only because of a five-month reprocessing lag. Earlier years are served normally, and 2026 turns out to be second of fourteen",
+  "Was 2026 unusual"
+) |> kable()
+```
+
+One further correction is not in that table because it never reached a reported
+number: the land-cover distance maps were initially undefined over 98% of the
+window, described in @sec-covariates. It is recorded because the failure was silent,
+and the only signal was an AIC value too absurd to ignore.
 
 # Limitations {#sec-limitations}
 
