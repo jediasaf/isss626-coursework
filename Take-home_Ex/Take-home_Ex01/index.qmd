@@ -24,41 +24,37 @@ format:
     number-sections: true
 abstract: |
   I analyse VIIRS active-fire detections over Pulang Pisau Regency, Central
-  Kalimantan, for the 2026 dry season. I picked this regency because it has the
-  highest detection density of any Kalimantan regency big enough for second-order
-  estimation at the kilometre scale. I wanted to answer three things: where the
-  detections concentrate, whether they interact beyond that concentration, and what
-  a fire agency could honestly do with the answer.
+  Kalimantan, across the 2026 dry season, asking where they concentrate, whether
+  they interact beyond that concentration, and what a fire agency could honestly do
+  with the answer.
 
-  The thing that shaped the whole analysis is a distinction I nearly missed. A VIIRS
-  hotspot is a 375 m pixel seen during one satellite overpass, not a fire. I measured
-  the consequence: the raw detection count overstates the number of distinct burning
-  locations by a factor of about 3.4. So testing the raw pattern against complete
-  spatial randomness rejects the null overwhelmingly and tells me nothing, because the
-  sensor guarantees that result. I switched the unit of analysis to the 375 m cell and
-  the null to an inhomogeneous Poisson process, re-estimating the reference intensity
-  for every simulated pattern. That gives a test that could fail. It does not.
+  One distinction shaped everything. A VIIRS hotspot is a 375 m pixel seen during a
+  single overpass, not a fire, and I measured the consequence: the raw count
+  overstates distinct burning locations by a factor of about 3.4. Testing that
+  pattern against complete spatial randomness rejects the null overwhelmingly and
+  establishes nothing, because the sensor guarantees the result. I moved the unit of
+  analysis to the 375 m cell and the null to an inhomogeneous Poisson process, with
+  the reference intensity re-estimated for every simulated pattern. That test could
+  fail. It does not.
 
-  What I found: clustering beyond the trend is strongest at about 440 m and only
-  decays to within 10% of no excess by about 7 km. That last number corrects my own
-  first attempt, which capped the distance range at 5 km and concluded the excess
-  stopped at 2 km. A Thomas process fitted after removing the trend puts the dominant
-  cluster scale at 1.1 km, with 95% of a cluster inside 2.6 km. Fitted without
-  removing the trend it returns 3.3 km and 440 events per cluster, which is really
-  just the peat belt re-described as a few giant clusters. A Knox permutation test
-  finds space-time interaction concentrated within a few hundred metres and a few
-  days. On covariates I was wrong once and corrected it: with only roads and
-  waterways in the model, distance to road looked dominant. Adding OSM land cover
-  showed distance to plantation and to forest recovering nearly all the explanatory
-  power instead, with signs describing fire on cleared and cultivated ground rather
-  than fire following road access.
+  Clustering beyond the trend peaks at about 440 m and decays to within 10% of no
+  excess only by roughly 7 km. A Thomas process fitted after the trend is removed
+  puts the cluster standard deviation near a kilometre, with a parametric bootstrap
+  interval of 0.90 to 1.03 km and 2.2 to 2.5 km holding most of a cluster. An areal
+  analysis agrees from different machinery: Moran's I on hexagons falls from 0.69 on
+  raw counts to 0.28 once the intensity is removed, and to 0.07 as the hexagons grow
+  past the interaction scale. A Knox permutation test finds space-time interaction
+  concentrated within a few hundred metres and a few days.
 
-  A late correction reframes all of it. I had recorded that I could not say whether
-  2026 was a severe season, because the API retains only ninety days. That was wrong.
-  The standard-processing archive is empty for 2026 only because of a five-month
-  reprocessing lag, and the same endpoint serves earlier years normally. Pulling the
-  identical window for every year since 2013 puts 2026 second of fourteen, at roughly
-  fifty times the median. So what I describe here is the structure of a severe
+  Three of my own conclusions were wrong and are corrected in place, because each
+  correction is more informative than the claim it replaced. A 5 km distance cap put
+  the end of dependence at 2 km when it is nearer 7. A covariate set of roads and
+  waterways made access look dominant until land cover showed fire tracking cleared
+  and cultivated ground instead. And I had recorded that the API's ninety-day
+  retention made it impossible to judge whether 2026 was severe, which was a wrong
+  inference from one year's worth of empty queries: the archive serves earlier years
+  normally, and pulling the identical window back to 2013 puts 2026 second of
+  fourteen, at roughly fifty times the median. What follows describes a severe
   season, not a typical one.
 execute:
   echo: true
@@ -130,7 +126,7 @@ Fire detections are point events in space and time, so point-pattern analysis is
 the obvious tool. What I wanted to work out in this exercise is what that tool can
 honestly support once you take the data seriously.
 
-## The problem the data handed me
+## The problem the data handed me {#sec-not-a-fire}
 
 A VIIRS active-fire detection is not a fire. It is a 375 m pixel where a radiometer
 measured a thermal anomaly during one overpass. A peat fire covering ten square
@@ -147,10 +143,10 @@ build a report on a rejection that was guaranteed.
 
 Two changes follow, and they are the methodological content of this exercise. The
 unit of analysis becomes the 375 m cell, not the detection. The null becomes an
-inhomogeneous Poisson process, not complete spatial randomness. Section 7 is where
+inhomogeneous Poisson process, not complete spatial randomness. @sec-second-order is where
 that earns its keep.
 
-# Research questions and objectives
+# Research questions and objectives {#sec-questions}
 
 I set four questions, each with a null and a reason for asking it. I wrote these
 before running the second-order analysis, so the report can be read as a test of
@@ -187,7 +183,7 @@ them. This conditions on both marginal patterns, which matters, because it means
 rejection cannot be explained away by the seasonal ramp or by the spatial
 concentration. I already know both of those exist.
 
-I added a fifth question as a value-added extension in Section 9, because the four
+I added a fifth question as a value-added extension in @sec-valueadded, because the four
 above tell me clustering exists without telling me what it is organised around or
 how big a cluster actually is.
 
@@ -316,7 +312,7 @@ right depends on which question I am asking:
 | `ppp_cell` | one event per 375 m cell over the window | primary spatial analysis |
 
 I use `ppp_cell` as the primary spatial pattern because it removes the
-repeat-detection inflation I described in Section 1.1. A cell that burned for three
+repeat-detection inflation I described in @sec-not-a-fire. A cell that burned for three
 weeks and was detected eighty times contributes one point, not eighty.
 
 For the representative point of each cell I take the earliest detection in it. That
@@ -343,7 +339,7 @@ I used the administrative boundary rather than a buffered or natural window beca
 the management question is administrative: a regency fire agency has jurisdiction to
 that line. The cost is a real edge effect, since fires obviously do not stop at a
 boundary, and I handle it with edge correction rather than pretending it is not
-there (Section 5).
+there (@sec-assumptions).
 
 ## Temporal study window
 
@@ -378,8 +374,7 @@ constraint. My pipeline is built to run unattended from a single key, and the ar
 service cannot be driven that way.
 
 The honest statement is therefore that I chose a 87-day window served by the API over
-a multi-year window that would have required an out-of-band request. Section 12
-records what that cost me.
+a multi-year window that would have required an out-of-band request. @sec-limitations records what that cost me.
 
 I want to be careful not to oversell the window. It is what was available. But it
 does happen to span the onset, escalation and peak of the 2026 dry season, which is
@@ -387,7 +382,7 @@ the period a fire agency actually acts over. If the retention limit had cut off 
 peak instead of the wet-season baseline I would have had to change the study design
 entirely. The honest cost is that I cannot make any wet-season comparison, so nothing
 in this report speaks to the seasonal amplitude of fire activity, only to its
-structure within one season. I repeat that in Section 12 because it is a real limit
+structure within one season. I repeat that in @sec-limitations because it is a real limit
 on what I can claim.
 
 ## My completeness audit, and a real outage
@@ -548,7 +543,7 @@ dressed up as a method, and the reader deserves to see which one it is.
 
 ## My evidence that a detection is not a fire
 
-The claim I made in Section 1.1 is checkable, so I checked it. If detections were
+The claim I made in @sec-not-a-fire is checkable, so I checked it. If detections were
 independent events, most occupied cells would be detected exactly once. They are
 not.
 
@@ -613,7 +608,7 @@ the 159 MB national ADM2 file through a bounding-box filter at the GDAL level ra
 than loading it and subsetting afterwards, so the full national geometry is never
 held in memory.
 
-# Analytical assumptions and methodological decisions
+# Analytical assumptions and methodological decisions {#sec-assumptions}
 
 Listing assumptions is easy. What I found harder, and more useful, was working out
 where each one might actually fail, so I have written each with the reason I think
@@ -654,7 +649,7 @@ serious mistake, and an easy one to make.</dd>
 <dt>A5. For the spatial analysis, time is collapsed</dt>
 <dd>My `ppp_cell` pattern treats a cell burning in July and a cell burning in
 September as the same kind of point. That is fine for "where does fire occur over a
-season" and wrong for "where is fire now". I relax it in Section 8.</dd>
+season" and wrong for "where is fire now". I relax it in the spatio-temporal analysis.</dd>
 
 <dt>A6. The intensity used as the inhomogeneous null is estimable from the data</dt>
 <dd>This is the weakest link in my second-order analysis and I want to be upfront
@@ -682,7 +677,7 @@ it does not bias $K$, $L$ or $g$. It would wreck a directional analysis.</dd>
 <dd>Permuting time labels across fixed locations conditions on both marginals. That
 makes it the correct null for "is there interaction beyond the two separate
 patterns" and the wrong null for "is the seasonal ramp real", which it simply
-assumes. I intend that. I establish the ramp in Section 6 and I am not trying to
+assumes. I intend that. I establish the ramp in the first-order analysis and I am not trying to
 test it here.</dd>
 </dl>
 ```
@@ -725,7 +720,7 @@ I still plot the pointwise envelopes, because they show me *where* on the $r$ ax
 the departure sits and a single p-value cannot. But every claim of significance I
 make in this report is backed by the MAD or DCLF global test, not by the band.
 
-# First-order analysis: where, and when
+# First-order analysis: where, and when {#sec-first-order}
 
 ## The pattern in its region
 
@@ -789,8 +784,7 @@ magnitude at every resolution, and the variance-to-mean ratio runs from
 `r min(FO$quad_summary$vmr)` to `r max(FO$quad_summary$vmr)` against a null of 1.
 Complete spatial homogeneity is rejected with certainty.
 
-It should persuade nobody. The result was guaranteed by the data-generating process
-in Section 1.1, and by the geography: a regency that is half drained peatland and
+It should persuade nobody. The result was guaranteed by the data-generating process in @sec-not-a-fire, and by the geography: a regency that is half drained peatland and
 half intact landscape cannot have uniform fire intensity. Quadrat counts also
 inherit an arbitrary origin and cell size and discard everything within a quadrat.
 The one useful column is the VMR, which says *how far* from uniform the pattern is
@@ -818,15 +812,14 @@ Cross-validation selectors choose very small bandwidths when a pattern is strong
 clustered at short range. Their criteria reward a surface that reproduces the local
 bursts, so clustering gets absorbed into the intensity estimate. For some purposes
 that is what you want. Not here. The same estimate becomes the reference intensity
-for the second-order test in Section 7.3, and if $\hat{\lambda}(u)$ has already
+for the second-order test in @sec-honest-test, and if $\hat{\lambda}(u)$ has already
 soaked up the sub-kilometre clustering then asking whether clustering survives its
 removal is rigged. The answer would be no by construction, and confidently wrong.
 
 So I fixed the bandwidth at **`r fmt_n(FO$sigma_main)` m**, on a criterion I set
 before looking at the surfaces: it has to exceed the interaction range, so that
 trend and interaction are estimated by separate parts of my analysis instead of
-competing for the same signal. Four kilometres sits above the interaction range
-Section 7 goes on to find, inside the interval spanned by the two components of
+competing for the same signal. Four kilometres sits above the interaction range @sec-second-order goes on to find, inside the interval spanned by the two components of
 `bw.scott` (`r fmt_n(round(FO$sigma_scott[1]))` m and
 `r fmt_n(round(FO$sigma_scott[2]))` m), and below `bw.CvL`
 (`r fmt_n(round(FO$sigma_CvL))` m).
@@ -858,7 +851,7 @@ ggplot(bw_df) +
   theme_map(base_size = 9)
 ```
 
-## The intensity surface I report
+## The intensity surface I report {#sec-intensity}
 
 ```{r fig-kde}
 #| label: fig-kde
@@ -947,9 +940,9 @@ ggplot(FO$overpass, aes(hr_bin, n, fill = daynight)) +
   theme_ex01()
 ```
 
-# Second-order analysis: clustering, inhibition, or randomness
+# Second-order analysis: clustering, inhibition, or randomness {#sec-second-order}
 
-## The straw man I had to test anyway
+## The straw man I had to test anyway {#sec-strawman}
 
 ```{r fig-csr}
 #| label: fig-csr
@@ -984,7 +977,7 @@ than I expected.
 
 ```{r fig-pcf}
 #| label: fig-pcf
-#| fig-cap: "Pair correlation function of the primary pattern, log scale. The dotted line marks the 375 m VIIRS pixel dimension. What I take from it: g(r) is suppressed at very short range and peaks at about 460 m, immediately above the pixel width. This is not fires avoiding one another. It is the sensor's resolution: two detections cannot be much closer than one pixel, because one pixel yields one detection. That short-range suppression is an instrument artefact and is the clearest single piece of evidence that this pattern records observation rather than events. Above the peak, g(r) decays slowly and is still above 3 at 2.9 km, nowhere near its asymptote of 1. So spatial dependence extends well beyond the 5 km range I plot here, which is what pushed me to Section 7.5."
+#| fig-cap: "Pair correlation function of the primary pattern, log scale. The dotted line marks the 375 m VIIRS pixel dimension. What I take from it: g(r) is suppressed at very short range and peaks at about 460 m, immediately above the pixel width. This is not fires avoiding one another. It is the sensor's resolution: two detections cannot be much closer than one pixel, because one pixel yields one detection. That short-range suppression is an instrument artefact and is the clearest single piece of evidence that this pattern records observation rather than events. Above the peak, g(r) decays slowly and is still above 3 at 2.9 km, nowhere near its asymptote of 1. So spatial dependence extends well beyond the 5 km range I plot here, which is what pushed me to the extended range in Section 7.6."
 #| fig-height: 3.6
 pcf_df <- SO$pcf_obs |> filter(is.finite(trans), r > 0)
 ggplot(pcf_df, aes(r, trans)) +
@@ -1002,10 +995,10 @@ ggplot(pcf_df, aes(r, trans)) +
   theme_ex01()
 ```
 
-## The test that can fail
+## The test that can fail {#sec-honest-test}
 
 These are the statistics I trust. The null is an inhomogeneous Poisson process
-whose intensity is the kernel estimate from Section 6.5, so everything the
+whose intensity is the kernel estimate from @sec-intensity, so everything the
 first-order analysis established sits inside the null already. A departure now means
 residual interaction, not large-scale variation. That is Q3.
 
@@ -1049,7 +1042,7 @@ of Q3.
 Where the clustering ends is a different matter, and here a decision of mine got in
 the way. I capped r at 5 km on the reasoning that longer lags in an elongated window
 rest on too few pairs. Across that whole range both curves sit outside the envelope.
-All 5 km establishes is that dependence extends *at least* that far. Section 7.5
+All 5 km establishes is that dependence extends *at least* that far. @sec-extended
 extends the range.
 
 The direction of the remaining bias matters for how confidently this can be
@@ -1058,7 +1051,7 @@ under test lets it absorb part of the clustering, which widens the envelope and
 makes the test *harder* to reject. The rejection therefore stands despite a
 conservative procedure, not because of a permissive one.
 
-## Testing isotropy, instead of just assuming it
+## Testing isotropy, instead of just assuming it {#sec-isotropy}
 
 Assumption A7 says $K$, $L$ and $g$ all average over direction, and that I expected
 real anisotropy because peat fires spread with the wind and along canal lines.
@@ -1075,7 +1068,7 @@ more room that way. And intensity is concentrated in a south-southeast band, so 
 pair drawn from inside it inherits that elongation.
 
 I therefore built the null the way I built it for clustering: simulate from an
-inhomogeneous Poisson process with the same $\hat{\lambda}$ from Section 6, which
+inhomogeneous Poisson process with the same $\hat{\lambda}$ from @sec-first-order, which
 absorbs the window geometry and the first-order trend together.
 
 **Two statistics, and the second one is the point.** Orientations here are axial, so
@@ -1203,8 +1196,7 @@ organised along-scan and along-track, and for a polar orbiter those project to
 roughly cardinal directions on the ground. So the raw detections carry a
 quasi-rectangular sampling geometry before I do anything to them.
 
-Neither component is fire. Both are instrument geometry, which is the warning from
-Section 1.1 applied to my own directional test.
+Neither component is fire. Both are instrument geometry, which is the warning from @sec-not-a-fire applied to my own directional test.
 
 ### At longer range, a real but negligible tilt
 
@@ -1293,11 +1285,10 @@ ggplot(sd_df, aes(r, v, colour = pattern)) +
   theme_ex01()
 ```
 
-## Extending the range, after getting it wrong
+## Extending the range, after getting it wrong {#sec-extended}
 
 I set the 5 km cap because long lags in an elongated window rest on few pairs. That
-reasoning is fine, but 5 km was more conservative than I needed. The rule I stated in
-Section 5 caps $r$ at a quarter of the window's shortest dimension, and the window is
+reasoning is fine, but 5 km was more conservative than I needed. The rule I stated in @sec-assumptions caps $r$ at a quarter of the window's shortest dimension, and the window is
 `r round((bb["xmax"]-bb["xmin"])/1000)` km wide, so 20 km was admissible the whole
 time. Extending to 20 km is not me granting myself a post-hoc licence, it is me
 finally applying the rule I had already written down.
@@ -1351,7 +1342,7 @@ cc <- EX$correction_cmp
 cc_med <- 100 * median(abs(cc$rel_diff), na.rm = TRUE)
 ```
 
-I cross-checked the extended curve against my Section 7.3 estimate over the lags
+I cross-checked the extended curve against my @sec-honest-test estimate over the lags
 both cover, since both use the translation correction. The median relative difference
 is `r sprintf("%.2f%%", cc_med)`, so changing the $r$ grid has not quietly changed
 the estimate underneath me.
@@ -1365,7 +1356,7 @@ looked far enough, and the conclusion I drew from it, that the first-order surfa
 was a sufficient description above 2 km, was wrong. It is not sufficient at any lag
 below roughly 7 km.
 
-# Spatio-temporal analysis
+# Spatio-temporal analysis {#sec-spacetime}
 
 ## Space-time interaction
 
@@ -1382,7 +1373,7 @@ ST$knox_tab |> transmute(
 
 ```{r fig-knox}
 #| label: fig-knox
-#| fig-cap: "Knox ratio of observed to expected close pairs, by spatial and temporal threshold. What I take from it: interaction is strongest in the tightest cell, pairs within a few hundred metres and one day, and decays monotonically as either threshold widens. That shape is the signature of local, short-lived propagation: a cell that burns today makes a neighbouring cell more likely to burn tomorrow, and the effect is largely spent within a few days and a kilometre or two. The decay in the time direction is steeper than in the space direction, which is consistent with fires spreading over contiguous ground within days rather than recurring in the same place weeks apart. Because the null holds both marginals fixed, none of this can be attributed to the seasonal escalation shown in Figure 8."
+#| fig-cap: "Knox ratio of observed to expected close pairs, by spatial and temporal threshold. What I take from it: interaction is strongest in the tightest cell, pairs within a few hundred metres and one day, and decays monotonically as either threshold widens. That shape is the signature of local, short-lived propagation: a cell that burns today makes a neighbouring cell more likely to burn tomorrow, and the effect is largely spent within a few days and a kilometre or two. The decay in the time direction is steeper than in the space direction, which is consistent with fires spreading over contiguous ground within days rather than recurring in the same place weeks apart. Because the null holds both marginals fixed, none of this can be attributed to the seasonal escalation in @fig-daily."
 #| fig-height: 3.6
 ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
   geom_tile(colour = "white", linewidth = 1.2) +
@@ -1399,7 +1390,7 @@ ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
 
 ```{r fig-rr}
 #| label: fig-rr
-#| fig-cap: "Probability that a burned cell belongs to the peak period rather than the onset period, as a spatially varying surface. Values above the overall peak share indicate areas where fire arrived late; values below indicate areas that burned early. What I take from it: the surface is not flat, so the episode is not a uniform intensification of one fixed footprint. The southern and southeastern peat burned disproportionately early, while the northern and western margins of the active area contribute disproportionately to the peak period. Read together with the trajectory in the next figure, this describes an episode that begins in the most degraded peat and expands outward from it. The operational implication I draw is that where fire is early in the season carries information about where it will appear later, which my static seasonal intensity map cannot convey."
+#| fig-cap: "Probability that a burned cell belongs to the peak period rather than the onset period, as a spatially varying surface. Values above the overall peak share indicate areas where fire arrived late; values below indicate areas that burned early. What I take from it: the surface is not flat, so the episode is not a uniform intensification of one fixed footprint. The southern and southeastern peat burned disproportionately early, while the northern and western margins of the active area contribute disproportionately to the peak period. Read together with the weekly trajectory below, this describes an episode that begins in the most degraded peat and expands outward from it. The operational implication I draw is that where fire is early in the season carries information about where it will appear later, which my static seasonal intensity map cannot convey."
 #| fig-height: 6.2
 rr_df <- im_df(ST$rr, "p")
 share_peak <- as.numeric(ST$season_counts["peak"]) / sum(ST$season_counts)
@@ -1463,8 +1454,7 @@ contiguity weights and a permutation test on counts share no assumptions with
 $K_{inhom}$ and its envelopes. If the two agree, that is worth more than either
 alone.
 
-It needs setting up carefully, because the obvious version repeats the mistake
-Section 7.1 is built around. Moran's I on raw burned-cell counts will be large and
+It needs setting up carefully, because the obvious version repeats the mistake @sec-strawman is built around. Moran's I on raw burned-cell counts will be large and
 significant here whatever the fire does. Intensity varies by two orders of
 magnitude between the peat belt and the northern interior, so adjacent hexagons in
 the south are both high and adjacent hexagons in the north are both low. The counts
@@ -1477,7 +1467,7 @@ variable analysed is the Pearson residual
 $(\text{observed} - \text{expected}) / \sqrt{\text{expected}}$. That is the areal
 analogue of swapping CSR for an inhomogeneous Poisson null.
 
-**Hexagons, not squares.** Section 7.5 found that a square 375 m lattice imprints
+**Hexagons, not squares.** @sec-isotropy found that a square 375 m lattice imprints
 its geometry on short-range structure. A square aggregation grid has the same
 defect: four edge neighbours and four corner neighbours sitting at different
 distances. A hexagonal tessellation gives six neighbours all equidistant.
@@ -1560,7 +1550,7 @@ above it.
 `r sig_res` survive correction. The residual autocorrelation is genuine in
 aggregate and too thin to localise.
 
-That matters for how the earlier results should be used. Section 9 gives a cluster
+That matters for how the earlier results should be used. @sec-cluster-size gives a cluster
 radius near a kilometre, which is a statement about typical scale. It is not a
 claim that particular places have persistently more clustering than the intensity
 surface predicts, and this section is the check that would have found such places
@@ -1573,7 +1563,7 @@ stable across them and the residual magnitude is not. And Benjamini-Hochberg acr
 to mark about 60 hexagons by chance alone, which would have made a convincing and
 entirely spurious map of residual hotspots.
 
-# Value-added analysis
+# Value-added analysis {#sec-valueadded}
 
 So far I have established that fire is clustered, where it concentrates, and over
 what distance and time the interaction operates. What I still cannot say is what the
@@ -1634,7 +1624,7 @@ if (!is.null(rho_df) && nrow(rho_df)) {
          title = "Access explains a great deal, mapped drainage very little",
          subtitle = "Dashed line, mean intensity over the window.") +
     theme_ex01(base_size = 9)
-} else cat("Covariate estimation unavailable; see Section 11.\n")
+} else cat("Covariate estimation unavailable; see the limitations.\n")
 ```
 
 ```{r tbl-aic}
@@ -1679,8 +1669,9 @@ this section had it wrong.
 **Land cover carries most of the signal, not access.** The covariate models improve
 on the intercept-only model by `r fmt_n(round(dn2))` AIC units. Distance to forest
 and to plantation alone recovers `r fmt_n(round(d_cover))` of that. Distance to road
-and to water alone recovers `r fmt_n(round(d_access))`. Both specifications use
-three parameters, so the comparison is clean, and the land-cover pair wins by
+and to water alone recovers `r fmt_n(round(d_access))`, and distance to road by
+itself `r fmt_n(round(d_road))`. The two pairs use the same three parameters, so the
+comparison is clean, and land cover wins by
 `r fmt_n(round(g("access") - g("cover")))` AIC units.
 
 My earlier claim that access did nearly all the work was an artefact of a thin
@@ -1761,7 +1752,7 @@ ggplot(rk, aes(r, .data[[ycol]])) +
   theme_ex01()
 ```
 
-## How large is a cluster?
+## How large is a cluster? {#sec-cluster-size}
 
 A significance test says clustering exists. A fitted cluster process says how big it
 is, which is the form a planner can use. Getting that number right meant discarding
@@ -1932,7 +1923,7 @@ ggplot(ls_df) +
   theme_map()
 ```
 
-# Was 2026 unusual?
+# Was 2026 unusual? {#sec-multiyear}
 
 An earlier draft said the 87-day window made it impossible to judge whether 2026
 was a severe season, and blamed the FIRMS API's 90-day retention. The retention is
@@ -2019,7 +2010,7 @@ of fifty.
 
 There is one thing this understates rather than overstates. My window closes on
 25 September because that was the last complete day before I pulled the data, and
-Section 10.3 shows October can be the peak month: in 2023 it carried more burned
+@sec-normal-year shows October can be the peak month: in 2023 it carried more burned
 cell-days than September did. Every year in the comparison is truncated at the same
 point, so the ranking is fair, but the 2026 figure is a season in progress. On the
 2023 pattern it could still grow substantially.
@@ -2068,7 +2059,7 @@ cannot say. There may be too few events in a median year to estimate them at all
 
 # Integrated findings and discussion
 
-Here are my four questions from Section 2, answered together, with how confident I
+Here are my four questions from @sec-questions, answered together, with how confident I
 am in each.
 
 ```{r tbl-integrate}
@@ -2259,14 +2250,14 @@ median would be overwhelmed this year; capability sized to 2026 would idle for
 years. That argues for a surge model keyed to drought forecasts, not a standing
 establishment sized to an average that never occurs.
 
-# Limitations
+# Limitations {#sec-limitations}
 
 ```{r tbl-limits}
 #| label: tbl-limits
 #| tbl-cap: "What limits my findings, what each limitation does to them, and what I would need to resolve it."
 tibble::tribble(
   ~Limitation, ~Consequence, ~Resolution,
-  "All second-order results are estimated inside a single season, and Section 10 shows that season is an extreme one",
+  "All second-order results are estimated inside a single season, and the multi-year section shows that season is an extreme one",
   "2026 ranks second of fourteen years at roughly fifty times the median. The cluster scale, the interaction range and the covariate relationships are therefore measured under severe conditions. Whether they hold in a median year, when this regency records a few dozen burned cells rather than eight thousand, is untested and may not be estimable at all.",
   "Re-run the full second-order pipeline on 2015 and 2019, the other high-fire years, and on pooled low-fire years",
   "2026 comes from the near-real-time product; every comparison year comes from the reprocessed standard product",
@@ -2288,7 +2279,7 @@ tibble::tribble(
   "Conservative test, so rejections stand; but the size of the excess clustering is not reliably estimated.",
   "Split-sample estimation of lambda, or a parametric trend from independent covariates",
   "Isotropy, tested rather than assumed",
-  "No longer a limitation at the scales used. Section 7.5 finds the pattern isotropic below 1.5 km, where the clustering lives. A weak departure beyond that reaches only R = 0.024 and cannot be separated from residual first-order structure.",
+  "No longer a limitation at the scales used. The isotropy test finds the pattern isotropic below 1.5 km, where the clustering lives. A weak departure beyond that reaches only R = 0.024 and cannot be separated from residual first-order structure.",
   "A larger bandwidth or a parametric trend, to establish whether the long-range axis is interaction or leftover trend",
   "OpenStreetMap coverage is incomplete for both drainage and land cover",
   "The drainage covariate is uninformative and must not be read as a null result about drainage. The land-cover covariates are informative but rest on a few dozen polygons covering about 31% of the window, so part of what they measure is mapping effort.",
@@ -2306,7 +2297,7 @@ tibble::tribble(
   "Seven days rest on one platform, so counts there are depressed. The dates carry 0.22% of events and all fall before the dry-season ramp, so no conclusion turns on them.",
   "None available: the absence is in the FIRMS near-real-time record itself, confirmed by repeated re-query",
   "The r range was initially capped at 5 km, too short to locate the end of dependence",
-  "An earlier draft concluded the excess was exhausted by 2 km and that the first-order surface was sufficient above it. Both were wrong and are corrected in Section 7.5.",
+  "An earlier draft concluded the excess was exhausted by 2 km and that the first-order surface was sufficient above it. Both were wrong and are corrected when the range is extended.",
   "Already resolved; recorded because the revision is part of the analytical history"
 ) |> kable()
 ```
