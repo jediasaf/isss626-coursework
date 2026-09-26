@@ -69,3 +69,35 @@ lagged variables built from them with <code>spdep</code>.</p>
 [<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Spatial Weights and Applications</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">05</span>
+<span class="coursework-group-title">Hands-on Exercise 5</span>
+:::
+
+<p class="coursework-group-desc">Whether Hunan's economic development clusters in space,
+and where. Global tests give one number for the province; local ones give a value per
+county, and the two disagree about what the pattern actually is.</p>
+
+[<span class="exercise-row-label">Part 01</span><span class="exercise-row-title">Global Measures of Spatial Autocorrelation</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex05/Part01.qmd){.exercise-row}
+
+[<span class="exercise-row-label">Part 02</span><span class="exercise-row-title">Local Measures of Spatial Autocorrelation</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex05/Part02.qmd){.exercise-row}
+
+:::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">06</span>
+<span class="coursework-group-title">Hands-on Exercise 6</span>
+:::
+
+<p class="coursework-group-desc">The same province across seventeen years. A space-time
+cube, Gi* per county per year, and a Mann-Kendall trend test on each series to separate
+hot spots that are emerging from ones that were always there.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Emerging Hot Spot Analysis</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.qmd){.exercise-row}
+
+:::
