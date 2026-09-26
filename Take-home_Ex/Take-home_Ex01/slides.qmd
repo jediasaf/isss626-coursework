@@ -56,6 +56,7 @@ EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
 TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
 MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
 BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
+LI <- readRDS(file.path(DIR_DERIVED, "lisa.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 
 win_p <- P$win_p; bb <- st_bbox(win_p)
@@ -70,6 +71,8 @@ gA <- function(m) BC$aic2$dAIC[BC$aic2$model == m]
 d_null <- gA("null"); d_cover <- d_null - gA("cover"); d_road2 <- d_null - gA("road")
 pb <- BC$boot_compare |> filter(key == "par")
 cfb <- as.data.frame(BC$best_coef2)
+gg <- LI$global
+mI <- function(sz, v) gg$moran_I[gg$hex_size == sz & grepl(v, gg$variable)]
 dnull <- CM$aic_tab$dAIC[CM$aic_tab$model == "null"]
 droad <- dnull - CM$aic_tab$dAIC[CM$aic_tab$model == "road"]
 knox_best <- ST$knox_tab |> arrange(desc(ratio)) |> slice(1)
@@ -290,6 +293,11 @@ pattern**. Everything my first-order analysis found is already inside it.
 envelope in 20 km; g_inhom, which localises scale, peaks at `r round(peak_r)` m and
 is within 10% of no-excess by `r round(r_decay/1000, 1)` km. My first draft capped r
 at 5 km and drew the wrong conclusion from exactly this.*
+
+**An areal method agrees.** Moran's I on hexagons falls from
+`r round(mI("3 km","raw"), 2)` on raw counts to `r round(mI("3 km","Pearson"), 2)`
+once lambda-hat is removed, and to `r round(mI("5 km","Pearson"), 2)` at 5 km.
+Different weights, different test, same answer on scale.
 :::
 :::
 

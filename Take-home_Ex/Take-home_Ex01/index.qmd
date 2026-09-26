@@ -93,6 +93,7 @@ MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
 AN <- readRDS(file.path(DIR_DERIVED, "anisotropy.rds"))
 BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
 RK <- readRDS(file.path(DIR_DERIVED, "residual_k.rds"))
+LI <- readRDS(file.path(DIR_DERIVED, "lisa.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
 GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
@@ -1454,6 +1455,124 @@ ggplot(st_df) +
   theme_map(base_size = 8)
 ```
 
+# An areal check: spatial autocorrelation
+
+Everything so far treats the data as a point pattern. Aggregating to areal units
+and computing Moran's I looks at the same question through different machinery:
+contiguity weights and a permutation test on counts share no assumptions with
+$K_{inhom}$ and its envelopes. If the two agree, that is worth more than either
+alone.
+
+It needs setting up carefully, because the obvious version repeats the mistake
+Section 7.1 is built around. Moran's I on raw burned-cell counts will be large and
+significant here whatever the fire does. Intensity varies by two orders of
+magnitude between the peat belt and the northern interior, so adjacent hexagons in
+the south are both high and adjacent hexagons in the north are both low. The counts
+are autocorrelated by construction. That is the first-order trend, measured again
+in a new coordinate system.
+
+The informative version asks whether autocorrelation survives the trend. Each
+hexagon gets an expected count by integrating $\hat{\lambda}$ over it, and the
+variable analysed is the Pearson residual
+$(\text{observed} - \text{expected}) / \sqrt{\text{expected}}$. That is the areal
+analogue of swapping CSR for an inhomogeneous Poisson null.
+
+**Hexagons, not squares.** Section 7.5 found that a square 375 m lattice imprints
+its geometry on short-range structure. A square aggregation grid has the same
+defect: four edge neighbours and four corner neighbours sitting at different
+distances. A hexagonal tessellation gives six neighbours all equidistant.
+
+```{r tbl-moran}
+#| label: tbl-moran
+#| tbl-cap: "Global Moran's I on hexagonal aggregations of three sizes, for raw counts and for Pearson residuals after the kernel intensity is removed. Weights are queen contiguity, row-standardised. The expectation under no autocorrelation is close to zero in every row."
+LI$global |> transmute(
+  `Hex size` = hex_size, Variable = variable, Units = fmt_n(n_units),
+  `Mean neighbours` = round(mean_nb, 2),
+  `Moran I` = round(moran_I, 3), `z` = round(z, 1),
+  `p` = ifelse(p < 1e-12, "< 1e-12", format.pval(p, digits = 2))
+) |> kable(align = "llrrrrr")
+```
+
+```{r}
+#| label: moran-inline
+#| include: false
+gg <- LI$global
+gr <- function(sz, v) gg$moran_I[gg$hex_size == sz & grepl(v, gg$variable)]
+zr <- function(sz, v) gg$z[gg$hex_size == sz & grepl(v, gg$variable)]
+cnt <- LI$counts
+hh_raw <- cnt$`raw count`[cnt$cluster == "High-High"]
+sig_res <- sum(cnt$residual[cnt$cluster != "not significant"])
+```
+
+```{r fig-moran}
+#| label: fig-moran
+#| fig-cap: "Global Moran's I against hexagon size, for raw counts and for residuals. What I take from it: the raw-count line barely moves, because the trend it is measuring exists at every scale. The residual line falls steeply, from 0.42 at 2 km to 0.07 at 5 km. That decay is the point of the figure. It is what the pair correlation function predicts independently, having found the excess concentrated below about 2 km and gone by 7 km. Aggregating into 5 km hexagons absorbs almost all of the structure into the units themselves, so little is left to show up between them."
+#| fig-height: 3.2
+gm <- LI$global |> mutate(size_km = as.numeric(sub(" km", "", hex_size)),
+                          v = ifelse(grepl("raw", variable), "Raw count", "Residual"))
+ggplot(gm, aes(size_km, moran_I, colour = v, group = v)) +
+  geom_hline(yintercept = 0, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(linewidth = 0.7) + geom_point(size = 1.8) +
+  scale_colour_manual(values = c(`Raw count` = PAL$cool, Residual = PAL$accent), name = NULL) +
+  scale_x_continuous(breaks = LI$sizes / 1000, labels = function(x) paste0(x, " km")) +
+  labs(x = "Hexagon size", y = "Global Moran's I",
+       title = "Removing the trend removes most of the autocorrelation",
+       subtitle = "And what remains decays as the units grow past the interaction scale.") +
+  theme_ex01()
+```
+
+## What the local statistics say
+
+```{r fig-lisa}
+#| label: fig-lisa
+#| fig-cap: "Local Moran clusters at 3 km, Benjamini-Hochberg adjusted across 1,252 simultaneous tests. Left, raw counts. Right, residuals after the kernel intensity is removed. What I take from it: the left map rediscovers the peat belt and nothing else. Its 105 High-High hexagons are the same southern concentration the intensity surface already shows, arrived at by a different route. The right map is empty. Not one hexagon survives correction, and the smallest adjusted p-value is 0.066. The residual autocorrelation that the global statistic detects is real but diffuse, spread thinly across the map instead of concentrated anywhere a planner could point at."
+#| fig-height: 6.4
+lis <- bind_rows(
+  LI$hex |> st_drop_geometry() |> transmute(hex_id, cluster = cl_raw, panel = "Raw counts"),
+  LI$hex |> st_drop_geometry() |> transmute(hex_id, cluster = cl_resid, panel = "Residuals after lambda-hat")) |>
+  left_join(LI$hex |> select(hex_id), by = "hex_id") |> st_as_sf()
+cols <- c("High-High" = PAL$accent_dk, "Low-Low" = PAL$cool,
+          "High-Low" = PAL$accent_lt, "Low-High" = "#8FBDC0",
+          "not significant" = PAL$ground_alt)
+ggplot(lis) +
+  geom_sf(aes(fill = cluster), colour = NA) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.35) +
+  facet_wrap(~panel, nrow = 1) +
+  scale_fill_manual(values = cols, name = NULL, drop = FALSE) +
+  coord_sf(datum = NA, expand = FALSE) +
+  labs(title = "The local statistics find the peat belt, and nothing beyond it") +
+  theme_map(base_size = 9)
+```
+
+### Reading it against the point-pattern result
+
+**The two methods agree, and that is the main value of doing both.** Removing
+$\hat{\lambda}$ cuts global Moran's I from `r round(gr("3 km","raw"), 2)` to
+`r round(gr("3 km","Pearson"), 2)` at 3 km. What remains is significant
+(z = `r round(zr("3 km","Pearson"), 1)`) and decays steeply as the hexagons grow,
+reaching `r round(gr("5 km","Pearson"), 2)` at 5 km. An areal method with
+contiguity weights and a point-pattern method with edge-corrected distance
+statistics both put residual structure below a few kilometres and nothing much
+above it.
+
+**The local statistics add a caution the global ones do not.** On raw counts,
+`r hh_raw` hexagons come out High-High, and they are the peat belt. On residuals,
+`r sig_res` survive correction. The residual autocorrelation is genuine in
+aggregate and too thin to localise.
+
+That matters for how the earlier results should be used. Section 9 gives a cluster
+radius near a kilometre, which is a statement about typical scale. It is not a
+claim that particular places have persistently more clustering than the intensity
+surface predicts, and this section is the check that would have found such places
+if they existed.
+
+**Two caveats.** The modifiable areal unit problem is unavoidable here, which is
+why three resolutions are reported instead of one; the raw-count conclusion is
+stable across them and the residual magnitude is not. And Benjamini-Hochberg across
+1,252 tests is doing real work. Without it, an unadjusted 5% test would be expected
+to mark about 60 hexagons by chance alone, which would have made a convincing and
+entirely spurious map of residual hotspots.
+
 # Value-added analysis
 
 So far I have established that fire is clustered, where it concentrates, and over
@@ -1971,6 +2090,8 @@ tibble::tribble(
   "Knox test under random labelling, 999 permutations, monotone decay across the threshold grid", "Moderate to high",
   "The episode expands outward from a southeastern origin rather than intensifying in place",
   "Relative-risk surface, weekly dispersion, space-time intensity sequence", "Moderate",
+  "Residual spatial autocorrelation exists globally but localises nowhere",
+  "Moran's I on Pearson residuals is 0.28 at 3 km hexagons (z = 16.4), but no hexagon survives Benjamini-Hochberg correction across 1,252 local tests", "High",
   "Fire intensity tracks land cover more than access: it rises near plantation and farmland, falls near mapped forest",
   "AIC comparison of Poisson models at matched parameter counts, coefficient signs, rhohat curves", "Moderate, limited by sparse OpenStreetMap landuse coverage",
   "Distance to road is associated with intensity but explains far less once land cover enters the model",
@@ -2211,6 +2332,7 @@ tibble::tribble(
   "`R/12_landcover_and_ci.R`", "OSM land cover, first bootstrap attempt", "`landcover_ci.rds`",
   "`R/13_fix_cover_and_parboot.R`", "corrected land-cover distances, parametric bootstrap", "`cover_boot.rds`",
   "`R/14_residual_k.R`", "residual K against whichever model AIC now selects", "`residual_k.rds`",
+  "`R/15_lisa.R`", "hexagonal aggregation, global Moran's I and LISA on counts and residuals", "`lisa.rds`",
   "`R/helpers.R`", "one theme and one palette for every figure", "sourced by report and slides"
 ) |> kable()
 ```
