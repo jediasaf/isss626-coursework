@@ -1231,7 +1231,7 @@
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#contents",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
     "section": "Contents",
-    "text": "Contents\n\nOne argument running through all of it: a satellite hotspot is not a fire, and almost everything I did follows from taking that seriously.\n\n\nThe place, the data, and the window\nWhy a detection is not a fire\nWhere it burns\nWhen it burns, and what the orbit decides\nTwo nulls: one meaningless, one that can fail\nSpace and time are not separable\nWhat the clustering is organised around, and how big it is\nThe correction that reframes it all\nWhat I would act on, and what I would not claim\nWhat I would take from this",
+    "text": "Contents\n\nOne argument running through all of it: a satellite hotspot is not a fire, and almost everything I did follows from taking that seriously.\n\n\nThe place, the data, and the window\nWhy a detection is not a fire\nWhere it burns\nWhen it burns, and what the orbit decides\nTwo nulls: one meaningless, one that can fail\nSpace and time are not separable\nWhat the clustering is organised around, and how big it is\nThe correction that reframes it all\nWhat the analysis says about fire here\nWhat I would take from this",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -2107,6 +2107,18 @@
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
     "section": "10. What I would take from this",
     "text": "10. What I would take from this\n\n\n\n3.4x\n\n\ninflation in the raw count\n\n\n\n\n438 m\n\n\npeak of residual clustering\n\n\n\n\n0.9 to 1.03 km\n\n\ncluster scale, bootstrap interval\n\n\n\n\n2 of 14\n\n\n2026 rank in the record\n\n\n\n\n\nWhat made the results credible\nEvery result I would defend came from replacing a default null with one that could fail. Complete spatial randomness rejects before I compute anything. Moran’s I on raw counts is 0.69. The short-range rose has eight lobes. None of those are findings: they are the instrument and the geometry, restated.\nIntensity spans two orders of magnitude and is stable across four bandwidths. Clustering survives the inhomogeneous null and an areal method with different weights agrees. Scale is confirmed by two independent estimators. Land cover carries 3,204 of 3,550 AIC units from one term.\n\n\nWhat produced the errors\nEvery mistake came from not checking what a default was doing. A 5 km distance cap. A cluster fit with no trend term. A covariate set of two. A harmonic that could not see the structure in front of it.\nEach returned a confident number, and each was wrong until something forced a look. Ten corrections are listed in the report.\nThe figure caught what the table missed more than once. That is the practical version of the lesson, and the thing I would carry into the next exercise.\nOne caveat over all of it. Everything here was measured in a season that ranks 2 of 14, at 54x the median. These are the properties of a severe year, not a typical one.\n\n\n\nMy technical report, code and audit trail are in the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.",
+    "crumbs": [
+      "Take-home",
+      "Take-home Exercise 1",
+      "Executive Summary"
+    ]
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#what-the-analysis-says-about-fire-here",
+    "href": "Take-home_Ex/Take-home_Ex01/slides.html#what-the-analysis-says-about-fire-here",
+    "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
+    "section": "9. What the analysis says about fire here",
+    "text": "9. What the analysis says about fire here\n\n\nFire is concentrated, not spread. Two orders of magnitude separate the southern peat belt from the northern interior. Capability placed in proportion to sub-district area sits mostly where fire is not.\nFire is contagious, briefly. A cell that burns today raises the chance its neighbour burns tomorrow, strongest within a few hundred metres and a few days. The useful response geometry is 2.2 to 2.5 km and days, not pixels and weeks.\n\n\nFire follows cleared land. Proximity to plantation and farmland carries 3,204 of 3,550 AIC units on its own, more than roads and forest together. Burning concentrates on the agricultural frontier.\nThere is no average year to plan for. 2 of 14, at 54x the median, and the record is bimodal: drought years in the thousands, wet years in single digits. Staffing to the mean staffs for a year that never happens. This argues for surge capacity keyed to seasonal drought forecasts.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",

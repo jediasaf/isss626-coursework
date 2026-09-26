@@ -101,7 +101,7 @@ almost everything I did follows from taking that seriously.
 6. Space and time are not separable
 7. What the clustering is organised around, and how big it is
 8. The correction that reframes it all
-9. What I would act on, and what I would not claim
+9. What the analysis says about fire here
 10. What I would take from this
 
 ## 1. The place, the data, and the window
@@ -199,8 +199,8 @@ That is the spine of everything else I did.
 ::: {.split}
 ::: {.col}
 ```{r sl-kde}
-#| fig-height: 5.9
-#| fig-width: 4.6
+#| fig-height: 4.2
+#| fig-width: 4.0
 kd <- im_df(FO$kde$main) |> mutate(v = per_1000km2(intensity))
 ggplot(kd) +
   geom_raster(aes(x, y, fill = v)) +
@@ -311,8 +311,11 @@ Different weights, different test, same answer on scale.
 #| fig-width: 5.6
 ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
   geom_tile(colour = PAL$ground, linewidth = 1.4) +
-  geom_text(aes(label = sprintf("%.2f", ratio)), size = 4.1, colour = PAL$ground,
-            fontface = "bold") +
+  # label colour flips on the darker tiles, which otherwise render dark on dark
+  geom_text(aes(label = sprintf("%.2f", ratio),
+                colour = ratio > mean(range(ratio))),
+            size = 4.1, fontface = "bold", show.legend = FALSE) +
+  scale_colour_manual(values = c(`TRUE` = PAL$ground, `FALSE` = PAL$ink), guide = "none") +
   scale_fill_gradientn(colours = PAL$seq, name = "Obs / exp") +
   labs(x = "Spatial threshold (m)", y = "Temporal threshold (days)") +
   theme_ex01(base_size = 13, grid = "none")
@@ -416,37 +419,30 @@ here.*
 :::
 :::
 
-## 9. What this supports, and what it does not
+## 9. What the analysis says about fire here
 
-::: {.split .even}
+::: {.split .even .roomy}
 ::: {.col}
-[What I would act on]{.colhead}
+**Fire is concentrated, not spread.** Two orders of magnitude separate the southern
+peat belt from the northern interior. Capability placed in proportion to
+sub-district area sits mostly where fire is not.
 
-**Reallocate by intensity, not by area.** Two orders of magnitude separate the
-southern peat belt from the northern interior.
-
-**A containment geometry.** First ring `r round(pb$r95_lo_m/1000, 1)` to
-`r round(pb$r95_hi_m/1000, 1)` km, elevation out to about
-`r round(r_decay/1000, 1)` km, days not weeks.
-
-**A monitoring limit.** I cannot resolve anything below 375 m. A finer answer needs
-a different sensor, not a different statistic.
+**Fire is contagious, briefly.** A cell that burns today raises the chance its
+neighbour burns tomorrow, strongest within a few hundred metres and a few days. The
+useful response geometry is `r round(pb$r95_lo_m/1000, 1)` to
+`r round(pb$r95_hi_m/1000, 1)` km and days, not pixels and weeks.
 :::
 ::: {.note}
-[What I would not claim]{.colhead}
+**Fire follows cleared land.** Proximity to plantation and farmland carries
+`r fmt_n(round(gn("plantation")))` of `r fmt_n(round(gn("all")))` AIC units on its
+own, more than roads and forest together. Burning concentrates on the agricultural
+frontier.
 
-**Roads as a policy lever.** Roads follow worked land. I cannot tell from this
-whether access aids suppression or enables ignition, and the two point opposite
-ways.
-
-**Drainage, or land cover, as a lever.** Both covariates are limited by OSM
-coverage, and cleared land, roads and forest edges are jointly determined.
-
-**Any claim about time of day.** Four fixed overpasses.
-
-**That any of this describes a normal year.** As the previous slide shows, 2026 is
-the second-worst season in fourteen years, so every scale here was measured under
-extreme conditions.
+**There is no average year to plan for.** `r a26$rank_cells` of
+`r nrow(MY$annual)`, at `r round(a26$vs_median)`x the median, and the record is
+bimodal: drought years in the thousands, wet years in single digits. Staffing to the
+mean staffs for a year that never happens. This argues for surge capacity keyed to
+seasonal drought forecasts.
 :::
 :::
 

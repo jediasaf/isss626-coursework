@@ -104,9 +104,12 @@ $code-block-bg: #3A1D18;
 .split.even > .col p strong, .split.even > .note p strong { color: var(--accent-dk); }
 .split .col p { font-size: 0.6em; line-height: 1.5; color: var(--muted); }
 .split .col p strong { color: var(--accent-dk); }
-/* The final slide sets two prose columns side by side rather than a figure and a
-   caption, so it is given equal weight. */
+/* Two prose columns side by side rather than a figure and a caption, so equal
+   weight. `.roomy` is for a slide carrying only a few short paragraphs, where the
+   caption-sized type leaves the frame two thirds empty. */
 .split.even { grid-template-columns: 1fr 1fr; }
+.split.even.roomy > .col, .split.even.roomy > .note { font-size: 0.8em; line-height: 1.55; }
+.split.even.roomy > .col p, .split.even.roomy > .note p { margin-bottom: 0.85em; }
 
 .reveal table { font-size: 0.55em; font-variant-numeric: tabular-nums; }
 .reveal table th { border-bottom: 1px solid var(--ink); color: var(--ink);
