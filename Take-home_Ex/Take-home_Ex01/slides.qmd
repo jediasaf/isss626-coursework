@@ -70,18 +70,19 @@ knox_best <- ST$knox_tab |> arrange(desc(ratio)) |> slice(1)
 ## Contents {.smaller}
 
 ::: {.subhead}
-Six tasks, one argument running through them.
+One argument running through all of it: a satellite hotspot is not a fire, and
+almost everything I did follows from taking that seriously.
 :::
 
-1. Why this place, and what the data actually is
-2. The problem the data creates: a detection is not a fire
+1. Why I chose this place, and what the data actually is
+2. The problem the data handed me: a detection is not a fire
 3. First order: where fire concentrates
-4. First order: when, and what the satellite cannot tell us
+4. First order: when, and what the satellite cannot tell me
 5. Second order: why complete spatial randomness is a straw man
 6. Second order: the test that can fail
 7. Space and time together
 8. What the clustering is organised around, and how big it is
-9. What this supports for planning
+9. What I think this supports for planning
 10. What it does not support
 
 ## 1. A regency chosen by rule, not reputation
@@ -102,19 +103,19 @@ ggplot(kal) +
 ```
 :::
 ::: {.note}
-**Rule, stated first.** Highest detection density among regencies above
-5,000 km², the size floor needed for second-order estimation to a 5 km lag.
+**My rule, set first.** Highest detection density among regencies above
+5,000 km², the size floor I need for second-order estimation to a 5 km lag.
 
 **Pulang Pisau wins outright**, at
 `r fmt_n(round(RANK$per_1000km2[RANK$shapeName == STUDY_REGENCY]))` per 1,000 km².
 
-**Rejected.** Ketapang leads on raw count
+**What I rejected.** Ketapang leads on raw count
 (`r fmt_n(RANK$n_detections[RANK$shapeName == "Ketapang"])`) but is 3x the area.
 Kota Palangka Raya is denser but only
 `r fmt_n(round(RANK$area_km2[RANK$shapeName == "Kota Palangka Raya"]))` km².
 
-It is the drained peat of the former Mega Rice Project, so the public-safety
-mechanism is respiratory, not thermal.
+*My first pass picked it from a 7-day sample where it led on count. Over the full
+window it does not, so I restated the rule against the whole record.*
 :::
 :::
 
@@ -135,17 +136,18 @@ kf(list(fmt_n(P$qa$n_in[1]), "rows downloaded, all Kalimantan"),
    list(P$n_days,            "days, 1 Jul to 25 Sep"))
 ```
 
-VIIRS 375 m Collection 2, both platforms. Window is the administrative polygon in
-UTM 49S, `r fmt_n(round(P$area_km2))` km².
+VIIRS 375 m Collection 2, both platforms. My window is the administrative polygon
+in UTM 49S, `r fmt_n(round(P$area_km2))` km².
 
-**The window is imposed, not chosen.** The FIRMS `area` API retains near-real-time
-granules for roughly 90 days, and the standard-processing archive is not built for
-2026. Kalimantan-wide queries return exactly zero rows for every sampled date from
-January to 30 June, and non-zero from 1 July. Six months of zero detections across
-a 10° box is not credible, so this is absence of coverage, not absence of fire.
+**The temporal window was imposed on me, not chosen.** The FIRMS `area` API retains
+near-real-time granules for roughly 90 days, and the standard-processing archive is
+not built for 2026. My Kalimantan-wide queries return exactly zero rows for every
+sampled date from January to 30 June, and non-zero from 1 July. Six months of zero
+detections across a 10° box is not credible, so I read that as absence of coverage,
+not absence of fire.
 
-*The cost: no wet-season baseline, so nothing here speaks to seasonal amplitude.
-The window does span onset to peak, which is the period an agency acts on.*
+*The cost: no wet-season baseline, so nothing here speaks to seasonal amplitude. It
+does span onset to peak, which is the period an agency acts on.*
 
 ## 3. A detection is not a fire
 
@@ -166,16 +168,17 @@ ggplot(mt, aes(n_det, n_cells)) +
 One large peat fire fills many 375 m pixels, and two satellites re-detect it about
 four times a day.
 
-**The raw count overstates distinct burning locations by `r round(infl, 1)`x.**
+**I measured it: the raw count overstates distinct burning locations by
+`r round(infl, 1)`x.**
 
-So the pattern partly measures the satellite's revisit schedule. Consequence:
-testing against complete spatial randomness is guaranteed to reject before any
-analysis is done.
+So the pattern I started with partly measures the satellite's revisit schedule,
+which means testing against complete spatial randomness was guaranteed to reject
+before I computed anything.
 
-**Two responses.** Change the unit to the 375 m cell. Change the null from CSR to
-an inhomogeneous Poisson process.
+**So I changed two things.** The unit becomes the 375 m cell. The null becomes an
+inhomogeneous Poisson process.
 
-This is the methodological spine of the whole exercise.
+That is the spine of everything else I did.
 :::
 :::
 
@@ -198,17 +201,17 @@ ggplot(kd) +
 ```
 :::
 ::: {.note}
-Gaussian kernel, Diggle edge correction, **bandwidth fixed at 4 km**.
+Gaussian kernel, Diggle edge correction, **bandwidth I fixed at 4 km**.
 
-Cross-validated selectors returned about 0.6 km and were **rejected**: they absorb
-the very clustering the second-order test exists to detect, which would rig the
-test in Slide 7.
+Cross-validated selectors gave me about 0.6 km and I **rejected** them: they absorb
+the very clustering my second-order test exists to detect, which would have rigged
+the test on Slide 7.
 
 Intensity spans roughly **two orders of magnitude** between the southern peat belt
 and the northern interior.
 
-*So allocation proportional to sub-district area is badly matched to risk. That is
-the single most directly usable result in the deck.*
+*So allocating in proportion to sub-district area is badly matched to risk. I think
+that is the most directly usable thing I found.*
 :::
 :::
 
@@ -234,12 +237,12 @@ ggplot(FO$daily, aes(date_local)) +
 Heavily back-loaded: week 1 recorded 7 events, the week of 16 September recorded
 8,087.
 
-**The day/night contrast is not a diurnal cycle.** Both platforms observe at four
-narrow fixed local times, so any claim that fire peaks at a given hour would be a
-claim about the orbit.
+**The day/night contrast is not a daily cycle, and I nearly read it as one.** Both
+platforms observe at four narrow fixed local times, so if I claimed fire peaks at a
+given hour I would be describing the orbit.
 
-Correct use of the split is as a detectability covariate, since night overpasses
-detect cooler anomalies against a cooler background.
+I use the split only as a detectability covariate, since night overpasses catch
+cooler anomalies against a cooler background.
 :::
 :::
 
@@ -262,12 +265,13 @@ ggplot(ea, aes(r)) +
   labs(x = "r", y = NULL) + theme_ex01(base_size = 12)
 ```
 
-Every statistic leaves the envelope immediately. **This persuades nobody**: the
-sensor guarantees it. Reported so the failure is visible rather than concealed.
+Every statistic leaves the envelope immediately. **This should persuade nobody,
+including me**: the sensor guarantees it. I show it so the failure is visible rather
+than hidden.
 
-The pair correlation function makes the point sharper still. It is suppressed below
-375 m, the pixel dimension. That apparent short-range inhibition is the instrument,
-not fires avoiding one another.
+My pair correlation function makes the point sharper. It is suppressed below 375 m,
+the pixel dimension. That apparent short-range inhibition is the instrument, not
+fires avoiding one another.
 
 ## 7. The test that can fail
 
@@ -291,19 +295,20 @@ ggplot(bind_rows(Lx, Gx), aes(r)) +
 ```
 :::
 ::: {.note}
-Null is an **inhomogeneous Poisson process** with intensity from the 4 km kernel
-estimate, so everything the first-order analysis found is already inside the null.
-The reference intensity is **re-estimated for every simulated pattern**.
+My null is an **inhomogeneous Poisson process** with intensity from the 4 km kernel
+estimate, so everything my first-order analysis found is already inside the null. I
+**re-estimate the reference intensity for every simulated pattern**.
 
 **The departure survives.** Both global tests reject at the Monte Carlo floor.
 
-**The two panels disagree, and that is the lesson.** L_inhom never re-enters its
-envelope in 20 km. g_inhom, which localises scale instead of accumulating it, peaks
-at `r round(peak_r)` m and is within 10% of no-excess by
+**The two panels disagree, and that was the lesson for me.** L_inhom never re-enters
+its envelope in 20 km. g_inhom, which localises scale instead of accumulating it,
+peaks at `r round(peak_r)` m and is within 10% of no-excess by
 `r round(r_decay/1000, 1)` km.
 
 *L accumulates every excess at smaller lags, so it stays significant far past the
-range over which anything is happening.*
+range where anything is happening. My first draft capped r at 5 km and drew the
+wrong conclusion from exactly this.*
 :::
 :::
 
@@ -324,14 +329,14 @@ ggplot(ST$knox_tab, aes(factor(s_m), factor(t_days), fill = ratio)) +
 ```
 :::
 ::: {.note}
-Knox test. Null is **random labelling**: locations and dates both held fixed, only
-their pairing permuted, across `r fmt_n(ST$nperm)` permutations of
+Knox test. My null is **random labelling**: I hold locations and dates both fixed
+and permute only their pairing, across `r fmt_n(ST$nperm)` permutations of
 `r fmt_n(ST$n_close_pairs)` close pairs.
 
-Because both marginals are fixed, none of this can be explained by the seasonal
-ramp or the spatial concentration.
+Because both marginals stay fixed, none of this can be explained away by the
+seasonal ramp or the spatial concentration.
 
-**Strongest at the tightest cell** and decaying monotonically outward: a cell that
+**Strongest at the tightest cell**, decaying monotonically outward: a cell that
 burns today raises the chance a neighbour burns tomorrow, and the effect is largely
 spent within days and a kilometre or two.
 :::
@@ -354,23 +359,23 @@ ggplot(rd, aes(.data[[names(rd)[1]]] / 1000)) +
 ```
 :::
 ::: {.note}
-**Access dominates.** Of `r fmt_n(round(dnull))` AIC units separating the covariate
+**Access dominates.** Of `r fmt_n(round(dnull))` AIC units separating my covariate
 model from an intercept-only model, distance to road accounts for
 `r fmt_n(round(droad))`.
 
-**Mapped drainage adds almost nothing** (13 AIC units). Not evidence that drainage
-does not matter: OSM does not map the Mega Rice Project canal network, so the
-covariate measures mapping coverage.
+**Mapped drainage adds almost nothing** (13 AIC units). That is not evidence
+drainage does not matter: OSM does not map the Mega Rice Project canal network, so
+my covariate is measuring mapping coverage.
 
-**Cluster scale `r fmt_n(sig_t)` m**, 95% within **`r fmt_n(r95)` m**, from a
-Thomas process fitted to g_inhom by minimum contrast.
+**Cluster scale `r fmt_n(sig_t)` m**, 95% within **`r fmt_n(r95)` m**, from a Thomas
+process I fitted to g_inhom by minimum contrast.
 
-*Fitted without the trend removed it returns
-`r fmt_n(round(TH$kppm_hom$sigma_m))` m and 440 events per cluster, which is the
-peat belt being re-described as a few giant clusters. Trend and interaction are not
+*My first fit left the trend in and returned
+`r fmt_n(round(TH$kppm_hom$sigma_m))` m and 440 events per cluster, which is really
+the peat belt re-described as a few giant clusters. Trend and interaction are not
 separately identifiable unless you make them so.*
 
-Residual K shows the covariates explain *location*, not *contagion*.
+Residual K shows my covariates explain *location*, not *contagion*.
 :::
 :::
 
@@ -384,29 +389,29 @@ Residual K shows the covariates explain *location*, not *contagion*.
 southern peat belt from the northern interior.
 
 **A containment geometry.** First ring `r round(r95/1000, 1)` km, elevation out to
-about `r round(r_decay/1000, 1)` km, days not weeks. Two independent methods agree
-on the dominant scale.
+about `r round(r_decay/1000, 1)` km, days not weeks. Two methods I ran independently
+agree on the dominant scale.
 
-**A monitoring limit.** Nothing below 375 m is resolvable. Buying a finer answer
-needs a different sensor, not a different statistic.
+**A monitoring limit.** I cannot resolve anything below 375 m. A finer answer needs
+a different sensor, not a different statistic.
 :::
 ::: {.note}
 [Not supported]{.colhead}
 
-**Roads as a policy lever.** Roads follow worked land. Whether access aids
-suppression or enables ignition is not answerable here, and the two have opposite
-implications.
+**Roads as a policy lever.** Roads follow worked land. I cannot tell from this
+whether access aids suppression or enables ignition, and the two point opposite
+ways.
 
-**Any claim about drainage.** The covariate measures OSM coverage.
+**Any claim about drainage.** My covariate measures OSM coverage.
 
-**Any diurnal claim.** Four fixed overpasses.
+**Any claim about time of day.** Four fixed overpasses.
 
-**Anything about how unusual 2026 is.** The 90-day retention denied the multi-year
-record. Obtaining it is the highest-value next step, and it is a data-access task,
-not a methodological one.
+**Anything about how unusual 2026 is.** The 90-day retention denied me the
+multi-year record. Getting it is the next thing I would do, and it is a data-access
+problem rather than a methodological one.
 :::
 :::
 
 ::: {.footer-note}
-Technical report, code and audit trail: see the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.
+My technical report, code and audit trail are in the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.
 :::
