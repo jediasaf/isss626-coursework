@@ -90,12 +90,18 @@ $code-block-bg: #3A1D18;
    so they must be styled identically. Without this the left column inherits the
    smaller, dimmer `.col` treatment while the right inherits `.note`, and the
    slide reads as though one side matters more than the other. */
+/* Specificity matters here. `.split .col p` and `.split.even p` tie at (0,2,1),
+   so source order was deciding and the left column kept the small muted caption
+   treatment. Going through the child combinator lifts these to (0,3,1) and makes
+   the intent explicit rather than order-dependent. */
 .split.even > .col, .split.even > .note {
   font-size: 0.62em; line-height: 1.5; color: var(--ink);
 }
-.split.even .colhead { font-size: 0.72rem; }
-.split.even p { font-size: 1em; color: var(--ink); }
-.split.even p strong { color: var(--accent-dk); }
+.split.even > .col .colhead, .split.even > .note .colhead { font-size: 0.72rem; }
+.split.even > .col p, .split.even > .note p {
+  font-size: 1em; color: var(--ink); line-height: 1.5;
+}
+.split.even > .col p strong, .split.even > .note p strong { color: var(--accent-dk); }
 .split .col p { font-size: 0.6em; line-height: 1.5; color: var(--muted); }
 .split .col p strong { color: var(--accent-dk); }
 /* The final slide sets two prose columns side by side rather than a figure and a

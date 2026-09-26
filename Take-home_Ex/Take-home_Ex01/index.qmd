@@ -51,6 +51,14 @@ abstract: |
   separating my covariate model from an intercept-only model, while mapped drainage
   accounts for almost none, which turned out to say more about OpenStreetMap coverage
   than about drainage.
+
+  A late correction reframes all of it. I had recorded that I could not say whether
+  2026 was a severe season, because the API retains only ninety days. That was wrong.
+  The standard-processing archive is empty for 2026 only because of a five-month
+  reprocessing lag, and the same endpoint serves earlier years normally. Pulling the
+  identical window for every year since 2013 puts 2026 second of fourteen, at roughly
+  fifty times the median. So what I describe here is the structure of a severe
+  season, not a typical one.
 execute:
   echo: true
 ---
@@ -80,6 +88,7 @@ ST <- readRDS(file.path(DIR_DERIVED, "spacetime.rds"))
 CM <- readRDS(file.path(DIR_DERIVED, "covariates_models.rds"))
 EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
 TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
+MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
 GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
@@ -1498,6 +1507,147 @@ ggplot(ls_df) +
   theme_map()
 ```
 
+# Was 2026 unusual?
+
+This section exists because I got something wrong, and the correction turned out
+to matter more than anything else in the report.
+
+I had written that the 87-day window made it impossible to say whether 2026 was a
+severe season, and I attributed that to the FIRMS API retaining only about 90 days.
+The retention is real, but my inference from it was not. The standard-processing
+product returns nothing for 2026 because near-real-time granules are only replaced
+by standard science quality after a lag of roughly five months. For **earlier**
+years the same REST endpoint serves the standard archive normally. I tested only
+2026, saw zeros, and concluded the archive was unavailable. One extra query against
+2019 would have shown me otherwise.
+
+So the multi-year record was reachable from the same key all along. I pulled it:
+the identical 1 July to 25 September window for every year from
+`r min(MY$years_pulled)` to `r max(MY$years_pulled)`.
+
+## Two rules for comparability
+
+**S-NPP only, every year including 2026.** NOAA-20 joins the record in 2018, so
+counting two platforms in recent years against one platform in earlier years would
+produce a step change in detection capability indistinguishable from a change in
+fire. The 2026 figure in this section is therefore *smaller* than the headline
+figure elsewhere in the report, which uses both platforms.
+
+**The identical calendar window every year**, so window length cannot be confused
+with fire intensity.
+
+One caveat I cannot remove: 2026 is the near-real-time product and every earlier
+year is the reprocessed standard product. They differ slightly, and I cannot
+quantify by how much, because the retention windows of the two products do not
+overlap anywhere in the record. The direction of the likely bias is that
+near-real-time retains some detections that reprocessing removes, so the 2026
+figure should be read as, if anything, a little generous.
+
+```{r tbl-multiyear}
+#| label: tbl-multiyear
+#| tbl-cap: "Burned 375 m cells in Pulang Pisau over the identical 1 July to 25 September window, every year of the VIIRS S-NPP record. Rank is over all 14 years."
+MY$annual |> transmute(
+  Year = year,
+  Detections = fmt_n(detections),
+  `Burned cells` = fmt_n(cells),
+  Rank = rank_cells,
+  `vs median` = ifelse(year == 2026, sprintf("%.0fx", vs_median), "")
+) |> kable(align = "rrrrr")
+```
+
+```{r fig-multiyear}
+#| label: fig-multiyear
+#| fig-cap: "Burned cells in the same 87-day window, 2013 to 2026, log scale. Reading: this is the figure I could not draw before, and it reframes the whole report. 2026 is not a representative season. It ranks second of fourteen years, roughly fifty times the median, behind only the 2015 El Nino fires and ahead of 2019. The record is also violently bimodal rather than continuous: drought years produce thousands of burned cells and wet years produce single or double digits, with almost nothing in between. That matters for planning, because a capability sized to the median would be overwhelmed in a year like this one, and a capability sized to 2026 would idle for years at a time."
+#| fig-height: 3.8
+ay <- MY$annual |> mutate(is26 = year == 2026)
+ggplot(ay, aes(factor(year), pmax(cells, 1), fill = is26)) +
+  geom_col(width = 0.72) +
+  geom_hline(yintercept = median(ay$cells[ay$year != 2026]),
+             colour = PAL$cool, linetype = "22", linewidth = 0.4) +
+  annotate("text", x = 1, y = median(ay$cells[ay$year != 2026]) * 1.5,
+           label = "2013-2025 median", hjust = 0, size = 2.9, colour = PAL$cool,
+           family = "Helvetica") +
+  scale_fill_manual(values = c(`FALSE` = PAL$accent_lt, `TRUE` = PAL$accent_dk),
+                    guide = "none") +
+  scale_y_log10(labels = label_number(big.mark = ",")) +
+  labs(x = NULL, y = "Burned cells, log scale",
+       title = "2026 is the second-worst season in the VIIRS record here",
+       subtitle = glue("Same 1 July to 25 September window every year. S-NPP only, for comparability.")) +
+  theme_ex01()
+```
+
+```{r}
+#| label: my-inline
+#| include: false
+a26 <- MY$annual |> filter(year == 2026)
+hist_med <- median(MY$annual$cells[MY$annual$year != 2026])
+worst <- MY$annual |> filter(year != 2026) |> slice_max(cells, n = 1)
+```
+
+2026 recorded `r fmt_n(a26$cells)` burned cells in the window, against a
+2013 to 2025 median of `r fmt_n(round(hist_med))`. That is
+**`r round(a26$vs_median)` times the median** and ranks
+**`r a26$rank_cells` of `r nrow(MY$annual)`**, behind only
+`r worst$year` (`r fmt_n(worst$cells)` cells).
+
+The gap is so large that the near-real-time versus standard-product caveat cannot
+explain it. Reprocessing shifts detection counts by a few percent, not by a factor
+of fifty.
+
+There is one thing this understates rather than overstates. My window closes on
+25 September because that was the last complete day before I pulled the data, and
+Section 10.3 shows October can be the peak month: in 2023 it carried more burned
+cell-days than September did. Every year in the comparison is truncated at the same
+point, so the ranking is fair, but the 2026 figure is a season in progress. On the
+2023 pattern it could still grow substantially.
+
+## What a normal year looks like {#sec-normal-year}
+
+```{r fig-seasonal}
+#| label: fig-seasonal
+#| fig-cap: "Monthly burned cell-days across two complete calendar years, log scale, showing the seasonal cycle the 87-day window cannot contain. What I take from it: fire here is not merely seasonal, it is close to switch-like, with wet-season months at or near zero and a dry-season peak orders of magnitude above. But it also corrects an assumption I had been carrying. My window closes on 25 September, and in 2023 the peak month was October, which alone carried more burned cell-days than September. July to September captured only 39% of the 2023 fire year against 67% of 2024. So my window is not the whole fire season, it is the first two thirds of it, and the 2026 figures should be read as a season still in progress rather than a completed total."
+#| fig-height: 3.6
+sm <- MY$seasonal |> mutate(month_lab = month.abb[month])
+sm$month_lab <- factor(sm$month_lab, levels = month.abb)
+ggplot(sm, aes(month_lab, pmax(cell_days, 0.5), fill = factor(year))) +
+  geom_col(position = position_dodge(width = 0.78), width = 0.7) +
+  scale_fill_manual(values = c(PAL$accent_lt, PAL$accent_dk), name = NULL) +
+  scale_y_log10(labels = label_number(big.mark = ",")) +
+  labs(x = NULL, y = "Burned cell-days, log scale",
+       title = "The fire year is close to switch-like",
+       subtitle = "Complete calendar years from the standard-processing archive.") +
+  theme_ex01()
+```
+
+```{r tbl-amplitude}
+#| label: tbl-amplitude
+#| tbl-cap: "Seasonal concentration in two complete years. The July to September share is the fraction of the year's burned cell-days that fall inside the window this report analyses."
+MY$amplitude |> transmute(
+  Year = year,
+  `Annual burned cell-days` = fmt_n(annual_total),
+  `Jul to Sep` = fmt_n(in_window_JulSep),
+  `Share in window` = percent(share_JulSep, accuracy = 1),
+  `Peak month` = month.abb[peak_month]
+) |> kable(align = "rrrrr")
+```
+
+## What this does to the rest of the report
+
+It does not overturn any second-order result. The clustering scale, the Knox
+interaction and the covariate relationships are all estimated within 2026 and stand
+on their own.
+
+It changes the interpretation of every one of them. I had been describing the
+spatial structure of *a* dry season. I was in fact describing the spatial structure
+of a **severe** dry season, one of the two worst in the fourteen-year record. A
+cluster scale of about a kilometre, and a containment window of days, are
+properties measured under extreme conditions. Whether they hold in a median year,
+where the regency records a few dozen burned cells rather than eight thousand, is
+not something this analysis can tell you, and there may be too few events in a
+median year to estimate them at all.
+
+That is a more useful limitation than the one it replaces, because it is specific.
+
 # Integrated findings and discussion
 
 Here are my four questions from Section 2, answered together, with how confident I
@@ -1672,11 +1822,10 @@ igniting is concentrated in the first few days. A response window of days over a
 radius of kilometres is supported.
 
 **Direct evidence about monitoring, not about fire.** The day and night contrast is
-an artefact of four fixed overpass times, and a dashboard reporting a daily fire
-cycle from these data would be reporting the orbit. My pair correlation function
-also shows I cannot resolve anything below 375 m, so these data cannot support
-tasking at the individual plot scale. A finer answer needs a different sensor, not a
-different statistic.
+an artefact of four fixed overpass times, so a dashboard reporting a daily fire
+cycle would be reporting the orbit. My pair correlation function also shows I cannot
+resolve anything below 375 m, so these data cannot support tasking at plot scale. A
+finer answer needs a different sensor, not a different statistic.
 
 **Inference that needs information I do not have.** My association between intensity
 and proximity to roads is strong, but roads get built where land is already worked,
@@ -1690,12 +1839,12 @@ OpenStreetMap does not map the minor canal network of the former Mega Rice Proje
 so my covariate is measuring mapping coverage. Testing that mechanism properly needs
 a canal inventory and water-table observations.
 
-Finally, the expansion from a southeastern origin describes one season. Whether it
-recurs, and could support early-season forecasting, needs a multi-year record. That
-record exists: FIRMS serves VIIRS back to 2012 through its archive download service.
-I did not use it because it authenticates by email and cannot be driven from an API
-key. That is a limit of my tooling, not of the science, and lifting it is the first
-thing I would do next.
+Finally, the multi-year record changed the planning picture. 2026 is the
+second-worst season in fourteen years here, and the record is bimodal: drought years
+produce thousands of burned cells, wet years single digits. Capability sized to the
+median would be overwhelmed this year; capability sized to 2026 would idle for
+years. That argues for a surge model keyed to drought forecasts, not a standing
+establishment sized to an average that never occurs.
 
 # Limitations
 
@@ -1704,9 +1853,12 @@ thing I would do next.
 #| tbl-cap: "What limits my findings, what each limitation does to them, and what I would need to resolve it."
 tibble::tribble(
   ~Limitation, ~Consequence, ~Resolution,
-  "Temporal coverage restricted to 87 days, because I used the REST API, which retains only ~90 days of near-real-time granules",
-  "No wet-season baseline and no inter-annual comparison. Nothing here speaks to seasonal amplitude or to whether 2026 is unusual. This is the single largest limitation in the report, and unlike the others it is self-imposed.",
-  "The FIRMS archive download service covers VIIRS S-NPP from 20 January 2012 and NOAA-20 from 1 April 2018. It needs an Earthdata login or an emailed verification code and delivers by email, so it cannot be scripted from a key, but it is freely available and would lift this limitation entirely",
+  "All second-order results are estimated inside a single season, and Section 10 shows that season is an extreme one",
+  "2026 ranks second of fourteen years at roughly fifty times the median. The cluster scale, the interaction range and the covariate relationships are therefore measured under severe conditions. Whether they hold in a median year, when this regency records a few dozen burned cells rather than eight thousand, is untested and may not be estimable at all.",
+  "Re-run the full second-order pipeline on 2015 and 2019, the other high-fire years, and on pooled low-fire years",
+  "2026 comes from the near-real-time product; every comparison year comes from the reprocessed standard product",
+  "The two differ by a few percent and I cannot measure by how much, because their retention windows never overlap. The inter-annual ranking survives this because the gap is a factor of fifty, but a close ranking would not.",
+  "Repeat the comparison once standard-processing data for 2026 is published, about five months after acquisition",
   "The NRT product omits the `type` field",
   "Static industrial heat sources are removed by a persistence proxy rather than by the product's own classification.",
   "Use the standard-processing product once available for 2026",
