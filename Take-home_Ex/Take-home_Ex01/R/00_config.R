@@ -7,9 +7,19 @@
 ## --- Temporal study window -------------------------------------------------
 # The brief requires 2026 observations. Two constraints set the window.
 #
-# Lower bound, imposed by the archive and verified empirically: the FIRMS
-# `area` API serves near-real-time granules on a rolling ~90-day retention and
-# the standard-processing (SP) archive has not yet been built for 2026. Queries
+# Lower bound, imposed by the ACCESS ROUTE rather than by the data, and verified
+# empirically. The FIRMS `area` REST API serves near-real-time granules on a
+# rolling ~90-day retention, and the standard-processing (SP) product has not
+# been built for 2026 because NRT is only replaced by standard science quality
+# after a ~5 month lag.
+#
+# Note carefully: FIRMS DOES publish the full archive (VIIRS S-NPP from
+# 2012-01-20, NOAA-20 from 2018-04-01) through its archive download service at
+# https://firms.modaps.eosdis.nasa.gov/download/ . That service authenticates by
+# Earthdata login or emailed code and delivers by email, so it cannot be driven
+# from an API key inside this pipeline. The 87-day window is therefore a
+# consequence of choosing a scriptable route, not a hard limit on the record.
+# Queries
 # for a Kalimantan-wide box return a header with zero data rows for every
 # sampled date from January to 30 June 2026 and non-zero counts from 1 July
 # onward. Six consecutive months of exactly zero detections across a

@@ -351,13 +351,28 @@ PROBE$nrt |> transmute(Date = format(date, "%d %b %Y"),
                        `Detections returned` = fmt_n(n)) |> kable(align = "lr")
 ```
 
-The FIRMS `area` endpoint serves near-real-time granules on a rolling retention of
-roughly 90 days, and the standard-processing archive that would have covered January
-to June has not been produced for 2026. So the earliest day I can retrieve is 1 July
+The FIRMS `area` REST endpoint serves near-real-time granules on a rolling retention
+of roughly 90 days, and the standard-processing product has not been produced for
+2026 yet, because NRT granules are only replaced by standard science quality data
+after a lag of about five months. So the earliest day the API will give me is 1 July
 2026, which I located to the day with the probe above rather than assuming it. The
 upper bound is my choice: the last complete UTC day before I accessed the data, so
 that no partially observed day enters the daily series and shows up as a fake
 decline.
+
+I should be precise about what that constraint is and is not, because it would be
+easy to overstate it. **The 90-day limit belongs to the API, not to the data.** FIRMS
+also publishes an archive download service covering VIIRS S-NPP from 20 January 2012
+and NOAA-20 from 1 April 2018. It is a request form rather than a REST endpoint: it
+authenticates through an Earthdata login or an emailed verification code, and it
+delivers the extract by email afterwards. That is a perfectly obtainable dataset, and
+the reason this report does not use it is a scripting constraint rather than a data
+constraint. My pipeline is built to run unattended from a single key, and the archive
+service cannot be driven that way.
+
+The honest statement is therefore that I chose a 87-day window served by the API over
+a multi-year window that would have required an out-of-band request. Section 12
+records what that cost me.
 
 I want to be careful not to oversell the window. It is what was available. But it
 does happen to span the onset, escalation and peak of the 2026 dry season, which is
@@ -1638,31 +1653,29 @@ no jurisdiction there.
 My findings support four operational conclusions, and I have tried to keep what the
 evidence shows separate from what I am inferring.
 
-**Direct evidence, usable now.** My intensity surface identifies where fire recurs
-across a season at a resolution finer than any administrative unit. Roughly two
-orders of magnitude separate the southern peat belt from the northern interior. So
-resources allocated in proportion to sub-district area, or spread evenly, are badly
-matched to risk. My surface supports a concrete reallocation: concentrate standing
-capability in the southern third, and treat the northern interior as a response area
-rather than a prevention area.
+**Direct evidence, usable now.** My intensity surface shows where fire recurs across
+a season at a resolution finer than any administrative unit, and roughly two orders
+of magnitude separate the southern peat belt from the northern interior. Resources
+allocated by sub-district area, or spread evenly, are badly matched to that. The
+surface supports a concrete reallocation: concentrate standing capability in the
+southern third, and treat the northern interior as a response area rather than a
+prevention area.
 
 **Direct evidence, with a scale attached.** Two methods I ran independently agree
-that the dominant clustering scale is about 1.1 km, with roughly 95% of a cluster's
-events within 2.6 km of its centre. That gives a containment geometry I am willing
-to defend: when a detection arrives, the area worth immediate attention is the
-surrounding two to three kilometres, not the surrounding pixel and not the
-surrounding sub-district. Measurable elevation runs out to about 7 km, so I would
-treat 2.6 km as a first ring rather than a boundary. My Knox result adds the time
-dimension: the raised probability of a neighbouring cell igniting is concentrated in
-the first few days. A response window of days over a radius of kilometres is
-supported by what I found.
+the dominant clustering scale is about 1.1 km, with roughly 95% of a cluster's
+events within 2.6 km of its centre. That gives a containment geometry I can defend:
+when a detection arrives, the area worth immediate attention is the surrounding two
+to three kilometres, not the surrounding pixel and not the surrounding sub-district.
+Measurable elevation runs out to about 7 km, so 2.6 km is a first ring rather than a
+boundary. My Knox result adds time: the raised probability of a neighbouring cell
+igniting is concentrated in the first few days. A response window of days over a
+radius of kilometres is supported.
 
 **Direct evidence about monitoring, not about fire.** The day and night contrast is
-an artefact of four fixed overpass times. Any dashboard reporting a daily fire cycle
-from these data would be reporting the orbit, and I nearly made that mistake myself.
-My pair correlation function also shows the analysis cannot resolve anything below
-375 m, so these data cannot support tasking at the individual plot scale. That is a
-limit on the instrument. Buying a finer answer needs a different sensor, not a
+an artefact of four fixed overpass times, and a dashboard reporting a daily fire
+cycle from these data would be reporting the orbit. My pair correlation function
+also shows I cannot resolve anything below 375 m, so these data cannot support
+tasking at the individual plot scale. A finer answer needs a different sensor, not a
 different statistic.
 
 **Inference that needs information I do not have.** My association between intensity
@@ -1677,10 +1690,12 @@ OpenStreetMap does not map the minor canal network of the former Mega Rice Proje
 so my covariate is measuring mapping coverage. Testing that mechanism properly needs
 a canal inventory and water-table observations.
 
-Finally, the expansion from a southeastern origin describes one season, which is all
-I have. Whether it recurs, and could therefore support early-season forecasting,
-needs the multi-year record the ninety-day retention denied me. That is the next
-thing I would do, and it is a data-access problem rather than a methodological one.
+Finally, the expansion from a southeastern origin describes one season. Whether it
+recurs, and could support early-season forecasting, needs a multi-year record. That
+record exists: FIRMS serves VIIRS back to 2012 through its archive download service.
+I did not use it because it authenticates by email and cannot be driven from an API
+key. That is a limit of my tooling, not of the science, and lifting it is the first
+thing I would do next.
 
 # Limitations
 
@@ -1689,9 +1704,9 @@ thing I would do, and it is a data-access problem rather than a methodological o
 #| tbl-cap: "What limits my findings, what each limitation does to them, and what I would need to resolve it."
 tibble::tribble(
   ~Limitation, ~Consequence, ~Resolution,
-  "Temporal coverage restricted to 87 days by a rolling ~90-day API retention; the standard-processing archive is not built for 2026",
-  "No wet-season baseline and no inter-annual comparison. Nothing in this report speaks to seasonal amplitude or to whether 2026 is unusual.",
-  "Bulk archive request through the FIRMS archive download service, or Earthdata-authenticated access to the VIIRS product",
+  "Temporal coverage restricted to 87 days, because I used the REST API, which retains only ~90 days of near-real-time granules",
+  "No wet-season baseline and no inter-annual comparison. Nothing here speaks to seasonal amplitude or to whether 2026 is unusual. This is the single largest limitation in the report, and unlike the others it is self-imposed.",
+  "The FIRMS archive download service covers VIIRS S-NPP from 20 January 2012 and NOAA-20 from 1 April 2018. It needs an Earthdata login or an emailed verification code and delivers by email, so it cannot be scripted from a key, but it is freely available and would lift this limitation entirely",
   "The NRT product omits the `type` field",
   "Static industrial heat sources are removed by a persistence proxy rather than by the product's own classification.",
   "Use the standard-processing product once available for 2026",

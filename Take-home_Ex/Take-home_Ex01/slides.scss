@@ -85,7 +85,17 @@ $code-block-bg: #3A1D18;
   color: var(--accent-dk); margin-bottom: 0.7em;
   padding-bottom: 0.4em; border-bottom: 1px solid var(--rule);
 }
-.split .note .colhead { font-size: 1.05em; }
+
+/* On the closing slide the two columns are peers, not a figure and its caption,
+   so they must be styled identically. Without this the left column inherits the
+   smaller, dimmer `.col` treatment while the right inherits `.note`, and the
+   slide reads as though one side matters more than the other. */
+.split.even > .col, .split.even > .note {
+  font-size: 0.62em; line-height: 1.5; color: var(--ink);
+}
+.split.even .colhead { font-size: 0.72rem; }
+.split.even p { font-size: 1em; color: var(--ink); }
+.split.even p strong { color: var(--accent-dk); }
 .split .col p { font-size: 0.6em; line-height: 1.5; color: var(--muted); }
 .split .col p strong { color: var(--accent-dk); }
 /* The final slide sets two prose columns side by side rather than a figure and a

@@ -86,10 +86,17 @@ plus the Geofabrik download above.
 
 ## Two things this analysis cannot do
 
-The FIRMS `area` endpoint retains near-real-time granules for roughly 90 days and
-the standard-processing archive is not built for 2026, so the record begins on
-1 July 2026. There is no wet-season baseline and no inter-annual comparison, and
-nothing here speaks to whether 2026 was unusual.
+The FIRMS `area` REST endpoint retains near-real-time granules for roughly 90 days
+and the standard-processing product is not built for 2026 yet, so the scripted
+record begins on 1 July 2026. There is no wet-season baseline and no inter-annual
+comparison, and nothing here speaks to whether 2026 was unusual.
+
+This is a limit of the access route, not of the data. FIRMS publishes the full
+archive (VIIRS S-NPP from January 2012) through its download service at
+<https://firms.modaps.eosdis.nasa.gov/download/>, which authenticates by Earthdata
+login or emailed code and delivers by email. It cannot be driven from an API key,
+which is why this pipeline does not use it, but it would lift the limitation
+entirely.
 
 OpenStreetMap does not map the minor canal network of the former Mega Rice
 Project. The drainage covariate therefore measures mapping coverage, and its flat

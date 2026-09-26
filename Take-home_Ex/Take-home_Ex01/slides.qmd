@@ -409,9 +409,10 @@ ways.
 
 **Any claim about time of day.** Four fixed overpasses.
 
-**Anything about how unusual 2026 is.** The 90-day retention denied me the
-multi-year record. Getting it is the next thing I would do, and it is a data-access
-problem rather than a methodological one.
+**Anything about how unusual 2026 is.** I only analysed 87 days. The REST API
+retains ~90, but FIRMS serves VIIRS back to 2012 through its archive download
+service, which authenticates by email and so does not fit a scripted pipeline. That
+limit is my tooling, not the data.
 :::
 :::
 
