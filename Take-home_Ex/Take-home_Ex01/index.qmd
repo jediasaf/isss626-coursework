@@ -92,6 +92,7 @@ TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
 MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
 AN <- readRDS(file.path(DIR_DERIVED, "anisotropy.rds"))
 BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
+RK <- readRDS(file.path(DIR_DERIVED, "residual_k.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
 GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
@@ -1623,6 +1624,24 @@ ggplot(rc, aes(x / 1000)) +
   theme_ex01(base_size = 9)
 ```
 
+### What the covariates still fail to explain
+
+```{r fig-resk}
+#| label: fig-resk
+#| fig-cap: "Residual K function for the best-fitting Poisson model, which is the full model with road, water, forest and plantation distances. If the fitted trend explained the pattern this curve would sit on zero. What I take from it: it does not. A large positive residual remains at short lags, so the covariates account for a great deal of the first-order variation and none of the local interaction. Knowing how far a place is from cleared land tells me whether it is likely to burn. It does not tell me that burning spreads. A Poisson model cannot represent contagion by construction, which is what motivates the cluster process fitted next."
+#| fig-height: 3.4
+rk <- RK$res_K
+ycol <- if ("bres" %in% names(rk)) "bres" else names(rk)[2]
+ggplot(rk, aes(r, .data[[ycol]])) +
+  geom_hline(yintercept = 0, colour = PAL$muted, linetype = "22", linewidth = 0.35) +
+  geom_line(colour = PAL$accent, linewidth = 0.7) +
+  scale_x_continuous(labels = label_number(scale = 1e-3, suffix = " km")) +
+  labs(x = "r", y = "Residual K",
+       title = "The covariates explain location, not contagion",
+       subtitle = glue("Model: {RK$formula}")) +
+  theme_ex01()
+```
+
 ## How large is a cluster?
 
 A significance test says clustering exists. A fitted cluster process says how big it
@@ -2191,6 +2210,7 @@ tibble::tribble(
   "`R/11_anisotropy.R`", "directional test of assumption A7, with an un-thinned control", "`anisotropy.rds`",
   "`R/12_landcover_and_ci.R`", "OSM land cover, first bootstrap attempt", "`landcover_ci.rds`",
   "`R/13_fix_cover_and_parboot.R`", "corrected land-cover distances, parametric bootstrap", "`cover_boot.rds`",
+  "`R/14_residual_k.R`", "residual K against whichever model AIC now selects", "`residual_k.rds`",
   "`R/helpers.R`", "one theme and one palette for every figure", "sourced by report and slides"
 ) |> kable()
 ```
