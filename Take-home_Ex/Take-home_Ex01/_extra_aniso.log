@@ -1,0 +1,32 @@
+computing observed orientations, n = 10321, rmax = 6000 m
+  close pairs: 1,790,172
+simulating 199 inhomogeneous Poisson patterns
+  50/199
+  100/199
+  150/199
+    r1   r2 n_pairs    R_obs R_null_mean    R4_obs R4_null_mean    R8_obs
+1  375  750   36860 0.006341    0.006636 0.0288500     0.006396 0.0869900
+2  750 1500  126200 0.005886    0.003637 0.0009177     0.003139 0.0020850
+3 1500 3000  411400 0.012070    0.002986 0.0044470     0.001769 0.0002751
+4 3000 6000 1207000 0.024020    0.005488 0.0155200     0.001855 0.0010400
+  R8_null_mean axis_deg axis4_deg  max_dev p_sector p_resultant p_fourfold
+1    0.0069820   144.70    88.710 0.028510    0.005       0.475      0.005
+2    0.0032580    96.59     5.908 0.004062    0.005       0.115      0.930
+3    0.0016870    87.98     5.598 0.002155    0.005       0.005      0.015
+4    0.0008681    76.68    13.690 0.003401    0.005       0.005      0.005
+  p_eightfold
+1       0.005
+2       0.665
+3       0.970
+4       0.350
+control: same test on the un-thinned pattern
+                              pattern     n n_pairs  R4_obs  R4_null p_fourfold
+1 ppp_cell (one point per 375 m cell) 10320   36860 0.02885 0.006396      0.005
+2           ppp_all (every detection) 34990  812600 0.01446 0.001870      0.010
+   R8_obs  R8_null p_eightfold
+1 0.08699 0.006982       0.005
+2 0.03358 0.001785       0.010
+    network       R axis_deg total_km
+1 waterways 0.03096   113.20     1203
+2     roads 0.05617    38.38     2270
+anisotropy analysis cached

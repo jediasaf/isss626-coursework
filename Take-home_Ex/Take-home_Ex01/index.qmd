@@ -89,6 +89,7 @@ CM <- readRDS(file.path(DIR_DERIVED, "covariates_models.rds"))
 EX <- readRDS(file.path(DIR_DERIVED, "extended.rds"))
 TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
 MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
+AN <- readRDS(file.path(DIR_DERIVED, "anisotropy.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
 GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
@@ -672,11 +673,15 @@ detect clustering, which is why I am reasonably confident the clustering I do de
 is not an artefact of this choice.</dd>
 
 <dt>A7. Isotropy</dt>
-<dd>$K$, $L$ and $g$ all assume it, because they average over direction. I doubt it
-holds here: peat fires spread with the wind and along canal lines, so I would expect
-real anisotropy. Any directional structure gets averaged into a weaker isotropic
-signal, so once again my reported clustering is a conservative reading rather than
-an inflated one.</dd>
+<dd>$K$, $L$ and $g$ all assume it. I expected it to fail, on the reasoning that
+peat fires spread with the wind and along canal lines. <strong>I tested it and
+every part of that was wrong.</strong> There is strong directional structure below
+750 m, but it is four-fold and aligned to the cardinal axes: the signature of the
+375 m cell grid and of the VIIRS scan grid, not of fire. Beyond 750 m it vanishes,
+leaving only a weak single-axis tilt that reaches R = 0.024 on a scale running to 1
+and matches neither the drainage nor the roads. Because the four-fold component is
+symmetric about the cardinal axes it cancels in direction-averaged statistics, so
+it does not bias $K$, $L$ or $g$. It would wreck a directional analysis.</dd>
 
 <dt>A8. Random labelling is the right null for space-time interaction</dt>
 <dd>Permuting time labels across fixed locations conditions on both marginals. That
@@ -1065,6 +1070,220 @@ stated. As set out in assumption A6, estimating $\hat{\lambda}$ from the pattern
 under test lets it absorb part of the clustering, which widens the envelope and
 makes the test *harder* to reject. The rejection therefore stands despite a
 conservative procedure, not because of a permissive one.
+
+## Testing isotropy, instead of just assuming it
+
+Assumption A7 says $K$, $L$ and $g$ all average over direction, and that I expected
+real anisotropy because peat fires spread with the wind and along canal lines.
+Listing an assumption and never testing it is the kind of thing that should not
+survive a read, so this section tests it. The test found something, but not the
+thing I predicted, and the first version of my own analysis missed it.
+
+**Why I did not use the packaged tools.** `spatstat` offers `Ksector` and
+`pairorient`, and neither accepts a `lambda` argument: both assume homogeneity.
+Applied here they would reject isotropy for two reasons that have nothing to do
+with fire. The window is 86 km wide and 213 km tall, so even a perfectly isotropic
+process yields more north-south pairs than east-west ones purely because there is
+more room that way. And intensity is concentrated in a south-southeast band, so any
+pair drawn from inside it inherits that elongation.
+
+I therefore built the null the way I built it for clustering: simulate from an
+inhomogeneous Poisson process with the same $\hat{\lambda}$ from Section 6, which
+absorbs the window geometry and the first-order trend together.
+
+**Two statistics, and the second one is the point.** Orientations here are axial, so
+I double the angles before averaging and summarise concentration by the mean
+resultant length $R_2 = |n^{-1}\sum_k e^{2i\theta_k}|$, which is 0 when
+orientations are spread evenly and 1 when every pair lies on one axis.
+
+Each harmonic is blind to the next one up, and I walked into that twice.
+
+$R_2$ detects a single preferred axis and is **structurally blind to four-fold
+structure**, because a rose with spikes at 0 and 90 degrees has its doubled angles
+cancel. My first version of this section reported the short range as isotropic on
+the strength of $R_2$ alone, and the rose diagram contradicted it on sight. So I
+added $R_4 = |n^{-1}\sum_k e^{4i\theta_k}|$.
+
+$R_4$ is in turn blind to **eight-fold** structure. Spikes at 0, 45, 90 and 135
+degrees have a 45-degree period, so under $e^{4i\theta}$ the 45 and 135 pair sits
+in antiphase to the 0 and 90 pair and the two cancel. That is exactly the shape a
+square grid produces, because a lattice offers displacements along its axes *and*
+along its diagonals. $R_8$ is what captures it, and it turns out to be the largest
+directional signal anywhere in this analysis.
+
+The general lesson is worth stating plainly, because it cost me two passes: a
+harmonic statistic only finds the structure you asked it about, and the way to
+avoid missing the rest is to look at the rose.
+
+```{r tbl-aniso}
+#| label: tbl-aniso
+#| tbl-cap: "Directional structure by distance band against 199 simulations of an inhomogeneous Poisson process in the same window. R2 detects a single preferred axis, R4 four-fold structure, R8 eight-fold. Note that at 375 to 750 m the three disagree completely: R2 sees nothing, R4 sees something, and R8 sees the largest effect in the whole analysis."
+AN$results |> transmute(
+  Band = glue("{r1} to {r2} m"),
+  Pairs = fmt_n(n_pairs),
+  `R2` = round(R_obs, 4), `p R2` = vapply(p_resultant, fmt_p, character(1), nperm = AN$nsim),
+  `R4` = round(R4_obs, 4), `p R4` = vapply(p_fourfold, fmt_p, character(1), nperm = AN$nsim),
+  `R8` = round(R8_obs, 4), `p R8` = vapply(p_eightfold, fmt_p, character(1), nperm = AN$nsim),
+  `null R8` = round(R8_null_mean, 4)
+) |> kable(align = "lrrrrrrrr")
+```
+
+```{r fig-aniso}
+#| label: fig-aniso
+#| fig-cap: "Orientation of close pairs by distance band, as a rose diagram, against the 95% interval from 199 inhomogeneous Poisson simulations. Each rose is mirrored across the origin because orientations are axial. What I take from it: the shortest band is not isotropic at all. It has eight sharp spikes on the cardinal axes and the diagonals, which is the signature of a square grid rather than of fire, and my R2 statistic scored it as isotropic because R2 cannot see four-fold structure. The figure caught what the table missed. From 750 m outward the spikes vanish and the roses sit close to their null intervals, with only a slight and growing elongation by 3 to 6 km."
+#| fig-height: 4.2
+rose <- AN$results |> select(r1, r2, props) |> tidyr::unnest(props) |>
+  mutate(band = factor(glue("{r1} to {r2} m"),
+                       levels = glue("{AN$results$r1} to {AN$results$r2} m")))
+rose2 <- bind_rows(rose, rose |> mutate(lo_deg = lo_deg + 180))
+ggplot(rose2, aes(lo_deg)) +
+  geom_ribbon(aes(ymin = null_lo, ymax = null_hi, group = band),
+              fill = PAL$rule, alpha = 0.8) +
+  geom_line(aes(y = null, group = band), colour = PAL$muted,
+            linetype = "22", linewidth = 0.3) +
+  geom_line(aes(y = obs, group = band), colour = PAL$accent, linewidth = 0.7) +
+  coord_polar(start = pi/2, direction = -1) +
+  facet_wrap(~band, nrow = 1) +
+  # Only N and S are labelled. With four polar facets side by side, an E on one
+  # panel sits directly against the W of the next and the two read as one word.
+  scale_x_continuous(breaks = c(90, 270), labels = c("N", "S")) +
+  scale_y_continuous(labels = NULL, name = NULL) +
+  labs(x = NULL,
+       title = "The short-range spikes are geometry, not fire",
+       subtitle = glue("Orange, observed share of pairs per 10 degree sector. Band, 95% interval under {AN$nsim} simulations.")) +
+  theme_ex01(base_size = 9, grid = "none") +
+  theme(axis.text.y = element_blank(),
+        panel.spacing = unit(14, "pt"))
+```
+
+```{r}
+#| label: aniso-inline
+#| include: false
+a_short <- AN$results |> filter(r1 == 375)
+a_mid   <- AN$results |> filter(r1 == 750)
+a_long  <- AN$results |> filter(r1 == 3000)
+wat <- AN$networks |> filter(network == "waterways")
+rds <- AN$networks |> filter(network == "roads")
+ctl_cell <- AN$control |> filter(grepl("ppp_cell", pattern))
+ctl_all  <- AN$control |> filter(grepl("ppp_all", pattern))
+axsep <- function(a, b) { d <- abs(a - b) %% 180; pmin(d, 180 - d) }
+```
+
+### The short-range structure is my grid, and the sensor's
+
+Over `r a_short$r1` to `r a_short$r2` m the eight-fold concentration is
+`r round(a_short$R8_obs, 4)` against `r round(a_short$R8_null_mean, 4)` under the
+null, `r fmt_p(a_short$p_eightfold, AN$nsim)`. That is more than twelve times the
+null value and the largest directional effect measured anywhere in this report. The
+four-fold term is `r round(a_short$R4_obs, 4)`, also significant, and $R_2$ is
+`r round(a_short$R_obs, 4)` against a null of `r round(a_short$R_null_mean, 4)`,
+`r fmt_p(a_short$p_resultant, AN$nsim)`, which is nothing at all.
+
+Three statistics on the same 36,860 pairs, and they disagree completely. The
+structure is spikes on the axes and on the diagonals, which is what a square
+lattice produces and what only the eighth harmonic can see.
+
+My first explanation was that this is entirely my own doing. `ppp_cell` keeps at
+most one point per 375 m cell, so short-range displacements are dominated by
+lattice vectors: 375 m at 0 and 90 degrees, 530 m on the diagonals, 750 m at two
+cells. That would produce spikes exactly where they appear. The way to check it is
+to run the identical test on `ppp_all`, which keeps every detection at its own
+sensor coordinate and has no such lattice.
+
+```{r tbl-aniso-control}
+#| label: tbl-aniso-control
+#| tbl-cap: "The same test over 375 to 750 m, on the thinned pattern and on the un-thinned detections. If the spikes were purely an artefact of my cell thinning, the second row would show nothing. It does not."
+AN$control |> transmute(
+  Pattern = pattern, n = fmt_n(n), Pairs = fmt_n(n_pairs),
+  `R8 obs` = round(R8_obs, 4), `R8 null` = round(R8_null, 4),
+  `p R8` = vapply(p_eightfold, fmt_p, character(1), nperm = AN$nsim_control),
+  `R4 obs` = round(R4_obs, 4),
+  `p R4` = vapply(p_fourfold, fmt_p, character(1), nperm = AN$nsim_control)
+) |> kable(align = "lrrrrrrr")
+```
+
+The control only half-confirms my explanation, which is more interesting than if it
+had confirmed it outright. Thinning multiplies the eight-fold signal by about two
+and a half, from `r round(ctl_all$R8_obs, 4)` to `r round(ctl_cell$R8_obs, 4)`, so
+a large part of the structure is indeed my construction. But the un-thinned
+detections still show `r round(ctl_all$R8_obs, 4)` against a null of
+`r round(ctl_all$R8_null, 4)`, `r fmt_p(ctl_all$p_eightfold, AN$nsim_control)`,
+which is roughly nineteen times the null. Removing my lattice reduces the effect
+without removing it.
+
+The remainder is the instrument. VIIRS reports detections on its own scan grid,
+organised along-scan and along-track, and for a polar orbiter those project to
+roughly cardinal directions on the ground. So the raw detections carry a
+quasi-rectangular sampling geometry before I do anything to them.
+
+Neither component is fire. Both are exactly the kind of thing Section 1.1 warned
+about: a statistic computed on these data partly measures the instrument. I did not
+expect that argument to come back and apply to my own directional test, and it is
+the most useful thing this section found.
+
+### At longer range, a real but negligible tilt
+
+From 750 m outward every harmonic goes quiet. Over
+`r a_mid$r1` to `r a_mid$r2` m, $R_4$ is `r round(a_mid$R4_obs, 4)`
+(`r fmt_p(a_mid$p_fourfold, AN$nsim)`) and $R_8$ is `r round(a_mid$R8_obs, 4)`
+(`r fmt_p(a_mid$p_eightfold, AN$nsim)`), both below their nulls. That is what a
+lattice explanation predicts, since every lattice vector is shorter than 750 m, and
+it is the check that makes me believe the short-range result is geometric rather
+than physical.
+
+What remains is a weak single-axis elongation that grows with distance, reaching
+$R_2 =$ `r round(a_long$R_obs, 4)` over `r a_long$r1` to `r a_long$r2` m against a
+null of `r round(a_long$R_null_mean, 4)`. That is statistically distinguishable at
+the Monte Carlo floor and it is 2.4% of the way to perfect alignment, which is not
+a directional pattern in any sense a fire officer would recognise.
+
+### My stated mechanism was wrong
+
+A7 guessed that fires would align with canal lines. They do not.
+
+```{r tbl-aniso-net}
+#| label: tbl-aniso-net
+#| tbl-cap: "Orientation of the mapped drainage and road networks inside the regency, weighted by segment length, against the fire pair-orientation axis at each band. Separation is axial, so 90 degrees is the maximum possible disagreement."
+bind_rows(
+  AN$networks |> transmute(What = network, `Length (km)` = fmt_n(round(total_km)),
+                           R2 = round(R, 4), `Axis (deg)` = round(axis_deg)),
+  AN$results |> transmute(What = glue("fire pairs, {r1} to {r2} m"),
+                          `Length (km)` = "", R2 = round(R_obs, 4),
+                          `Axis (deg)` = round(axis_deg))
+) |> kable(align = "lrrr")
+```
+
+The mapped waterways run at about `r round(wat$axis_deg)` degrees and the roads at
+about `r round(rds$axis_deg)` degrees. The long-range fire axis is
+`r round(a_long$axis_deg)` degrees: `r round(axsep(a_long$axis_deg, wat$axis_deg))`
+degrees off the drainage and `r round(axsep(a_long$axis_deg, rds$axis_deg))` degrees
+off the roads, on a scale where 90 degrees is the maximum possible disagreement.
+Neither is a match.
+
+So the weak long-range tilt is not canal-following. It runs closer to north-south,
+which is also the long axis of the regency and of the peat belt inside it. The most
+likely explanation is first-order structure that $\hat{\lambda}$ at a 4 km
+bandwidth does not fully absorb, rather than a directional process in the fire. I
+cannot separate those two with this design and I will not claim otherwise.
+
+### What this changes
+
+A7 is now tested rather than asserted, and every part of what I originally wrote
+turns out to be wrong. I said anisotropy was likely because fires follow canals,
+and that it would make my clustering estimates conservative.
+
+The directional structure that exists at short range is geometric, not
+meteorological. It comes from the 375 m cell grid and from the sensor's own scan
+grid, not from wind or canals. Beyond 750 m, where the clustering actually lives,
+no harmonic finds anything, so the isotropic $K$, $L$ and $g$ are estimating what
+they claim to and there is no conservatism to claim on those grounds.
+
+One practical consequence for the rest of the report. Because the eight-fold
+structure is symmetric about the cardinal axes and the diagonals, it very largely
+cancels in any statistic that averages over direction, which is what $K$, $L$ and
+$g$ do. So it does not bias the clustering results. It would wreck a directional
+analysis, and anyone extending this work should thin differently before attempting
+one.
 
 ## Sensitivity to the event definition
 
@@ -1874,9 +2093,9 @@ tibble::tribble(
   "The inhomogeneous null is estimated from the pattern under test",
   "Conservative test, so rejections stand; but the size of the excess clustering is not reliably estimated.",
   "Split-sample estimation of lambda, or a parametric trend from independent covariates",
-  "Isotropy assumed by K, L and g",
-  "Directional structure from wind and canal alignment is averaged away, weakening the measured signal.",
-  "Directional K function or a sector-based second-order analysis",
+  "Isotropy, tested rather than assumed",
+  "No longer a limitation at the scales used. Section 7.5 finds the pattern isotropic below 1.5 km, where the clustering lives. A weak departure beyond that reaches only R = 0.024 and cannot be separated from residual first-order structure.",
+  "A larger bandwidth or a parametric trend, to establish whether the long-range axis is interaction or leftover trend",
   "OpenStreetMap drainage coverage is incomplete in the study area",
   "The drainage covariate is uninformative and must not be read as a null result about drainage.",
   "A canal inventory, or canal extraction from high-resolution imagery",
