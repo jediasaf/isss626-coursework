@@ -1,0 +1,23 @@
+# Vercel serves the prebuilt _site directory (vercel.json sets outputDirectory).
+# Everything else here is source or data and must not be uploaded.
+#
+# This file is load-bearing: the Vercel CLI does NOT read .gitignore, so without
+# it the CLI walks Take-home_Ex/Take-home_Ex01/data/raw, which holds a 394 MB
+# Geofabrik extract and a 159 MB boundary file, and the deploy dies on the
+# 100 MB per-file limit.
+
+data/
+.quarto/
+_freeze/
+.Rproj.user/
+.Rhistory
+.RData
+.Renviron
+.env*
+
+# Large source data, wherever it appears
+*.zip
+*.gpkg
+*.geojson
+*.osm.pbf
+*.rds
