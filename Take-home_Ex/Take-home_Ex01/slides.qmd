@@ -93,52 +93,18 @@ One argument running through all of it: a satellite hotspot is not a fire, and
 almost everything I did follows from taking that seriously.
 :::
 
-1. A regency chosen by rule, not reputation
-2. The data, and a constraint worth naming
-3. Why a detection is not a fire
-4. Where it burns
-5. When it burns, and what the orbit decides
-6. Two nulls: one meaningless, one that can fail
-7. Space and time are not separable
-8. What the clustering is organised around, and how big it is
-9. The correction that reframes it all
-10. What I would act on, and what I would not claim
+1. The place, the data, and the window
+2. Why a detection is not a fire
+3. Where it burns
+4. When it burns, and what the orbit decides
+5. Two nulls: one meaningless, one that can fail
+6. Space and time are not separable
+7. What the clustering is organised around, and how big it is
+8. The correction that reframes it all
+9. What I would act on, and what I would not claim
+10. What I would take from this
 
-## 1. A regency chosen by rule, not reputation
-
-::: {.split}
-::: {.col}
-```{r sl-context}
-#| fig-height: 5.4
-#| fig-width: 5.4
-kal <- readRDS(file.path(DIR_DERIVED, "kal_adm2.rds")) |> st_transform(STUDY_CRS) |>
-  left_join(RANK |> select(shapeName, per_1000km2), by = "shapeName") |>
-  mutate(per_1000km2 = replace_na(per_1000km2, 0))
-ggplot(kal) +
-  geom_sf(aes(fill = per_1000km2), colour = PAL$ground, linewidth = 0.15) +
-  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.8) +
-  scale_fill_intensity(name = "Detections per 1,000 km\u00b2", v = kal$per_1000km2) +
-  coord_sf(datum = NA, expand = FALSE) + theme_map(base_size = 13)
-```
-:::
-::: {.note}
-**My rule, set first.** Highest detection density among regencies above
-5,000 km², the size floor I need for second-order estimation to a 5 km lag.
-
-**Pulang Pisau wins outright**, at
-`r fmt_n(round(RANK$per_1000km2[RANK$shapeName == STUDY_REGENCY]))` per 1,000 km².
-
-**What I rejected.** Ketapang leads on raw count
-(`r fmt_n(RANK$n_detections[RANK$shapeName == "Ketapang"])`) but is 3x the area.
-Kota Palangka Raya is denser but only
-`r fmt_n(round(RANK$area_km2[RANK$shapeName == "Kota Palangka Raya"]))` km².
-
-*My first pass picked it from a 7-day sample where it led on count. Over the full
-window it does not, so I restated the rule against the whole record.*
-:::
-:::
-
-## 2. Data, and a constraint worth naming
+## 1. The place, the data, and the window
 
 ```{r}
 #| output: asis
@@ -149,26 +115,53 @@ kf <- function(...) {
                                 it[[1]], it[[2]]))
   cat('</div>')
 }
-kf(list(fmt_n(P$qa$n_in[1]), "rows downloaded, all Kalimantan"),
-   list(fmt_n(P$ppp_all$n),  "detections inside the regency"),
-   list(fmt_n(P$ppp_cell$n), "burned 375 m cells, the analysis unit"),
-   list(P$n_days,            "days, 1 Jul to 25 Sep"))
+# short labels: on this slide the row sits above a map, and a label that wraps to
+# four lines takes the height the map needs
+kf(list(fmt_n(P$qa$n_in[1]), "rows downloaded"),
+   list(fmt_n(P$ppp_all$n),  "inside the regency"),
+   list(fmt_n(P$ppp_cell$n), "burned 375 m cells"),
+   list(P$n_days,            "days analysed"))
 ```
 
-VIIRS 375 m Collection 2, both platforms. My window is the administrative polygon
+::: {.split}
+::: {.col}
+```{r sl-context}
+#| fig-height: 3.1
+#| fig-width: 4.2
+# No legend on this one. It is a locator, the density figures are stated beside it,
+# and on a half-width column the legend key runs into the text.
+kal <- readRDS(file.path(DIR_DERIVED, "kal_adm2.rds")) |> st_transform(STUDY_CRS) |>
+  left_join(RANK |> select(shapeName, per_1000km2), by = "shapeName") |>
+  mutate(per_1000km2 = replace_na(per_1000km2, 0))
+ggplot(kal) +
+  geom_sf(aes(fill = per_1000km2), colour = PAL$ground, linewidth = 0.15) +
+  geom_sf(data = win_p, fill = NA, colour = PAL$ink, linewidth = 0.9) +
+  scale_fill_intensity(v = kal$per_1000km2) +
+  coord_sf(datum = NA, expand = FALSE) +
+  labs(subtitle = "Detections per 1,000 km\u00b2. Pulang Pisau outlined.") +
+  theme_map(base_size = 11) + theme(legend.position = "none")
+```
+:::
+::: {.note}
+**The regency was chosen by a rule, set before the result.** Highest detection
+density among regencies above 5,000 km², the size floor I need for second-order
+estimation to a 5 km lag. Pulang Pisau wins at
+`r fmt_n(round(RANK$per_1000km2[RANK$shapeName == STUDY_REGENCY]))` per 1,000 km².
+Ketapang leads on raw count
+(`r fmt_n(RANK$n_detections[RANK$shapeName == "Ketapang"])`) but is 3x the area.
+
+*My first pass used a 7-day sample, where Pulang Pisau led on count. Over the full
+window it does not, so I restated the rule against the whole record.*
+
+**VIIRS 375 m Collection 2, both platforms**, clipped to the administrative polygon
 in UTM 49S, `r fmt_n(round(P$area_km2))` km².
 
-**The temporal window was imposed on me, not chosen.** The FIRMS `area` API retains
-near-real-time granules for roughly 90 days, and the standard-processing archive is
-not built for 2026. My Kalimantan-wide queries return exactly zero rows for every
-sampled date from January to 30 June, and non-zero from 1 July. Six months of zero
-detections across a 10° box is not credible, so I read that as absence of coverage,
-not absence of fire.
+*The 87-day window is set by what the REST API retains. Why that is a limit of my
+tooling and not of the data comes later, in the correction slide.*
+:::
+:::
 
-*The cost: no wet-season baseline, so nothing here speaks to seasonal amplitude. It
-does span onset to peak, which is the period an agency acts on.*
-
-## 3. A detection is not a fire
+## 2. A detection is not a fire
 
 ::: {.split}
 ::: {.col}
@@ -201,7 +194,7 @@ That is the spine of everything else I did.
 :::
 :::
 
-## 4. Where it burns
+## 3. Where it burns
 
 ::: {.split}
 ::: {.col}
@@ -234,7 +227,7 @@ that is the most directly usable thing I found.*
 :::
 :::
 
-## 5. When it burns, and what the orbit decides
+## 4. When it burns, and what the orbit decides
 
 ::: {.split}
 ::: {.col}
@@ -265,7 +258,7 @@ cooler anomalies against a cooler background.
 :::
 :::
 
-## 6. Two nulls: one meaningless, one that can fail
+## 5. Two nulls: one meaningless, one that can fail
 
 ::: {.split}
 ::: {.col}
@@ -309,7 +302,7 @@ Different weights, different test, same answer on scale.
 :::
 :::
 
-## 7. Space and time are not separable
+## 6. Space and time are not separable
 
 ::: {.split}
 ::: {.col}
@@ -342,7 +335,7 @@ contiguous ground within days rather than recurring in the same place weeks apar
 :::
 :::
 
-## 8. What it is organised around, and how big it is
+## 7. What it is organised around, and how big it is
 
 ::: {.split}
 ::: {.col}
@@ -387,7 +380,7 @@ estimate. That is not a valid bootstrap for a point process.*
 :::
 :::
 
-## 9. The correction that reframes it all
+## 8. The correction that reframes it all
 
 ::: {.split}
 ::: {.col}
@@ -423,7 +416,7 @@ here.*
 :::
 :::
 
-## 10. What this supports, and what it does not
+## 9. What this supports, and what it does not
 
 ::: {.split .even}
 ::: {.col}
@@ -454,6 +447,53 @@ coverage, and cleared land, roads and forest edges are jointly determined.
 **That any of this describes a normal year.** As the previous slide shows, 2026 is
 the second-worst season in fourteen years, so every scale here was measured under
 extreme conditions.
+:::
+:::
+
+## 10. What I would take from this
+
+```{r}
+#| output: asis
+# labels kept to a similar length, or the tallest one drags the whole row down
+kf(list(paste0(round(infl, 1), "x"), "inflation in the raw count"),
+   list(paste0(round(peak_r), " m"), "peak of residual clustering"),
+   list(paste0(round(pb$lo95_m/1000, 2), " to ", round(pb$hi95_m/1000, 2), " km"),
+        "cluster scale, bootstrap interval"),
+   list(paste0(a26$rank_cells, " of ", nrow(MY$annual)), "2026 rank in the record"))
+```
+
+::: {.split .even}
+::: {.col}
+[What made the results credible]{.colhead}
+
+**Every result I would defend came from replacing a default null with one that
+could fail.** Complete spatial randomness rejects before I compute anything.
+Moran's I on raw counts is `r round(mI("3 km","raw"), 2)`. The short-range rose has
+eight lobes. None of those are findings: they are the instrument and the geometry,
+restated.
+
+**Intensity** spans two orders of magnitude and is stable across four bandwidths.
+**Clustering** survives the inhomogeneous null and an areal method with different
+weights agrees. **Scale** is confirmed by two independent estimators. **Land cover**
+carries `r fmt_n(round(gn("plantation")))` of `r fmt_n(round(gn("all")))` AIC units
+from one term.
+:::
+::: {.note}
+[What produced the errors]{.colhead}
+
+**Every mistake came from not checking what a default was doing.** A 5 km distance
+cap. A cluster fit with no trend term. A covariate set of two. A harmonic that
+could not see the structure in front of it.
+
+Each returned a confident number, and each was wrong until something forced a look.
+Ten corrections are listed in the report.
+
+*The figure caught what the table missed more than once. That is the practical
+version of the lesson, and the thing I would carry into the next exercise.*
+
+**One caveat over all of it.** Everything here was measured in a season that ranks
+`r a26$rank_cells` of `r nrow(MY$annual)`, at `r round(a26$vs_median)`x the median.
+These are the properties of a severe year, not a typical one.
 :::
 :::
 

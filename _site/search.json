@@ -1231,7 +1231,7 @@
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#contents",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
     "section": "Contents",
-    "text": "Contents\n\nOne argument running through all of it: a satellite hotspot is not a fire, and almost everything I did follows from taking that seriously.\n\n\nA regency chosen by rule, not reputation\nThe data, and a constraint worth naming\nWhy a detection is not a fire\nWhere it burns\nWhen it burns, and what the orbit decides\nTwo nulls: one meaningless, one that can fail\nSpace and time are not separable\nWhat the clustering is organised around, and how big it is\nThe correction that reframes it all\nWhat I would act on, and what I would not claim",
+    "text": "Contents\n\nOne argument running through all of it: a satellite hotspot is not a fire, and almost everything I did follows from taking that seriously.\n\n\nThe place, the data, and the window\nWhy a detection is not a fire\nWhere it burns\nWhen it burns, and what the orbit decides\nTwo nulls: one meaningless, one that can fail\nSpace and time are not separable\nWhat the clustering is organised around, and how big it is\nThe correction that reframes it all\nWhat I would act on, and what I would not claim\nWhat I would take from this",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1266,8 +1266,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#a-detection-is-not-a-fire",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#a-detection-is-not-a-fire",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "3. A detection is not a fire",
-    "text": "3. A detection is not a fire\n\n\n\n\n\n\n\n\n\n\n\n\n\nOne large peat fire fills many 375 m pixels, and two satellites re-detect it about four times a day.\nI measured it: the raw count overstates distinct burning locations by 3.4x.\nSo the pattern I started with partly measures the satellite’s revisit schedule, which means testing against complete spatial randomness was guaranteed to reject before I computed anything.\nSo I changed two things. The unit becomes the 375 m cell. The null becomes an inhomogeneous Poisson process.\nThat is the spine of everything else I did.",
+    "section": "2. A detection is not a fire",
+    "text": "2. A detection is not a fire\n\n\n\n\n\n\n\n\n\n\n\n\n\nOne large peat fire fills many 375 m pixels, and two satellites re-detect it about four times a day.\nI measured it: the raw count overstates distinct burning locations by 3.4x.\nSo the pattern I started with partly measures the satellite’s revisit schedule, which means testing against complete spatial randomness was guaranteed to reject before I computed anything.\nSo I changed two things. The unit becomes the 375 m cell. The null becomes an inhomogeneous Poisson process.\nThat is the spine of everything else I did.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1278,8 +1278,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#where-it-burns",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#where-it-burns",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "4. Where it burns",
-    "text": "4. Where it burns\n\n\n\n\n\n\n\n\n\n\n\n\n\nGaussian kernel, Diggle edge correction, bandwidth I fixed at 4 km.\nCross-validated selectors gave me about 0.6 km and I rejected them: they absorb the very clustering my second-order test exists to detect, which would have rigged the second-order test two slides on.\nIntensity spans roughly two orders of magnitude between the southern peat belt and the northern interior.\nSo allocating in proportion to sub-district area is badly matched to risk. I think that is the most directly usable thing I found.",
+    "section": "3. Where it burns",
+    "text": "3. Where it burns\n\n\n\n\n\n\n\n\n\n\n\n\n\nGaussian kernel, Diggle edge correction, bandwidth I fixed at 4 km.\nCross-validated selectors gave me about 0.6 km and I rejected them: they absorb the very clustering my second-order test exists to detect, which would have rigged the second-order test two slides on.\nIntensity spans roughly two orders of magnitude between the southern peat belt and the northern interior.\nSo allocating in proportion to sub-district area is badly matched to risk. I think that is the most directly usable thing I found.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1290,8 +1290,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#when-it-burns-and-what-the-orbit-decides",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#when-it-burns-and-what-the-orbit-decides",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "5. When it burns, and what the orbit decides",
-    "text": "5. When it burns, and what the orbit decides\n\n\n\n\n\n\n\n\n\n\n\n\n\nHeavily back-loaded: week 1 recorded 7 events, the week of 16 September recorded 8,087.\nThe day/night contrast is not a daily cycle, and I nearly read it as one. Both platforms observe at four narrow fixed local times, so if I claimed fire peaks at a given hour I would be describing the orbit.\nI use the split only as a detectability covariate, since night overpasses catch cooler anomalies against a cooler background.",
+    "section": "4. When it burns, and what the orbit decides",
+    "text": "4. When it burns, and what the orbit decides\n\n\n\n\n\n\n\n\n\n\n\n\n\nHeavily back-loaded: week 1 recorded 7 events, the week of 16 September recorded 8,087.\nThe day/night contrast is not a daily cycle, and I nearly read it as one. Both platforms observe at four narrow fixed local times, so if I claimed fire peaks at a given hour I would be describing the orbit.\nI use the split only as a detectability covariate, since night overpasses catch cooler anomalies against a cooler background.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1326,8 +1326,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#space-and-time-are-not-separable",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#space-and-time-are-not-separable",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "7. Space and time are not separable",
-    "text": "7. Space and time are not separable\n\n\n\n\n\n\n\n\n\n\n\n\n\nKnox test. My null is random labelling: I hold locations and dates both fixed and permute only their pairing, across 999 permutations of 8,720,153 close pairs.\nBecause both marginals stay fixed, none of this can be explained away by the seasonal ramp or the spatial concentration.\nStrongest at the tightest cell, decaying monotonically outward. I read that as short-range propagation: a cell that burns today raises the chance a neighbour burns tomorrow, and the effect is largely spent within days and a kilometre or two.\nThe decay is steeper in time than in space, which fits fire spreading over contiguous ground within days rather than recurring in the same place weeks apart.",
+    "section": "6. Space and time are not separable",
+    "text": "6. Space and time are not separable\n\n\n\n\n\n\n\n\n\n\n\n\n\nKnox test. My null is random labelling: I hold locations and dates both fixed and permute only their pairing, across 999 permutations of 8,720,153 close pairs.\nBecause both marginals stay fixed, none of this can be explained away by the seasonal ramp or the spatial concentration.\nStrongest at the tightest cell, decaying monotonically outward. I read that as short-range propagation: a cell that burns today raises the chance a neighbour burns tomorrow, and the effect is largely spent within days and a kilometre or two.\nThe decay is steeper in time than in space, which fits fire spreading over contiguous ground within days rather than recurring in the same place weeks apart.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1338,8 +1338,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#what-it-is-organised-around-and-how-big-it-is",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#what-it-is-organised-around-and-how-big-it-is",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "8. What it is organised around, and how big it is",
-    "text": "8. What it is organised around, and how big it is\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlantation, not access. Fitted alone, distance to plantation and farmland recovers 3,204 of the 3,550 AIC units the full model gains. Roads alone recover 1,991.\nMy first version had only roads and waterways and concluded access dominated. That was the thin covariate set talking.\nBut not the forest half of that story. Fitted alone, distance to forest explains less than roads (1,906), its curve is not monotone, and the median burned cell sits 20 km from any mapped forest. I reported it as a mechanism and it is not one.\nCluster scale 1055 m, parametric bootstrap 902 to 1025 m, with 2.2 to 2.5 km holding most of a cluster.\nResampling points with replacement gave an interval that excluded its own point estimate. That is not a valid bootstrap for a point process.",
+    "section": "7. What it is organised around, and how big it is",
+    "text": "7. What it is organised around, and how big it is\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlantation, not access. Fitted alone, distance to plantation and farmland recovers 3,204 of the 3,550 AIC units the full model gains. Roads alone recover 1,991.\nMy first version had only roads and waterways and concluded access dominated. That was the thin covariate set talking.\nBut not the forest half of that story. Fitted alone, distance to forest explains less than roads (1,906), its curve is not monotone, and the median burned cell sits 20 km from any mapped forest. I reported it as a mechanism and it is not one.\nCluster scale 1055 m, parametric bootstrap 902 to 1025 m, with 2.2 to 2.5 km holding most of a cluster.\nResampling points with replacement gave an interval that excluded its own point estimate. That is not a valid bootstrap for a point process.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1350,8 +1350,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#what-this-supports-and-what-it-does-not",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#what-this-supports-and-what-it-does-not",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "10. What this supports, and what it does not",
-    "text": "10. What this supports, and what it does not\n\n\nWhat I would act on\nReallocate by intensity, not by area. Two orders of magnitude separate the southern peat belt from the northern interior.\nA containment geometry. First ring 2.2 to 2.5 km, elevation out to about 7.2 km, days not weeks.\nA monitoring limit. I cannot resolve anything below 375 m. A finer answer needs a different sensor, not a different statistic.\n\n\nWhat I would not claim\nRoads as a policy lever. Roads follow worked land. I cannot tell from this whether access aids suppression or enables ignition, and the two point opposite ways.\nDrainage, or land cover, as a lever. Both covariates are limited by OSM coverage, and cleared land, roads and forest edges are jointly determined.\nAny claim about time of day. Four fixed overpasses.\nThat any of this describes a normal year. As the previous slide shows, 2026 is the second-worst season in fourteen years, so every scale here was measured under extreme conditions.\n\n\n\nMy technical report, code and audit trail are in the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.",
+    "section": "9. What this supports, and what it does not",
+    "text": "9. What this supports, and what it does not\n\n\nWhat I would act on\nReallocate by intensity, not by area. Two orders of magnitude separate the southern peat belt from the northern interior.\nA containment geometry. First ring 2.2 to 2.5 km, elevation out to about 7.2 km, days not weeks.\nA monitoring limit. I cannot resolve anything below 375 m. A finer answer needs a different sensor, not a different statistic.\n\n\nWhat I would not claim\nRoads as a policy lever. Roads follow worked land. I cannot tell from this whether access aids suppression or enables ignition, and the two point opposite ways.\nDrainage, or land cover, as a lever. Both covariates are limited by OSM coverage, and cleared land, roads and forest edges are jointly determined.\nAny claim about time of day. Four fixed overpasses.\nThat any of this describes a normal year. As the previous slide shows, 2026 is the second-worst season in fourteen years, so every scale here was measured under extreme conditions.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1889,8 +1889,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#the-correction-that-reframes-it-all",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#the-correction-that-reframes-it-all",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "9. The correction that reframes it all",
-    "text": "9. The correction that reframes it all\n\n\n\n\n\n\n\n\n\n\n\n\n\nI had written that I could not tell whether 2026 was severe, blaming the API’s 90-day retention.\nI was wrong. The standard archive is empty for 2026 only because reprocessing lags five months. For earlier years the same endpoint serves it normally. One query against 2019 would have shown me.\n2026 ranks 2 of 14, at 54x the 2013-2025 median of 150 cells.\nSo everything on the previous slides describes a severe season, not a typical one. And the record is bimodal, which means an average is a useless planning number here.",
+    "section": "8. The correction that reframes it all",
+    "text": "8. The correction that reframes it all\n\n\n\n\n\n\n\n\n\n\n\n\n\nI had written that I could not tell whether 2026 was severe, blaming the API’s 90-day retention.\nI was wrong. The standard archive is empty for 2026 only because reprocessing lags five months. For earlier years the same endpoint serves it normally. One query against 2019 would have shown me.\n2026 ranks 2 of 14, at 54x the 2013-2025 median of 150 cells.\nSo everything on the previous slides describes a severe season, not a typical one. And the record is bimodal, which means an average is a useless planning number here.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -1901,8 +1901,8 @@
     "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#two-nulls-one-meaningless-one-that-can-fail",
     "href": "Take-home_Ex/Take-home_Ex01/slides.html#two-nulls-one-meaningless-one-that-can-fail",
     "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
-    "section": "6. Two nulls: one meaningless, one that can fail",
-    "text": "6. Two nulls: one meaningless, one that can fail\n\n\n\n\n\n\n\n\n\n\n\n\n\nAgainst CSR, G, F and L all leave the envelope immediately. That persuades nobody, including me: the sensor guarantees it. g(r) is even suppressed below 375 m, which is the pixel, not fires avoiding each other.\nSo I changed the null. An inhomogeneous Poisson process with intensity from the 4 km kernel estimate, with the reference re-estimated for every simulated pattern. Everything my first-order analysis found is already inside it.\nThe departure survives. Both global tests reject at the Monte Carlo floor.\nThe two panels disagree, and that was the lesson. L_inhom never re-enters its envelope in 20 km; g_inhom, which localises scale, peaks at 438 m and is within 10% of no-excess by 7.2 km. My first draft capped r at 5 km and drew the wrong conclusion from exactly this.\nAn areal method agrees. Moran’s I on hexagons falls from 0.69 on raw counts to 0.28 once lambda-hat is removed, and to 0.07 at 5 km. Different weights, different test, same answer on scale.",
+    "section": "5. Two nulls: one meaningless, one that can fail",
+    "text": "5. Two nulls: one meaningless, one that can fail\n\n\n\n\n\n\n\n\n\n\n\n\n\nAgainst CSR, G, F and L all leave the envelope immediately. That persuades nobody, including me: the sensor guarantees it. g(r) is even suppressed below 375 m, which is the pixel, not fires avoiding each other.\nSo I changed the null. An inhomogeneous Poisson process with intensity from the 4 km kernel estimate, with the reference re-estimated for every simulated pattern. Everything my first-order analysis found is already inside it.\nThe departure survives. Both global tests reject at the Monte Carlo floor.\nThe two panels disagree, and that was the lesson. L_inhom never re-enters its envelope in 20 km; g_inhom, which localises scale, peaks at 438 m and is within 10% of no-excess by 7.2 km. My first draft capped r at 5 km and drew the wrong conclusion from exactly this.\nAn areal method agrees. Moran’s I on hexagons falls from 0.69 on raw counts to 0.28 once lambda-hat is removed, and to 0.07 at 5 km. Different weights, different test, same answer on scale.",
     "crumbs": [
       "Take-home",
       "Take-home Exercise 1",
@@ -2087,6 +2087,30 @@
       "Take-home",
       "Take-home Exercise 1",
       "Technical Report"
+    ]
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#the-place-the-data-and-the-window",
+    "href": "Take-home_Ex/Take-home_Ex01/slides.html#the-place-the-data-and-the-window",
+    "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
+    "section": "1. The place, the data, and the window",
+    "text": "1. The place, the data, and the window\n\n\n\n413,182\n\n\nrows downloaded\n\n\n\n\n34,987\n\n\ninside the regency\n\n\n\n\n10,321\n\n\nburned 375 m cells\n\n\n\n\n87\n\n\ndays analysed\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe regency was chosen by a rule, set before the result. Highest detection density among regencies above 5,000 km², the size floor I need for second-order estimation to a 5 km lag. Pulang Pisau wins at 3,656 per 1,000 km². Ketapang leads on raw count (65,901) but is 3x the area.\nMy first pass used a 7-day sample, where Pulang Pisau led on count. Over the full window it does not, so I restated the rule against the whole record.\nVIIRS 375 m Collection 2, both platforms, clipped to the administrative polygon in UTM 49S, 9,759 km².\nThe 87-day window is set by what the REST API retains. Why that is a limit of my tooling and not of the data comes later, in the correction slide.",
+    "crumbs": [
+      "Take-home",
+      "Take-home Exercise 1",
+      "Executive Summary"
+    ]
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/slides.html#what-i-would-take-from-this",
+    "href": "Take-home_Ex/Take-home_Ex01/slides.html#what-i-would-take-from-this",
+    "title": "Take-home Exercise 1: Geospatial Analytics for Public Safety",
+    "section": "10. What I would take from this",
+    "text": "10. What I would take from this\n\n\n\n3.4x\n\n\ninflation in the raw count\n\n\n\n\n438 m\n\n\npeak of residual clustering\n\n\n\n\n0.9 to 1.03 km\n\n\ncluster scale, bootstrap interval\n\n\n\n\n2 of 14\n\n\n2026 rank in the record\n\n\n\n\n\nWhat made the results credible\nEvery result I would defend came from replacing a default null with one that could fail. Complete spatial randomness rejects before I compute anything. Moran’s I on raw counts is 0.69. The short-range rose has eight lobes. None of those are findings: they are the instrument and the geometry, restated.\nIntensity spans two orders of magnitude and is stable across four bandwidths. Clustering survives the inhomogeneous null and an areal method with different weights agrees. Scale is confirmed by two independent estimators. Land cover carries 3,204 of 3,550 AIC units from one term.\n\n\nWhat produced the errors\nEvery mistake came from not checking what a default was doing. A 5 km distance cap. A cluster fit with no trend term. A covariate set of two. A harmonic that could not see the structure in front of it.\nEach returned a confident number, and each was wrong until something forced a look. Ten corrections are listed in the report.\nThe figure caught what the table missed more than once. That is the practical version of the lesson, and the thing I would carry into the next exercise.\nOne caveat over all of it. Everything here was measured in a season that ranks 2 of 14, at 54x the median. These are the properties of a severe year, not a typical one.\n\n\n\nMy technical report, code and audit trail are in the repository. Data: NASA FIRMS, geoBoundaries, OpenStreetMap via Geofabrik.",
+    "crumbs": [
+      "Take-home",
+      "Take-home Exercise 1",
+      "Executive Summary"
     ]
   }
 ]
