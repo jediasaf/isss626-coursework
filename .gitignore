@@ -10,3 +10,11 @@ _freeze/
 data/
 
 **/*.quarto_ipynb
+.env*
+
+# Secrets. .Renviron carries the FIRMS MAP_KEY used by
+# Take-home_Ex/Take-home_Ex01; .Renviron.example documents what is needed.
+.Renviron
+.Renviron.local
+.env.local
+.env
