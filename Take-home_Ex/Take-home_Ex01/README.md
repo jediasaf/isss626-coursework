@@ -1,4 +1,4 @@
-# Where peat burns, and how close together
+# Take-home Exercise 1: Geospatial Analytics for Public Safety
 
 First- and second-order point-pattern analysis of VIIRS active-fire detections in
 **Pulang Pisau Regency, Central Kalimantan**, 1 July to 25 September 2026.

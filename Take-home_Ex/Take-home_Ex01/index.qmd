@@ -1,6 +1,6 @@
 ---
-title: "Where peat burns, and how close together"
-subtitle: "TAKE-HOME EXERCISE 1"
+title: "Take-home Exercise 1: Geospatial Analytics for Public Safety"
+subtitle: "First- and second-order point-pattern analysis of VIIRS active-fire detections in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026"
 description: |
   A first- and second-order point-pattern analysis of VIIRS active-fire detections
   in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026.
@@ -40,7 +40,9 @@ abstract: |
   Clustering beyond the trend peaks at about 440 m and decays to within 10% of no
   excess only by roughly 7 km. A Thomas process fitted after the trend is removed
   puts the cluster standard deviation near a kilometre, with a parametric bootstrap
-  interval of 0.90 to 1.03 km and 2.2 to 2.5 km holding most of a cluster. An areal
+  interval of 0.90 to 1.03 km and 2.2 to 2.5 km holding most of a cluster. Proximity
+  to plantation and farmland is the strongest covariate, recovering 90% of the
+  explanatory power of the full model from one term. An areal
   analysis agrees from different machinery: Moran's I on hexagons falls from 0.69 on
   raw counts to 0.28 once the intensity is removed, and to 0.07 as the hexagons grow
   past the interaction scale. A Knox permutation test finds space-time interaction
@@ -90,6 +92,7 @@ AN <- readRDS(file.path(DIR_DERIVED, "anisotropy.rds"))
 BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
 RK <- readRDS(file.path(DIR_DERIVED, "residual_k.rds"))
 LI <- readRDS(file.path(DIR_DERIVED, "lisa.rds"))
+CS <- readRDS(file.path(DIR_DERIVED, "cover_split.rds"))
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 PROBE <- readRDS(file.path(DIR_DERIVED, "retention_probe.rds"))
 GAP <- readRDS(file.path(DIR_DERIVED, "gap_report.rds"))
@@ -1674,23 +1677,55 @@ sh <- BC$cover_share
 ```
 
 Adding land cover changed which mechanism looks dominant, and the earlier version of
-this section had it wrong.
+this section had it wrong. Checking the support behind each covariate then corrected
+me a second time, in the other direction.
 
-**Land cover carries most of the signal, not access.** The covariate models improve
-on the intercept-only model by `r fmt_n(round(dn2))` AIC units. Distance to forest
-and to plantation alone recovers `r fmt_n(round(d_cover))` of that. Distance to road
-and to water alone recovers `r fmt_n(round(d_access))`, and distance to road by
-itself `r fmt_n(round(d_road))`. The two pairs use the same three parameters, so the
-comparison is clean, and land cover wins by
-`r fmt_n(round(g("access") - g("cover")))` AIC units.
+```{r tbl-coversplit}
+#| label: tbl-coversplit
+#| tbl-cap: "Each covariate fitted on its own, so the explanatory power can be attributed rather than shared. Gain is the AIC improvement over an intercept-only model. The single-covariate models all use two parameters and are directly comparable."
+CS$aic |> transmute(Model = model, Parameters = npar,
+                    `Gain over null` = fmt_n(round(gain_over_null)),
+                    AIC = fmt_n(round(AIC))) |> kable(align = "lrrr")
+```
+
+```{r}
+#| label: cs-inline
+#| include: false
+gn <- function(m) CS$aic$gain_over_null[CS$aic$model == m]
+sup <- CS$support
+cf <- as.data.frame(BC$best_coef2)
+co <- function(n) cf[n, "Estimate"]; zz <- function(n) cf[n, "Zval"]
+sh <- BC$cover_share
+```
+
+**Proximity to plantation and farmland is the covariate that matters.** On its own
+it recovers `r fmt_n(round(gn("plantation")))` of the
+`r fmt_n(round(gn("all")))` AIC units the full model gains over an intercept-only
+model, which is about
+`r percent(gn("plantation")/gn("all"), accuracy = 1)` of the total from a single
+term. Distance to road recovers `r fmt_n(round(gn("road")))` and distance to forest
+`r fmt_n(round(gn("forest")))`, both on the same two parameters.
 
 My earlier claim that access did nearly all the work was an artefact of a thin
 covariate set. With only roads and waterways in the model, distance to road was the
 best available proxy for something it was not measuring.
 
+**The forest term is much weaker than I first reported, and I should not have read
+it as a mechanism.** Adding forest on top of plantation buys only
+`r fmt_n(round(gn("cover_both") - gn("plantation")))` further AIC units, and forest
+alone explains slightly less than roads alone. The reason is visible in the support
+behind it. The median burned cell sits
+`r round(sup$median_km[sup$feature == "forest"], 1)` km from the nearest mapped
+forest polygon and
+`r percent(sup$share_beyond_20km[sup$feature == "forest"], accuracy = 1)` of cells
+are beyond 20 km, so the covariate is describing a near-regional gradient across an
+86 km wide window. Plantation sits at a median of
+`r round(sup$median_km[sup$feature == "plantation"], 1)` km, which is a local
+relationship.
+
 ```{r tbl-coef2}
 #| label: tbl-coef2
-#| tbl-cap: "Coefficients of the full model, on the log-intensity scale, per kilometre. A negative coefficient means intensity falls as you move away from that feature, so fires concentrate near it."
+#| tbl-cap: "Coefficients of the full model, on the log-intensity scale, per kilometre. A negative coefficient means intensity falls with distance from that feature. The forest coefficient is positive and precisely estimated, but see the caution below: a linear term summarises a relationship that the non-parametric curve shows is not monotone."
 tibble::tibble(
   Covariate = c("Distance to road", "Distance to waterway",
                 "Distance to forest", "Distance to plantation or farmland"),
@@ -1700,33 +1735,35 @@ tibble::tibble(
 ) |> kable(align = "lrrr")
 ```
 
-**The signs describe an agricultural frontier.** Intensity rises steeply as you
+**What the signs support, and what they do not.** Intensity rises steeply as you
 approach plantation and farmland (coefficient `r round(co("Dplantation_km"), 4)`,
-z = `r round(zz("Dplantation_km"), 1)`) and falls as you approach mapped forest
-(`r round(co("Dforest_km"), 4)`, z = `r round(zz("Dforest_km"), 1)`). Fire sits near
-cultivated land and away from standing forest. For peat fire used in land clearing
-that is the expected pattern, and it is a more specific mechanism than proximity to
-a road.
+z = `r round(zz("Dplantation_km"), 1)`). That relationship is local, monotone and
+carries most of the model, and for peat fire used in land clearing it is the
+expected pattern.
 
-**The caveat from the drainage covariate applies again, with less force.** OSM
-landuse is sparse here. Mapped forest covers
+The forest coefficient is positive and has a large z, but a large z on a
+misspecified functional form is not evidence of a mechanism. The rhohat curve below
+is not monotone: intensity is moderate near mapped forest, higher at 20 to 25 km,
+low at 40 km and high again beyond. A single linear term across that range is a
+summary, not a description. What I can say is that mapped forest and fire are
+largely in different parts of the regency. What I cannot say is that proximity to
+forest suppresses fire.
+
+**The OSM caveat applies to both, with different force.** Mapped forest covers
 `r percent(sh$share_of_window[sh$group == "forest"], accuracy = 0.1)` of the window
 and plantation or farmland
-`r percent(sh$share_of_window[sh$group == "plantation"], accuracy = 0.1)`, from a few
-dozen polygons apiece. Distance to the nearest such polygon across a
-`r fmt_n(round(P$area_km2))` km² regency is a coarse instrument, and part of what it
-measures is where mappers have drawn boundaries. The effect is large enough, and the
-signs coherent enough, that I do not think mapping effort explains it. I cannot rule
-it out.
+`r percent(sh$share_of_window[sh$group == "plantation"], accuracy = 0.1)`, from a
+few dozen polygons apiece. For plantation the effect is local and steep enough that
+mapping effort is an unlikely explanation. For forest, where the covariate varies
+over tens of kilometres, I cannot separate the two.
 
-**None of this is causal.** Roads, farmland and forest edges are all jointly
-determined by where people have cleared and worked the land. The model identifies
-association and orders the covariates by explanatory power. It does not tell me what
-would happen if any of them changed.
+**None of this is causal.** Roads, farmland and forest edges are jointly determined
+by where people have cleared and worked the land. The model orders covariates by
+explanatory power. It does not say what would happen if any of them changed.
 
 ```{r fig-rho2}
 #| label: fig-rho2
-#| fig-cap: "Intensity as a non-parametric function of distance to mapped forest and to plantation or farmland, with 95% bands. What I take from it: the plantation curve falls steeply over the first few kilometres, which is the strongest covariate relationship in the report. The forest curve rises, so fire is less likely close to mapped forest and more likely away from it. Both are consistent with burning concentrated on cleared and cultivated ground rather than inside remaining forest. The bands widen at large distances, where few cells are that far from anything mapped, and the curves should not be read out there."
+#| fig-cap: "Intensity as a non-parametric function of distance to mapped forest and to plantation or farmland, with 95% bands. What I take from it: the two panels are not equally trustworthy and the figure is the reason I stopped treating them as a pair. Plantation falls steeply over the first few kilometres and is the strongest covariate relationship in the report; the median burned cell is 4 km from mapped plantation, so the informative part of that curve is where the data is. Forest is a different matter. The curve is not monotone, rising to 20 to 25 km, dropping near 40 and rising again, and the median cell sits 20 km out with half beyond that. The positive linear coefficient in the model is a summary of that shape, not a description of it."
 #| fig-height: 3.6
 rc <- bind_rows(lapply(names(BC$rho_cover), function(nm) {
   d <- BC$rho_cover[[nm]]; names(d)[1] <- "x"
@@ -1740,7 +1777,7 @@ ggplot(rc, aes(x / 1000)) +
   geom_line(aes(y = per_1000km2(rho)), colour = PAL$accent, linewidth = 0.7) +
   facet_wrap(~panel, scales = "free", nrow = 1) +
   labs(x = "Distance (km)", y = "Burned cells per 1,000 km\u00b2",
-       title = "Fire tracks cleared land, not forest") +
+       title = "One curve is local and steep, the other is neither") +
   theme_ex01(base_size = 9)
 ```
 
@@ -2093,8 +2130,10 @@ tibble::tribble(
   "Relative-risk surface, weekly dispersion, space-time intensity sequence", "Moderate",
   "Residual spatial autocorrelation exists globally but localises nowhere",
   "Moran's I on Pearson residuals is 0.28 at 3 km hexagons (z = 16.4), but no hexagon survives Benjamini-Hochberg correction across 1,252 local tests", "High",
-  "Fire intensity tracks land cover more than access: it rises near plantation and farmland, falls near mapped forest",
-  "AIC comparison of Poisson models at matched parameter counts, coefficient signs, rhohat curves", "Moderate, limited by sparse OpenStreetMap landuse coverage",
+  "Fire intensity rises steeply towards plantation and farmland, and that single covariate carries most of the model",
+  "Fitted alone it recovers 3,204 of the 3,550 AIC units the full model gains over an intercept-only model; the rhohat curve is local and monotone", "Moderate, limited by sparse OpenStreetMap landuse coverage",
+  "Distance to mapped forest is a weak and non-monotone covariate that should not be read as a mechanism",
+  "Fitted alone it explains less than roads do, its rhohat curve is not monotone, and the median burned cell sits 20 km from any mapped forest", "High, in the negative sense: the claim I first made is not supportable",
   "Distance to road is associated with intensity but explains far less once land cover enters the model",
   "Roads recover about 56% of the AIC improvement over an intercept-only model; land cover about 98%", "Moderate",
   "The observed temporal profile is fire activity, but the day/night contrast is sampling",
@@ -2243,10 +2282,11 @@ resolve anything below 375 m, so these data cannot support tasking at plot scale
 finer answer needs a different sensor, not a different statistic.
 
 **Inference that needs information I do not have.** Fire intensity rises sharply
-near plantation and farmland and falls near mapped forest. That is association, not
-a lever. Cleared land, roads and forest edges are jointly determined by where people
-have worked the landscape, and I cannot say which one moving would change the
-others. Settling it needs ignition-cause records, land tenure and enforcement data.
+near plantation and farmland, and that one covariate carries most of the model. It
+is an association, not a lever. Cleared land, roads and forest edges are jointly
+determined by where people have worked the landscape, and I cannot say which one
+moving would change the others. Settling it needs ignition-cause records, land
+tenure and enforcement data.
 
 The flat drainage relationship is also not evidence that drainage does not matter.
 OpenStreetMap does not map the minor canal network of the former Mega Rice Project,
@@ -2262,7 +2302,7 @@ establishment sized to an average that never occurs.
 
 # What I got wrong {#sec-corrections}
 
-This report revises nine of its own conclusions. They are scattered through the
+This report revises ten of its own conclusions. They are scattered through the
 sections where they happened, which is the right place for them but makes the
 pattern hard to see, so they are collected here.
 
@@ -2300,6 +2340,9 @@ tibble::tribble(
   "How large is a cluster",
   "Access does nearly all the explanatory work",
   "The covariate set held only roads and waterways. Adding land cover, distance to plantation and forest recovers far more",
+  "What the clustering is organised around",
+  "Fire tracks cleared land and avoids forest, in equal measure",
+  "Fitted separately, plantation carries 90% of the explanatory power and forest explains less than roads. The forest rhohat curve is not monotone and the median cell sits 20 km from any mapped forest, so the linear coefficient summarises a shape it does not describe",
   "What the clustering is organised around",
   "The 90-day API retention makes 2026 impossible to place in context",
   "The standard archive is empty for 2026 only because of a five-month reprocessing lag. Earlier years are served normally, and 2026 turns out to be second of fourteen",
@@ -2419,6 +2462,83 @@ tibble::tibble(
               as.character(packageVersion("spatstat.model")),
               as.character(packageVersion("ggplot2")))) |> kable(align = "ll")
 ```
+
+# Insight {#sec-insight}
+
+If someone reads only one page of this, it should be this one.
+
+## The finding that governs the rest
+
+**A satellite hotspot is not a fire, and forgetting that invalidates most of what
+you would otherwise conclude.** A VIIRS detection is a 375 m pixel seen during one
+overpass. One peat fire fills dozens of them and gets re-recorded about four times a
+day, and I measured the consequence: the raw count overstates distinct burning
+locations by a factor of about `r round(infl, 1)`. Every standard test then returns
+a significant result for reasons that have nothing to do with fire. Complete spatial
+randomness is rejected before any analysis. Moran's I on raw counts is
+`r round(gr("3 km","raw"), 2)`. The short-range rose diagram has eight sharp lobes.
+None of those are findings. They are the instrument and the geometry, restated.
+
+Almost every methodological decision in this report exists to get past that.
+
+## What survives a harder test
+
+```{r tbl-insight}
+#| label: tbl-insight
+#| tbl-cap: "The four results I would defend, each with the harder test it survived and the number that carries it."
+tibble::tribble(
+  ~Finding, ~`What made it credible`, ~Number,
+  "Fire concentrates in the drained southern peat, by two orders of magnitude",
+  "Stable across four bandwidths and an adaptive estimator",
+  glue("0 to {fmt_n(round(FO$kde_range[2, 'main']))} burned cells per 1,000 sq km"),
+  "Clustering survives after the trend is removed, and is local",
+  "Inhomogeneous Poisson null with lambda re-estimated per simulation; an areal method with different weights agrees",
+  glue("peak at {round(EX$summary_ext$peak_r_m)} m, gone by {round(EX$summary_ext$r_g_within_10pct_of_1/1000, 1)} km"),
+  "A cluster is about a kilometre across",
+  "Two independent estimators agree, and a parametric bootstrap gives an interval",
+  glue("sigma {round(pb$lo95_m)} to {round(pb$hi95_m)} m"),
+  "Fire tracks cleared and cultivated ground",
+  "One covariate fitted alone against matched alternatives",
+  glue("{fmt_n(round(gn('plantation')))} of {fmt_n(round(gn('all')))} AIC units")
+) |> kable()
+```
+
+And the context that reframes all four: **2026 was the second-worst fire season in
+fourteen years here**, at roughly `r round(a26$vs_median)` times the median. These
+are the properties of a severe season, not a typical one.
+
+## What I would tell a fire agency
+
+Three things, in the order I would say them.
+
+**Allocate by intensity, not by area.** Two orders of magnitude separate the
+southern peat belt from the northern interior. Anything distributed evenly, or in
+proportion to sub-district size, is mismatched to where fire actually is.
+
+**Size the response ring in kilometres and the response window in days.** A cluster
+is about a kilometre across with 2.2 to 2.5 km holding most of one, and the raised
+probability of a neighbour igniting is concentrated in the first few days.
+
+**Plan for a bimodal record, not an average.** Drought years produce thousands of
+burned cells here and wet years produce single digits. There is no average year to
+staff for, which argues for surge capacity keyed to seasonal drought forecasts.
+
+## What I would not let them conclude
+
+That roads, or forest edges, are levers. They are associations, jointly determined
+by where people have cleared and worked land. That anything below 375 m is
+resolvable: it is not, and no statistic fixes that. That a quiet year will look like
+this one at smaller scale, which is untested and may not be estimable.
+
+## The thing I would take to the next exercise
+
+Every substantive result here came from replacing a default null with one that could
+actually fail, and every error I made came from not checking what a default was
+doing. The distance cap, the trend-free cluster fit, the thin covariate set, the
+harmonic that could not see the structure in front of it: each produced a confident
+number, and each was wrong until something forced a look. @sec-corrections lists all
+ten. The figure caught what the table missed more than once, which is the practical
+version of the lesson.
 
 # References
 

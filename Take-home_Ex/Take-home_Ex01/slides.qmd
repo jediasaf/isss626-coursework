@@ -1,6 +1,6 @@
 ---
-title: "Where peat burns, and how close together"
-subtitle: "VIIRS active-fire detections in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026. ISSS626 Take-home Exercise 1."
+title: "Take-home Exercise 1: Geospatial Analytics for Public Safety"
+subtitle: "First- and second-order point-pattern analysis of VIIRS active-fire detections in Pulang Pisau Regency, Central Kalimantan, 1 July to 25 September 2026"
 format:
   revealjs:
     theme: [dark, slides.scss]
@@ -57,6 +57,9 @@ TH <- readRDS(file.path(DIR_DERIVED, "thomas.rds"))
 MY <- readRDS(file.path(DIR_DERIVED, "multiyear.rds"))
 BC <- readRDS(file.path(DIR_DERIVED, "cover_boot.rds"))
 LI <- readRDS(file.path(DIR_DERIVED, "lisa.rds"))
+CS <- readRDS(file.path(DIR_DERIVED, "cover_split.rds"))
+gn <- function(m) CS$aic$gain_over_null[CS$aic$model == m]
+sup <- CS$support
 RANK <- readRDS(file.path(DIR_DERIVED, "regency_ranking.rds"))
 
 win_p <- P$win_p; bb <- st_bbox(win_p)
@@ -67,6 +70,11 @@ r_decay <- EX$summary_ext$r_g_within_10pct_of_1
 peak_r  <- EX$summary_ext$peak_r_m
 a26 <- MY$annual |> filter(year == 2026)
 hist_med <- median(MY$annual$cells[MY$annual$year != 2026])
+wk <- FO$daily |> mutate(w = ((as.integer(date_local - WINDOW_START)) %/% 7) + 1L) |>
+  count(w, wt = n_events, name = "events")
+wk_first <- wk$events[wk$w == 1]
+wk_peak  <- max(wk$events)
+wk_peak_start <- WINDOW_START + (wk$w[which.max(wk$events)] - 1L) * 7
 gA <- function(m) BC$aic2$dAIC[BC$aic2$model == m]
 d_null <- gA("null"); d_cover <- d_null - gA("cover"); d_road2 <- d_null - gA("road")
 pb <- BC$boot_compare |> filter(key == "par")
@@ -85,16 +93,16 @@ One argument running through all of it: a satellite hotspot is not a fire, and
 almost everything I did follows from taking that seriously.
 :::
 
-1. Why I chose this place, and what the data actually is
-2. The problem the data handed me: a detection is not a fire
-3. First order: where fire concentrates
-4. First order: when, and what the satellite cannot tell me
-5. Second order: two nulls, one meaningless and one that can fail
-6. Space and time together
-7. What the clustering is organised around, and how big it is
-8. The correction that reframes all of it
-9. What I would act on
-10. What I would not claim
+1. A regency chosen by rule, not reputation
+2. The data, and a constraint worth naming
+3. Why a detection is not a fire
+4. Where it burns
+5. When it burns, and what the orbit decides
+6. Two nulls: one meaningless, one that can fail
+7. Space and time are not separable
+8. What the clustering is organised around, and how big it is
+9. The correction that reframes it all
+10. What I would act on, and what I would not claim
 
 ## 1. A regency chosen by rule, not reputation
 
@@ -216,7 +224,7 @@ Gaussian kernel, Diggle edge correction, **bandwidth I fixed at 4 km**.
 
 Cross-validated selectors gave me about 0.6 km and I **rejected** them: they absorb
 the very clustering my second-order test exists to detect, which would have rigged
-the test on Slide 7.
+the second-order test two slides on.
 
 Intensity spans roughly **two orders of magnitude** between the southern peat belt
 and the northern interior.
@@ -245,8 +253,8 @@ ggplot(FO$daily, aes(date_local)) +
 ```
 :::
 ::: {.note}
-Heavily back-loaded: week 1 recorded 7 events, the week of 16 September recorded
-8,087.
+Heavily back-loaded: week 1 recorded `r fmt_n(wk_first)` events, the week of
+`r format(wk_peak_start, "%d %B")` recorded `r fmt_n(wk_peak)`.
 
 **The day/night contrast is not a daily cycle, and I nearly read it as one.** Both
 platforms observe at four narrow fixed local times, so if I claimed fire peaks at a
@@ -356,17 +364,18 @@ ggplot(rc, aes(x / 1000)) +
 ```
 :::
 ::: {.note}
-**Land cover, not access.** Of `r fmt_n(round(d_null))` AIC units over an
-intercept-only model, land cover recovers `r fmt_n(round(d_cover))` and roads
-`r fmt_n(round(d_road2))`. Same parameter count.
+**Plantation, not access.** Fitted alone, distance to plantation and farmland
+recovers `r fmt_n(round(gn("plantation")))` of the
+`r fmt_n(round(gn("all")))` AIC units the full model gains. Roads alone recover
+`r fmt_n(round(gn("road")))`.
 
-*My first version had only roads and waterways, and concluded access dominated.
-That was the thin covariate set talking.*
+*My first version had only roads and waterways and concluded access dominated. That
+was the thin covariate set talking.*
 
-**The signs are an agricultural frontier.** Intensity climbs towards plantation and
-farmland (z = `r round(cfb["Dplantation_km","Zval"], 0)`) and falls towards mapped
-forest (z = `r round(cfb["Dforest_km","Zval"], 0)`). Fire on cleared ground, not in
-standing forest.
+**But not the forest half of that story.** Fitted alone, distance to forest explains
+less than roads (`r fmt_n(round(gn("forest")))`), its curve is not monotone, and the
+median burned cell sits `r round(sup$median_km[sup$feature=="forest"], 0)` km from
+any mapped forest. I reported it as a mechanism and it is not one.
 
 **Cluster scale `r round(pb$point_sigma_m)` m**, parametric bootstrap
 `r round(pb$lo95_m)` to `r round(pb$hi95_m)` m, with

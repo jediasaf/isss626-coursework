@@ -20,7 +20,7 @@ dry season. The analysis argues that a satellite hotspot is not a fire, replaces
 complete spatial randomness with an inhomogeneous Poisson null, and tests
 space-time interaction by random labelling with <code>spatstat</code>.</p>
 
-[<span class="exercise-row-label">Report</span><span class="exercise-row-title">Where peat burns, and how close together</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/index.qmd){.exercise-row}
+[<span class="exercise-row-label">Report</span><span class="exercise-row-title">Geospatial Analytics for Public Safety</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/index.qmd){.exercise-row}
 
 [<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/slides.qmd){.exercise-row}
 
