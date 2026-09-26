@@ -336,9 +336,12 @@ and permute only their pairing, across `r fmt_n(ST$nperm)` permutations of
 Because both marginals stay fixed, none of this can be explained away by the
 seasonal ramp or the spatial concentration.
 
-**Strongest at the tightest cell**, decaying monotonically outward: a cell that
-burns today raises the chance a neighbour burns tomorrow, and the effect is largely
-spent within days and a kilometre or two.
+**Strongest at the tightest cell**, decaying monotonically outward. I read that as
+short-range propagation: a cell that burns today raises the chance a neighbour burns
+tomorrow, and the effect is largely spent within days and a kilometre or two.
+
+*The decay is steeper in time than in space, which fits fire spreading over
+contiguous ground within days rather than recurring in the same place weeks apart.*
 :::
 :::
 
@@ -373,7 +376,7 @@ process I fitted to g_inhom by minimum contrast.
 *My first fit left the trend in and returned
 `r fmt_n(round(TH$kppm_hom$sigma_m))` m and 440 events per cluster, which is really
 the peat belt re-described as a few giant clusters. Trend and interaction are not
-separately identifiable unless you make them so.*
+separately identifiable unless I force them apart.*
 
 Residual K shows my covariates explain *location*, not *contagion*.
 :::
@@ -383,7 +386,7 @@ Residual K shows my covariates explain *location*, not *contagion*.
 
 ::: {.split .even}
 ::: {.col}
-[Supported now]{.colhead}
+[What I would act on]{.colhead}
 
 **Reallocate by intensity, not by area.** Two orders of magnitude separate the
 southern peat belt from the northern interior.
@@ -396,7 +399,7 @@ agree on the dominant scale.
 a different sensor, not a different statistic.
 :::
 ::: {.note}
-[Not supported]{.colhead}
+[What I would not claim]{.colhead}
 
 **Roads as a policy lever.** Roads follow worked land. I cannot tell from this
 whether access aids suppression or enables ignition, and the two point opposite

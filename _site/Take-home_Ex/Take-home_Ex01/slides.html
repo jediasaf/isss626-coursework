@@ -1184,7 +1184,8 @@ days, 1 Jul to 25 Sep
 <div class="note">
 <p>Knox test. My null is <strong>random labelling</strong>: I hold locations and dates both fixed and permute only their pairing, across 999 permutations of 8,720,153 close pairs.</p>
 <p>Because both marginals stay fixed, none of this can be explained away by the seasonal ramp or the spatial concentration.</p>
-<p><strong>Strongest at the tightest cell</strong>, decaying monotonically outward: a cell that burns today raises the chance a neighbour burns tomorrow, and the effect is largely spent within days and a kilometre or two.</p>
+<p><strong>Strongest at the tightest cell</strong>, decaying monotonically outward. I read that as short-range propagation: a cell that burns today raises the chance a neighbour burns tomorrow, and the effect is largely spent within days and a kilometre or two.</p>
+<p><em>The decay is steeper in time than in space, which fits fire spreading over contiguous ground within days rather than recurring in the same place weeks apart.</em></p>
 </div>
 </div>
 </section>
@@ -1206,7 +1207,7 @@ days, 1 Jul to 25 Sep
 <p><strong>Access dominates.</strong> Of 2,005 AIC units separating my covariate model from an intercept-only model, distance to road accounts for 1,991.</p>
 <p><strong>Mapped drainage adds almost nothing</strong> (13 AIC units). That is not evidence drainage does not matter: OSM does not map the Mega Rice Project canal network, so my covariate is measuring mapping coverage.</p>
 <p><strong>Cluster scale 1,055 m</strong>, 95% within <strong>2,581 m</strong>, from a Thomas process I fitted to g_inhom by minimum contrast.</p>
-<p><em>My first fit left the trend in and returned 3,292 m and 440 events per cluster, which is really the peat belt re-described as a few giant clusters. Trend and interaction are not separately identifiable unless you make them so.</em></p>
+<p><em>My first fit left the trend in and returned 3,292 m and 440 events per cluster, which is really the peat belt re-described as a few giant clusters. Trend and interaction are not separately identifiable unless I force them apart.</em></p>
 <p>Residual K shows my covariates explain <em>location</em>, not <em>contagion</em>.</p>
 </div>
 </div>
@@ -1215,13 +1216,13 @@ days, 1 Jul to 25 Sep
 <h2>10. What this supports, and what it does not</h2>
 <div class="split even">
 <div class="col">
-<p><span class="colhead">Supported now</span></p>
+<p><span class="colhead">What I would act on</span></p>
 <p><strong>Reallocate by intensity, not by area.</strong> Two orders of magnitude separate the southern peat belt from the northern interior.</p>
 <p><strong>A containment geometry.</strong> First ring 2.6 km, elevation out to about 7.2 km, days not weeks. Two methods I ran independently agree on the dominant scale.</p>
 <p><strong>A monitoring limit.</strong> I cannot resolve anything below 375 m. A finer answer needs a different sensor, not a different statistic.</p>
 </div>
 <div class="note">
-<p><span class="colhead">Not supported</span></p>
+<p><span class="colhead">What I would not claim</span></p>
 <p><strong>Roads as a policy lever.</strong> Roads follow worked land. I cannot tell from this whether access aids suppression or enables ignition, and the two point opposite ways.</p>
 <p><strong>Any claim about drainage.</strong> My covariate measures OSM coverage.</p>
 <p><strong>Any claim about time of day.</strong> Four fixed overpasses.</p>

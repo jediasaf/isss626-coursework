@@ -3,7 +3,7 @@ title: "Coursework"
 toc: false
 ---
 
-A collection of hands-on exercises exploring geospatial data, analysis, and
+Weekly hands-on exercises exploring geospatial data, analysis, and
 visualisation in R, completed for **ISSS626: Geospatial Analytics and Applications**
 at Singapore Management University.
 
@@ -67,24 +67,5 @@ distance-band and adaptive spatial weights over Hunan's 88 counties, and the spa
 lagged variables built from them with <code>spdep</code>.</p>
 
 [<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Spatial Weights and Applications</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd){.exercise-row}
-
-:::
-
-::: {.coursework-group}
-
-::: {.coursework-group-header}
-<span class="coursework-number">T1</span>
-<span class="coursework-group-title">Take-home Exercise 1</span>
-:::
-
-<p class="coursework-group-desc">Point-pattern analysis of NASA FIRMS VIIRS
-active-fire detections in Pulang Pisau Regency, Central Kalimantan, across the
-2026 dry season. Argues that a satellite hotspot is not a fire, replaces complete
-spatial randomness with an inhomogeneous Poisson null, and tests space-time
-interaction by random labelling with <code>spatstat</code>.</p>
-
-[<span class="exercise-row-label">Report</span><span class="exercise-row-title">Where peat burns, and how close together</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/index.qmd){.exercise-row}
-
-[<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/slides.qmd){.exercise-row}
 
 :::

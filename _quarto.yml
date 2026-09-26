@@ -13,7 +13,9 @@ website:
       - href: index.qmd
         text: Home
       - href: coursework.qmd
-        text: Exercises
+        text: Hands-on
+      - href: takehome.qmd
+        text: Take-home
       - href: about.qmd
         text: About
     right:
@@ -21,36 +23,47 @@ website:
         href: https://github.com/jediasaf/isss626-coursework
         aria-label: GitHub repository
   sidebar:
-    style: docked
-    collapse-level: 1
-    contents:
-      - coursework.qmd
-      - section: "Hands-on Exercise 1"
-        contents:
-          - text: "Part 01: Geospatial Data Wrangling"
-            href: Hands-on_Ex/Hands-on_Ex01/Part01.qmd
-          - text: "Part 02: Choropleth Mapping"
-            href: Hands-on_Ex/Hands-on_Ex01/Part02.qmd
-      - section: "Hands-on Exercise 2"
-        contents:
-          - text: "Part 01: First-order SPPA"
-            href: Hands-on_Ex/Hands-on_Ex02/Part01.qmd
-          - text: "Part 02: Second-order SPPA"
-            href: Hands-on_Ex/Hands-on_Ex02/Part02.qmd
-      - section: "Hands-on Exercise 3"
-        contents:
-          - text: "Network Constrained SPPA"
-            href: Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd
-      - section: "Hands-on Exercise 4"
-        contents:
-          - text: "Spatial Weights and Applications"
-            href: Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd
-      - section: "Take-home Exercise 1"
-        contents:
-          - text: "Technical Report"
-            href: Take-home_Ex/Take-home_Ex01/index.qmd
-          - text: "Executive Summary"
-            href: Take-home_Ex/Take-home_Ex01/slides.qmd
+    # Two sidebars, keyed by id. Quarto picks the one whose `contents` list the
+    # page being rendered, so the hands-on pages and the take-home pages each get
+    # their own navigation instead of sharing one long list.
+    - id: handson
+      title: "Hands-on"
+      style: docked
+      collapse-level: 1
+      contents:
+        - coursework.qmd
+        - section: "Hands-on Exercise 1"
+          contents:
+            - text: "Part 01: Geospatial Data Wrangling"
+              href: Hands-on_Ex/Hands-on_Ex01/Part01.qmd
+            - text: "Part 02: Choropleth Mapping"
+              href: Hands-on_Ex/Hands-on_Ex01/Part02.qmd
+        - section: "Hands-on Exercise 2"
+          contents:
+            - text: "Part 01: First-order SPPA"
+              href: Hands-on_Ex/Hands-on_Ex02/Part01.qmd
+            - text: "Part 02: Second-order SPPA"
+              href: Hands-on_Ex/Hands-on_Ex02/Part02.qmd
+        - section: "Hands-on Exercise 3"
+          contents:
+            - text: "Network Constrained SPPA"
+              href: Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.qmd
+        - section: "Hands-on Exercise 4"
+          contents:
+            - text: "Spatial Weights and Applications"
+              href: Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd
+    - id: takehome
+      title: "Take-home"
+      style: docked
+      collapse-level: 1
+      contents:
+        - takehome.qmd
+        - section: "Take-home Exercise 1"
+          contents:
+            - text: "Technical Report"
+              href: Take-home_Ex/Take-home_Ex01/index.qmd
+            - text: "Executive Summary"
+              href: Take-home_Ex/Take-home_Ex01/slides.qmd
   page-footer:
     border: true
     left: |
