@@ -52,6 +52,16 @@ website:
           contents:
             - text: "Spatial Weights and Applications"
               href: Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.qmd
+        - section: "Hands-on Exercise 5"
+          contents:
+            - text: "Part 01: Global Measures"
+              href: Hands-on_Ex/Hands-on_Ex05/Part01.qmd
+            - text: "Part 02: Local Measures"
+              href: Hands-on_Ex/Hands-on_Ex05/Part02.qmd
+        - section: "Hands-on Exercise 6"
+          contents:
+            - text: "Emerging Hot Spot Analysis"
+              href: Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.qmd
     - id: takehome
       title: "Take-home"
       style: docked

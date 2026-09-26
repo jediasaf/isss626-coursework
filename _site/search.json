@@ -1512,5 +1512,341 @@
       "Take-home",
       "Take-home Exercises"
     ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "",
+    "text": "R spdep Moran’s I Geary’s C Correlogram\nThis exercise follows Global Measures of Spatial Autocorrelation, in the Spatial Weights block of the course.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#overview",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "1. Overview",
+    "text": "1. Overview\nExercise 4 built the weights matrix. This exercise finally uses it to answer a question worth asking: is Hunan’s economic development spatially clustered, or is it scattered at random across the province?\nThat matters because the two cases call for different policy. If wealthy counties are scattered, each one succeeded on its own terms and there is little to generalise. If they are clustered, something is spilling across county borders, and the unit of intervention is the region rather than the county.\nThe techniques split into two levels:\n\nGlobal measures return one number for the whole map. Moran’s I and Geary’s C answer “is there clustering anywhere”.\nLocal measures return one number per county. LISA and Getis-Ord Gi* answer “clustering where”, which is the question a planner actually has.\n\nI expected the local maps to be a more detailed version of the global result. They are not, and the gap between them turned out to be the most useful thing in this exercise.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#the-study-area-and-data",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#the-study-area-and-data",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "2. The Study Area and Data",
+    "text": "2. The Study Area and Data\n\n\n\n\n\n\n\n\nDataset\nDescription\nFormat\n\n\n\n\nHunan\nCounty boundary layer for Hunan province, China, 88 counties\nESRI Shapefile (polygon)\n\n\nHunan_2012.csv\nSelected local development indicators for 2012\nCSV\n\n\n\nSame data as Exercise 4, which is deliberate. Having already built and inspected the weights matrix for these 88 counties, I can attribute anything surprising here to the statistics rather than to the geography being unfamiliar.\nThe variable of interest is GDPPC, GDP per capita, which ranges from 8,497 to 88,656 with a mean of 24,405. That is better than a tenfold spread across a single province.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#getting-started",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "3. Getting Started",
+    "text": "3. Getting Started\n\npacman::p_load(sf, spdep, tmap, tidyverse, knitr)",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#getting-the-data-into-r",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#getting-the-data-into-r",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "4. Getting the Data Into R",
+    "text": "4. Getting the Data Into R\n\n4.1 Importing the Shapefile\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `/Users/jedidiahasaf/Downloads/School/ISSS626/coursework-website/Hands-on_Ex/Hands-on_Ex05/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\n\n\n\n4.2 Importing the CSV\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\n\n\n\n4.3 Performing the Relational Join\n\nhunan &lt;- left_join(hunan, hunan2012, by = c(\"County\" = \"County\")) %&gt;%\n  select(1:4, 7, 15)",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#visualising-the-distribution",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#visualising-the-distribution",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "5. Visualising the Distribution",
+    "text": "5. Visualising the Distribution\nBefore any test, look at the map. A statistic that disagrees with the picture usually means the statistic was computed wrong.\n\nequal &lt;- tm_shape(hunan) +\n  tm_polygons(\"GDPPC\", fill.scale = tm_scale_intervals(n = 5, style = \"equal\"),\n              fill.legend = tm_legend(title = \"Equal interval\")) +\n  tm_borders(col_alpha = 0.5)\n\nquantile &lt;- tm_shape(hunan) +\n  tm_polygons(\"GDPPC\", fill.scale = tm_scale_intervals(n = 5, style = \"quantile\"),\n              fill.legend = tm_legend(title = \"Equal quantile\")) +\n  tm_borders(col_alpha = 0.5)\n\ntmap_arrange(equal, quantile, asp = 1, ncol = 2)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNoteThe two classifications disagree about how many rich counties there are\n\n\n\nEqual interval puts almost every county in the bottom class, because Changsha at 88,656 stretches the range so far that the other 87 counties are squeezed together. Equal quantile forces 20% into each class and shows a north-east cluster clearly.\nNeither is wrong. Equal interval is honest about the magnitude of the gap; quantile is honest about the ranking. The reason this matters for the rest of the exercise is that Moran’s I works on deviations from the mean, and that mean of 24,405 is dragged upward by a handful of counties. Most of Hunan sits below its own provincial average.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#global-measures-of-spatial-autocorrelation",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#global-measures-of-spatial-autocorrelation",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "6. Global Measures of Spatial Autocorrelation",
+    "text": "6. Global Measures of Spatial Autocorrelation\n\n6.1 Computing Row-standardised Weights\n\nwm_q &lt;- poly2nb(hunan, queen = TRUE)\nrswm_q &lt;- nb2listw(wm_q, style = \"W\", zero.policy = TRUE)\nrswm_q\n\nCharacteristics of weights list object:\nNeighbour list object:\nNumber of regions: 88 \nNumber of nonzero links: 448 \nPercentage nonzero weights: 5.785124 \nAverage number of links: 5.090909 \n\nWeights style: W \nWeights constants summary:\n   n   nn S0       S1       S2\nW 88 7744 88 37.86334 365.9147\n\n\nQueen contiguity, row-standardised, as built in Exercise 4. Average of 5.09 neighbours per county.\n\n\n6.2 Moran’s I Test\n\nmoran.test(hunan$GDPPC, listw = rswm_q, zero.policy = TRUE, na.action = na.omit)\n\n\n    Moran I test under randomisation\n\ndata:  hunan$GDPPC  \nweights: rswm_q    \n\nMoran I statistic standard deviate = 4.7351, p-value = 1.095e-06\nalternative hypothesis: greater\nsample estimates:\nMoran I statistic       Expectation          Variance \n      0.300749970      -0.011494253       0.004348351 \n\n\nMoran’s I is 0.3007 against an expected value of -0.0115 under spatial randomness. The z-score is 4.735 and p is about 1.1e-06.\nSo: positive spatial autocorrelation. Counties resemble their neighbours more than chance would produce. On the standard reading of Moran’s I, which runs roughly -1 to +1, 0.30 is moderate rather than overwhelming.\n\n\n6.3 Monte Carlo Moran’s I\nThe analytical p-value assumes normality, and GDPPC is clearly skewed. A permutation test avoids that assumption entirely by shuffling the values across counties 999 times and asking where the observed value falls.\n\nset.seed(1234)\nbperm &lt;- moran.mc(hunan$GDPPC, listw = rswm_q, nsim = 999, zero.policy = TRUE, na.action = na.omit)\nbperm\n\n\n    Monte-Carlo simulation of Moran I\n\ndata:  hunan$GDPPC \nweights: rswm_q  \nnumber of simulations + 1: 1000 \n\nstatistic = 0.30075, observed rank = 1000, p-value = 0.001\nalternative hypothesis: greater\n\n\nThe observed statistic ranks 1000 out of 1000, giving p = 0.001. No permutation of the data produced clustering as strong as the real arrangement. The conclusion survives dropping the normality assumption, which is the point of running it.\n\n\n6.4 Visualising the Simulation\n\nhist(bperm$res, freq = TRUE, breaks = 20, xlab = \"Simulated Moran's I\",\n     main = \"999 permutations against the observed value\")\nabline(v = 0, col = \"grey40\", lty = 2)\nabline(v = bperm$statistic, col = \"red\", lwd = 2)\n\n\n\n\n\n\n\n\nThe simulated distribution sits around zero, as it should when values are scattered at random. The observed value sits outside the whole distribution.\n\n\n6.5 Geary’s C Test\n\ngeary.test(hunan$GDPPC, listw = rswm_q)\n\n\n    Geary C test under randomisation\n\ndata:  hunan$GDPPC \nweights: rswm_q   \n\nGeary C statistic standard deviate = 3.6108, p-value = 0.0001526\nalternative hypothesis: Expectation greater than statistic\nsample estimates:\nGeary C statistic       Expectation          Variance \n        0.6907223         1.0000000         0.0073364 \n\n\nGeary’s C is 0.6907 against an expected 1. Values below 1 indicate positive autocorrelation, so this agrees with Moran’s I.\n\n\n6.6 Monte Carlo Geary’s C\n\nset.seed(1234)\nbperm_geary &lt;- geary.mc(hunan$GDPPC, listw = rswm_q, nsim = 999)\nbperm_geary\n\n\n    Monte-Carlo simulation of Geary C\n\ndata:  hunan$GDPPC \nweights: rswm_q  \nnumber of simulations + 1: 1000 \n\nstatistic = 0.69072, observed rank = 1, p-value = 0.001\nalternative hypothesis: greater\n\n\np = 0.001 again.\n\n\n\n\n\n\nNoteWhy run both when they agree\n\n\n\nMoran’s I is built on cross-products of deviations from the global mean, so it responds to the overall pattern. Geary’s C is built on squared differences between neighbouring pairs, so it is more sensitive to local differences between adjacent units.\nWhen they agree, as here, the reading is that the pattern is not an artefact of one formulation. If Moran’s I had come back positive while Geary’s C indicated no structure, that would have pointed to a broad regional gradient without sharp neighbour-to-neighbour similarity, and would have been worth chasing. Agreement is the boring outcome, but it is only boring because it was checked.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#spatial-correlogram",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#spatial-correlogram",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "7. Spatial Correlogram",
+    "text": "7. Spatial Correlogram\nContiguity only looks at immediate neighbours. A correlogram extends the question: how far does the similarity reach before it dies out?\n\n7.1 Moran’s I Correlogram\n\nMI_corr &lt;- sp.correlogram(wm_q, hunan$GDPPC, order = 6, method = \"I\", style = \"W\")\nplot(MI_corr)\n\n\n\n\n\n\n\n\n\nprint(MI_corr)\n\nSpatial correlogram for hunan$GDPPC \nmethod: Moran's I\n         estimate expectation   variance standard deviate Pr(I) two sided    \n1 (88)  0.3007500  -0.0114943  0.0043484           4.7351       2.189e-06 ***\n2 (88)  0.2060084  -0.0114943  0.0020962           4.7505       2.029e-06 ***\n3 (88)  0.0668273  -0.0114943  0.0014602           2.0496        0.040400 *  \n4 (88)  0.0299470  -0.0114943  0.0011717           1.2107        0.226015    \n5 (88) -0.1530471  -0.0114943  0.0012440          -4.0134       5.984e-05 ***\n6 (88) -0.1187070  -0.0114943  0.0016791          -2.6164        0.008886 ** \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\n\n\n\n\nLag\nMoran’s I\n\n\n\n\n1\n+0.3007\n\n\n2\n+0.2060\n\n\n3\n+0.0668\n\n\n4\n+0.0299\n\n\n5\n-0.1530\n\n\n6\n-0.1187\n\n\n\n\n\n\n\n\n\nImportantThe sign flip is the finding, not the decay\n\n\n\nI expected the correlation to decay toward zero as lag increases, and it does through lag 4. What I did not expect is that it goes negative at lags 5 and 6.\nDecay to zero would mean influence simply fades with distance. Going negative means something stronger: counties five or six steps apart are systematically dissimilar. That is the signature of a single dominant cluster rather than a smooth gradient. Once you walk five counties away from the rich north-east, you are reliably in the poor periphery, so the correlation inverts.\nA gradient across the province would have produced a slow decay that stayed positive. The negative tail says Hunan has a core and a periphery, and the boundary between them is crossed at about four steps.\n\n\n\n\n7.2 Geary’s C Correlogram\n\nGC_corr &lt;- sp.correlogram(wm_q, hunan$GDPPC, order = 6, method = \"C\", style = \"W\")\nplot(GC_corr)\n\n\n\n\n\n\n\n\nGeary’s C mirrors it, rising above 1 at the longer lags, which is the same statement in the opposite direction.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#additional-exploration-does-the-choice-of-weights-change-morans-i",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#additional-exploration-does-the-choice-of-weights-change-morans-i",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "8. Additional Exploration: Does the Choice of Weights Change Moran’s I?",
+    "text": "8. Additional Exploration: Does the Choice of Weights Change Moran’s I?\nEverything above used queen contiguity. Exercise 4 built four different weighting schemes, and I was left wondering how much of Moran’s I is the data and how much is the matrix.\nFirst the distance-based neighbours, which need a cut-off large enough that no county is left isolated.\n\ncoords &lt;- st_coordinates(st_centroid(st_geometry(hunan)))\nk1 &lt;- knn2nb(knearneigh(coords))\ndmax &lt;- max(unlist(nbdists(k1, coords, longlat = TRUE)))\nround(dmax, 2)\n\n[1] 61.81\n\n\n\n\n\n\n\n\nWarningPass coordinates, not geometry\n\n\n\nMy first attempt passed st_centroid() output straight into knearneigh(), an sfc object rather than a coordinate matrix, and the maximum first-neighbour distance came back as 0.60 instead of 61.81. The longlat = TRUE argument is silently ignored, so spdep measures in degrees as though they were planar units.\nIt does not error. It produces a perfectly well-formed weights matrix that is completely wrong. I made this exact mistake in Exercise 4, wrote it up, and made it again here. What saved me was the habit the first one left behind: look at the number and ask whether 0.6 km is plausible for Chinese counties.\n\n\nNow the four schemes.\n\nd62 &lt;- dnearneigh(coords, 0, dmax, longlat = TRUE)\nwm_r &lt;- poly2nb(hunan, queen = FALSE)\nk6 &lt;- knn2nb(knearneigh(coords, k = 6))\nschemes &lt;- list(Queen = wm_q, Rook = wm_r, `knn (k=6)` = k6, `Fixed 62km` = d62)\n\nmap_dfr(names(schemes), function(nm) {\n  lw &lt;- nb2listw(schemes[[nm]], style = \"W\", zero.policy = TRUE)\n  m &lt;- moran.test(hunan$GDPPC, lw, zero.policy = TRUE)\n  tibble(Scheme = nm,\n         `Avg neighbours` = round(mean(card(schemes[[nm]])), 2),\n         `Moran's I` = round(unname(m$estimate[1]), 4),\n         z = round(unname(m$statistic), 3),\n         p = format.pval(m$p.value, digits = 3))\n}) %&gt;% kable()\n\n\n\n\nScheme\nAvg neighbours\nMoran’s I\nz\np\n\n\n\n\nQueen\n5.09\n0.3007\n4.735\n1.09e-06\n\n\nRook\n5.00\n0.3084\n4.810\n7.53e-07\n\n\nknn (k=6)\n6.00\n0.3429\n6.429\n6.41e-11\n\n\nFixed 62km\n3.64\n0.4210\n5.388\n3.56e-08\n\n\n\n\n\n\n\n\nScheme\nAvg neighbours\nMoran’s I\nz\np\n\n\n\n\nQueen\n5.09\n0.3007\n4.735\n1.09e-06\n\n\nRook\n5.00\n0.3084\n4.810\n7.53e-07\n\n\nknn (k=6)\n6.00\n0.3429\n6.429\n6.41e-11\n\n\nFixed 62 km\n3.64\n0.4210\n5.388\n3.56e-08\n\n\n\n\n\n\n\n\n\nNoteThe direction is robust. The magnitude is not.\n\n\n\nEvery scheme agrees that autocorrelation is positive, and the weakest p-value is still about 1e-06. That conclusion is safe.\nMoran’s I itself ranges from 0.30 to 0.42, a swing of 40% of the lower value. Reporting “Moran’s I for Hunan GDPPC is 0.42” without naming the matrix would not be reproducible by someone who reasonably chose queen contiguity.\nThe mechanism is the neighbour count. The fixed-distance scheme has the fewest neighbours at 3.64, so each county is compared against a tighter and nearer set, and near neighbours are more alike. Fewer and closer neighbours means a higher measured index. Part 02 finds the same sensitivity in the local statistics, where it decides whether Hunan has any cold spots at all.\nThe rule I am taking from this: treat the ranking of places as more trustworthy than the absolute value of any index, and state the weights specification alongside the statistic.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part01.html#what-i-take-away",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part01.html#what-i-take-away",
+    "title": "Global Measures of Spatial Autocorrelation",
+    "section": "9. What I Take Away",
+    "text": "9. What I Take Away\nHunan’s development is spatially clustered, and the evidence is not marginal. Moran’s I of 0.3007 against an expected -0.0115 gives z = 4.735 and p near 1e-06, and the permutation test puts the observed value outside all 999 simulations. Geary’s C agrees from a different formulation. The conclusion survives dropping the normality assumption, which is the reason to run the Monte Carlo version at all.\nThe correlogram’s negative tail was worth plotting. Decay to zero would mean influence simply fades with distance. Turning negative at lags 5 and 6 means counties that far apart are systematically dissimilar, which is the signature of a core and a periphery rather than a smooth gradient. The boundary is crossed at about four steps.\nThe direction is robust, the magnitude is not. Moran’s I moves between 0.30 and 0.42 across four reasonable weighting schemes. Reporting the number without naming the matrix that produced it would not be reproducible. Fewer and nearer neighbours means a higher index, every time.\nAnd a global statistic is an average over the whole map. It says clustering exists somewhere. It cannot say where, it cannot say whether the clustering is in the rich counties or the poor ones, and it cannot say how much of the province participates. Part 02 takes the same data apart county by county, and the answer turns out to be narrower than this number suggests.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 01: Global Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "",
+    "text": "R spdep LISA Getis-Ord Gi* Cluster maps\nThis exercise follows Local Measures of Spatial Autocorrelation, in the Spatial Weights block of the course.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html#overview",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "1. Overview",
+    "text": "1. Overview\nPart 01 established that Hunan’s GDP per capita is spatially clustered: Moran’s I of 0.3007 with p near 1e-06. That is one number for 88 counties, and it cannot say where the clustering is.\nThis part decomposes it. Local Moran’s I (LISA) returns a statistic per county and classifies each into high-high, low-low, high-low or low-high. Getis-Ord Gi* asks a different question again: is this neighbourhood’s total unusually high or low?\nI expected the local maps to be a more detailed version of the global result. They are not, and the gap between them is the most useful thing here. I also found an error in the reference code along the way, and it inverted the finding.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html#getting-started",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "2. Getting Started",
+    "text": "2. Getting Started\nSame packages and the same Hunan data as Part 01, re-imported so this page stands alone.\n\npacman::p_load(sf, spdep, tmap, tidyverse, knitr)\n\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `/Users/jedidiahasaf/Downloads/School/ISSS626/coursework-website/Hands-on_Ex/Hands-on_Ex05/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\nhunan2012 &lt;- read_csv(\"data/aspatial/Hunan_2012.csv\")\nhunan &lt;- left_join(hunan, hunan2012, by = c(\"County\" = \"County\")) %&gt;%\n  select(1:4, 7, 15)\n\n\nwm_q &lt;- poly2nb(hunan, queen = TRUE)\nrswm_q &lt;- nb2listw(wm_q, style = \"W\", zero.policy = TRUE)\n\nQueen contiguity, row-standardised, averaging 5.09 neighbours per county.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html#local-indicators-of-spatial-association",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html#local-indicators-of-spatial-association",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "3. Local Indicators of Spatial Association",
+    "text": "3. Local Indicators of Spatial Association\nThe global tests say clustering exists. They cannot say where. LISA decomposes Moran’s I into one value per county.\n\n3.1 Computing Local Moran’s I\n\nfips &lt;- order(hunan$County)\nlocalMI &lt;- localmoran(hunan$GDPPC, rswm_q)\nhead(localMI)\n\n            Ii          E.Ii       Var.Ii        Z.Ii Pr(z != E(Ii))\n1 -0.001468468 -2.815006e-05 4.723841e-04 -0.06626904      0.9471636\n2  0.025878173 -6.061953e-04 1.016664e-02  0.26266425      0.7928094\n3 -0.011987646 -5.366648e-03 1.133362e-01 -0.01966705      0.9843090\n4  0.001022468 -2.404783e-07 5.105969e-06  0.45259801      0.6508382\n5  0.014814881 -6.829362e-05 1.449949e-03  0.39085814      0.6959021\n6 -0.038793829 -3.860263e-04 6.475559e-03 -0.47728835      0.6331568\n\n\n\nhunan.localMI &lt;- cbind(hunan, localMI) %&gt;%\n  rename(Pr.Ii = Pr.z....E.Ii..)\n\n\n\n3.2 Mapping Local Moran’s I and its p-values\n\nlocalMI.map &lt;- tm_shape(hunan.localMI) +\n  tm_polygons(\"Ii\", fill.scale = tm_scale_intervals(style = \"pretty\"),\n              fill.legend = tm_legend(title = \"Local Moran's I\")) +\n  tm_borders(col_alpha = 0.5)\n\npvalue.map &lt;- tm_shape(hunan.localMI) +\n  tm_polygons(\"Pr.Ii\",\n              fill.scale = tm_scale_intervals(\n                breaks = c(-Inf, 0.001, 0.01, 0.05, Inf),\n                values = \"brewer.-rd_pu\"),\n              fill.legend = tm_legend(title = \"p-value\")) +\n  tm_borders(col_alpha = 0.5)\n\ntmap_arrange(localMI.map, pvalue.map, asp = 1, ncol = 2)\n\n\n\n\n\n\n\n\nOnly 11 of 88 counties reach significance at the 0.05 level.\n\n\n3.3 LISA Cluster Map\nThe cluster map classifies each significant county into one of four quadrants. This is the code the chapter gives.\n\nquadrant &lt;- vector(mode = \"numeric\", length = nrow(localMI))\nhunan$lag_GDPPC &lt;- lag.listw(rswm_q, hunan$GDPPC)\nDV &lt;- hunan$lag_GDPPC - mean(hunan$lag_GDPPC)\nLM_I &lt;- localMI[, 1] - mean(localMI[, 1])\nsignif &lt;- 0.05\n\nquadrant[DV &lt; 0 & LM_I &gt; 0] &lt;- 1   # low-high\nquadrant[DV &gt; 0 & LM_I &lt; 0] &lt;- 2   # high-low\nquadrant[DV &lt; 0 & LM_I &lt; 0] &lt;- 3   # low-low\nquadrant[DV &gt; 0 & LM_I &gt; 0] &lt;- 4   # high-high\nquadrant[localMI[, 5] &gt; signif] &lt;- 0\n\nBefore mapping it I checked the output against the underlying values, and it does not survive that check.\n\nlab &lt;- c(\"insignificant\", \"low-high\", \"high-low\", \"low-low\", \"high-high\")\ntibble(County = hunan$County,\n       GDPPC = hunan$GDPPC,\n       lag = round(hunan$lag_GDPPC),\n       label = lab[quadrant + 1]) %&gt;%\n  filter(quadrant != 0) %&gt;%\n  arrange(label, -GDPPC) %&gt;%\n  kable()\n\n\n\n\nCounty\nGDPPC\nlag\nlabel\n\n\n\n\nChangsha\n88656\n41364\nhigh-high\n\n\nWangcheng\n70666\n45651\nhigh-high\n\n\nLiuyang\n63118\n43747\nhigh-high\n\n\nMiluo\n42497\n47383\nhigh-high\n\n\nLiling\n41491\n42324\nhigh-high\n\n\nZhuzhou\n27589\n47346\nhigh-high\n\n\nXiangtan\n27060\n44940\nhigh-low\n\n\nTaojiang\n19509\n35934\nhigh-low\n\n\nPingjiang\n17252\n55158\nhigh-low\n\n\nWugang\n12112\n11566\nlow-high\n\n\nLonghui\n9572\n12297\nlow-high\n\n\n\n\n\nWugang has a GDPPC of 12,112 against a provincial mean of 24,405, and its neighbours average 11,566. A poor county surrounded by poor counties is the definition of low-low. The code labels it low-high.\n\n\n\n\n\n\nImportantThe chapter’s quadrant code is wrong, and it inverts the finding\n\n\n\nThe second axis in that code is LM_I, the local Moran statistic itself. That cannot work, and the reason is in the formula. Local Moran’s I for county i is\n\\[I_i = z_i \\sum_j w_{ij} z_j\\]\na product of the county’s own standardised deviation and its neighbours’. When both are positive, high-high, the product is positive. When both are negative, low-low, the product is also positive. Local Moran’s I is positive for high-high and low-low alike, and negative for high-low and low-high alike. Using it as an axis therefore conflates exactly the pairs the quadrant map exists to separate.\nThe correct second axis is the county’s own deviation from the mean, GDPPC - mean(GDPPC), which is what a Moran scatterplot actually plots.\n\nquadrant2 &lt;- vector(mode = \"numeric\", length = nrow(localMI))\nX &lt;- hunan$GDPPC - mean(hunan$GDPPC)\nY &lt;- hunan$lag_GDPPC - mean(hunan$lag_GDPPC)\n\nquadrant2[X &lt; 0 & Y &gt; 0] &lt;- 1   # low-high\nquadrant2[X &gt; 0 & Y &lt; 0] &lt;- 2   # high-low\nquadrant2[X &lt; 0 & Y &lt; 0] &lt;- 3   # low-low\nquadrant2[X &gt; 0 & Y &gt; 0] &lt;- 4   # high-high\nquadrant2[localMI[, 5] &gt; signif] &lt;- 0\n\n\ntibble(Quadrant = lab,\n       `Chapter code` = map_int(0:4, ~sum(quadrant == .x)),\n       `Corrected` = map_int(0:4, ~sum(quadrant2 == .x))) %&gt;%\n  kable()\n\n\n\n\nQuadrant\nChapter code\nCorrected\n\n\n\n\ninsignificant\n77\n77\n\n\nlow-high\n2\n2\n\n\nhigh-low\n3\n0\n\n\nlow-low\n0\n2\n\n\nhigh-high\n6\n7\n\n\n\n\n\nFive of the 11 significant counties change label. Low-low goes from 0 to 2, high-low from 3 to 0, and high-high from 6 to 7.\nI had written a whole paragraph about how Hunan has no low-low clusters at all before I ran this check. It was an artefact of the code, not a property of Hunan. That is the uncomfortable part: the wrong version produced a more interesting story, and I would have submitted it.\n\n\n\nhunan.localMI$quadrant &lt;- quadrant2\ncolours &lt;- c(\"#ffffff\", \"#2c7bb6\", \"#abd9e9\", \"#fdae61\", \"#d7191c\")\n\ntm_shape(hunan.localMI) +\n  tm_fill(\"quadrant\",\n          fill.scale = tm_scale_categorical(\n            values = colours[sort(unique(quadrant2)) + 1],\n            labels = lab[sort(unique(quadrant2)) + 1]),\n          fill.legend = tm_legend(title = \"LISA cluster\")) +\n  tm_borders(col_alpha = 0.5)\n\n\n\n\n\n\n\n\nThe corrected classification of the 11 significant counties:\n\n\n\n\n\n\n\n\nQuadrant\nCounties\nCount\n\n\n\n\nHigh-high\nChangsha, Wangcheng, Liuyang, Miluo, Liling, Zhuzhou, Xiangtan\n7\n\n\nLow-low\nWugang, Longhui\n2\n\n\nLow-high\nTaojiang, Pingjiang\n2\n\n\nHigh-low\nnone\n0\n\n\nInsignificant\n\n77\n\n\n\n\n\n\n\n\n\nNoteWhat the corrected map actually says\n\n\n\nThe asymmetry I thought I had found is still there, just smaller than the buggy version claimed. Seven counties form high-high clusters against two low-low. Wealth clusters about three times as often as poverty does.\nThere are also zero high-low counties, meaning no rich county sits isolated in a poor neighbourhood. Wealth in Hunan does not appear alone. Every significantly rich county has rich neighbours, which is a stronger statement about spillover than Moran’s I of 0.30 conveys on its own.\nAnd 77 of 88 counties are locally insignificant. The global test returned p near 1e-06, yet seven eighths of the province is indistinguishable from a random arrangement. A significant global statistic does not mean most places participate in the pattern.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html#hot-and-cold-spot-analysis-with-getis-ord-gi",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html#hot-and-cold-spot-analysis-with-getis-ord-gi",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "4. Hot and Cold Spot Analysis with Getis-Ord Gi*",
+    "text": "4. Hot and Cold Spot Analysis with Getis-Ord Gi*\nLISA asks whether a county resembles its neighbours. Gi* asks whether a neighbourhood’s total is unusually high or low, and answers in z-score units.\n\n4.1 Deriving the Weights\n\ncoords &lt;- st_coordinates(st_centroid(st_geometry(hunan)))\nk1 &lt;- knn2nb(knearneigh(coords))\nk1dists &lt;- unlist(nbdists(k1, coords, longlat = TRUE))\nsummary(k1dists)\n\n   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. \n  24.79   32.56   38.00   39.07   44.52   61.81 \n\n\n\n\n\n\n\n\nWarningI walked into the same trap I documented last exercise\n\n\n\nMy first run passed st_centroid() output straight into knearneigh() and got a maximum first-neighbour distance of 0.60 instead of 61.81. That is the exact sfc versus coordinate-matrix mistake I wrote a callout about in Exercise 4, and I made it again within a fortnight.\nWriting the lesson down was evidently not the same as learning it. What saved me was the habit the last one left behind: I looked at the number, knew 0.6 km was impossible for Chinese counties, and checked. The value of documenting a mistake was not that I stopped making it, but that I now recognise the symptom on sight.\n\n\nMaximum first-nearest-neighbour distance is 61.81 km, the cut-off that guarantees every county at least one neighbour.\n\n\n4.2 Gi* with Fixed Distance Weights\nGi* includes the county itself, which is what include.self() is for and what the star in the name denotes.\n\nd62 &lt;- dnearneigh(coords, 0, 61.81, longlat = TRUE)\ngi.fixed &lt;- localG(hunan$GDPPC, nb2listw(include.self(d62), style = \"B\"))\nhunan.gi &lt;- cbind(hunan, as.matrix(gi.fixed)) %&gt;%\n  rename(gstat_fixed = as.matrix.gi.fixed.)\n\n\ntm_shape(hunan.gi) +\n  tm_polygons(\"gstat_fixed\",\n              fill.scale = tm_scale_intervals(\n                breaks = c(-Inf, -2, -1, 1, 2, Inf),\n                values = \"brewer.-rd_bu\"),\n              fill.legend = tm_legend(title = \"Gi* (fixed 62km)\")) +\n  tm_borders(col_alpha = 0.5)\n\n\n\n\n\n\n\n\n\ngi_f &lt;- as.numeric(gi.fixed)\ntibble(County = hunan$County, GDPPC = hunan$GDPPC, `Gi*` = round(gi_f, 2)) %&gt;%\n  arrange(-`Gi*`) %&gt;% head(7) %&gt;% kable()\n\n\n\n\nCounty\nGDPPC\nGi*\n\n\n\n\nWangcheng\n70666\n5.81\n\n\nChangsha\n88656\n5.43\n\n\nXiangyin\n33983\n4.30\n\n\nShaoshan\n55570\n3.77\n\n\nLiuyang\n63118\n3.75\n\n\nNingxiang\n62202\n3.54\n\n\nMiluo\n42497\n2.50\n\n\n\n\n\nGi* runs from -1.90 to +5.81. Seven counties exceed +2. Not one falls below -2.\n\n\n\n\n\n\nNoteXiangyin shows what Gi* is actually measuring\n\n\n\nXiangyin has a GDPPC of 33,983, which ranks 13th of 88. Its Gi* ranks 3rd, behind only Wangcheng and Changsha.\nIts neighbours explain it: Wangcheng at 70,666 and Miluo at 42,497, alongside Yuanjiang, Yueyang and Taojiang. Gi* scores the neighbourhood sum including the county, so Xiangyin inherits a large score from company it keeps rather than from its own output. LISA, by contrast, leaves Xiangyin insignificant at p = 0.051.\nThe two statistics are answering different questions rather than giving two views of one answer. If the task is siting infrastructure to serve concentrated economic mass, Gi* is the right tool. If the task is finding counties that have fallen behind their own neighbours, LISA is.\n\n\n\n\n4.3 Gi* with Adaptive Distance Weights\n\nknn8 &lt;- knn2nb(knearneigh(coords, k = 8))\ngi.adaptive &lt;- localG(hunan$GDPPC, nb2listw(include.self(knn8), style = \"B\"))\nhunan.gi$gstat_adaptive &lt;- as.numeric(gi.adaptive)\n\n\ntm_shape(hunan.gi) +\n  tm_polygons(\"gstat_adaptive\",\n              fill.scale = tm_scale_intervals(\n                breaks = c(-Inf, -2, -1, 1, 2, Inf),\n                values = \"brewer.-rd_bu\"),\n              fill.legend = tm_legend(title = \"Gi* (adaptive k=8)\")) +\n  tm_borders(col_alpha = 0.5)\n\n\n\n\n\n\n\n\n\ngi_a &lt;- as.numeric(gi.adaptive)\ntibble(Scheme = c(\"Fixed 62 km\", \"Adaptive k = 8\"),\n       `Avg neighbours` = c(round(mean(card(d62)), 2), 8),\n       Minimum = round(c(min(gi_f), min(gi_a)), 2),\n       Maximum = round(c(max(gi_f), max(gi_a)), 2),\n       `Hot (&gt; +2)` = c(sum(gi_f &gt; 2), sum(gi_a &gt; 2)),\n       `Cold (&lt; -2)` = c(sum(gi_f &lt; -2), sum(gi_a &lt; -2))) %&gt;%\n  kable()\n\n\n\n\n\n\n\n\n\n\n\n\nScheme\nAvg neighbours\nMinimum\nMaximum\nHot (&gt; +2)\nCold (&lt; -2)\n\n\n\n\nFixed 62 km\n3.64\n-1.90\n5.81\n7\n0\n\n\nAdaptive k = 8\n8.00\n-2.33\n4.92\n15\n5\n\n\n\n\n\n\n\n\n\n\n\nImportantWhether Hunan has any cold spots at all depends on the weights\n\n\n\nThe fixed-distance scheme finds 7 hot spots and 0 cold spots. The adaptive scheme finds 15 hot spots and 5 cold spots. Same variable, same province, same threshold.\nThe mechanism is the neighbour count. The fixed 62 km band averages 3.64 neighbours, and in the sparse western counties it gives very few. A Gi* z-score built from three units cannot reach far from zero, so the poor west never crosses -2. Forcing k = 8 gives those same counties a wider window, their deficit accumulates over more neighbours, and cold spots appear.\nPingjiang makes the point sharply. Its GDPPC is 17,252, below the provincial median of 20,433, so it is a genuinely poor county. Under the fixed band its Gi* is +1.95; under adaptive k = 8 it is +4.61, which would be reported as a strong hot spot. The corrected LISA classifies it as low-high, a poor county surrounded by wealth, which is the honest description.\n“Hunan has no economic cold spots” is a sentence I could have written from the fixed-band map alone, and it would have been an artefact of the neighbour definition. Report the weights with the result, every time.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex05/Part02.html#what-i-take-away",
+    "href": "Hands-on_Ex/Hands-on_Ex05/Part02.html#what-i-take-away",
+    "title": "Local Measures of Spatial Autocorrelation",
+    "section": "5. What I Take Away",
+    "text": "5. What I Take Away\nI caught a real error in the reference code, and only because I checked the output against the data. The chapter’s quadrant assignment uses local Moran’s I as an axis, and because that statistic is positive for high-high and low-low alike, it cannot separate them. Five of 11 significant counties were mislabelled, low-low was reported as empty when there are two, and three spurious high-low counties appeared. Running the code and mapping the result would have shown nothing wrong. Reading one row against its own values did.\nThe wrong answer was the more interesting one. “Hunan has no low-low clusters at all” is a better line than “seven high-high against two low-low”, and I had already written it. Findings that flatter the analysis deserve more scepticism than findings that complicate it, not less.\nGlobal and local measures answer different questions. Part 01’s Moran’s I of 0.30 at p near 1e-06 sounds province-wide. Locally, 77 of 88 counties are indistinguishable from random and the pattern is carried by a minority around Changsha. A significant global statistic does not mean most places participate.\nTwo statistics can both be right and disagree. Xiangyin is 13th by GDPPC and 3rd by Gi*, and insignificant under LISA. Neither is broken; Gi* scores the neighbourhood and LISA scores the county against its neighbours. The choice belongs to the question being asked.\nWeights are not a preliminary step. Whether Hunan has any cold spots at all flips between 0 and 5 on the neighbour definition alone. Exercise 4 presented weights as setup for the real analysis. They are part of the result.\nAnd I repeated a documented mistake. The sfc versus coordinate-matrix trap cost me time in Exercise 4, I wrote it up carefully, and I made it again here. What had stuck was the sanity check rather than the rule, which is probably the realistic version of learning from a mistake.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 5",
+      "Part 02: Local Measures"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "",
+    "text": "R sfdep Space-time cube Gi* Mann-Kendall EHSA\nThis exercise follows Emerging Hot Spot Analysis, the first reading in the Geospatial Multivariate Data Analysis block.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#overview",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#overview",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "1. Overview",
+    "text": "1. Overview\nExercise 5 found a hot spot around Changsha in 2012. It could not say whether that hot spot was new, fading, or permanent, because it only ever saw one year.\nEmerging Hot Spot Analysis adds the time axis. It computes Gi* for every location in every time period, then runs a Mann-Kendall trend test on each location’s sequence of Gi* values, and classifies the result into categories such as persistent, intensifying, diminishing, sporadic and oscillating.\nThe question this answers is the one a planner actually cares about: not “where is it hot” but “where is it becoming hot”.\nI will say at the outset that the headline result of this exercise is a bug I found in the sfdep package rather than a fact about Hunan. The fact about Hunan only became visible after fixing it.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#the-study-area-and-data",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#the-study-area-and-data",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "2. The Study Area and Data",
+    "text": "2. The Study Area and Data\n\n\n\n\n\n\n\n\nDataset\nDescription\nFormat\n\n\n\n\nHunan\nCounty boundary layer, 88 counties\nESRI Shapefile (polygon)\n\n\nHunan_GDPPC.csv\nGDP per capita by county by year, 2005 to 2021\nCSV (long format)\n\n\n\nThe boundary layer is the same one used in Exercises 4 and 5. The attribute file is new and is a balanced panel: 88 counties by 17 years gives 1,496 rows with no gaps and no missing values. Its 2012 column reconciles with the Hunan_2012.csv used in Exercise 5 to within rounding, which is the check that confirms the two files describe the same place.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#getting-started",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "3. Getting Started",
+    "text": "3. Getting Started\n\npacman::p_load(sf, sfdep, tmap, plotly, tidyverse, Kendall, knitr)\nset.seed(1234)",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#getting-the-data-into-r",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#getting-the-data-into-r",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "4. Getting the Data Into R",
+    "text": "4. Getting the Data Into R\n\nhunan &lt;- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n\nReading layer `Hunan' from data source \n  `/Users/jedidiahasaf/Downloads/School/ISSS626/coursework-website/Hands-on_Ex/Hands-on_Ex06/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n\nGDPPC &lt;- read_csv(\"data/aspatial/Hunan_GDPPC.csv\")\n\n\ntibble(Rows = nrow(GDPPC),\n       Counties = n_distinct(GDPPC$County),\n       Years = n_distinct(GDPPC$Year),\n       From = min(GDPPC$Year), To = max(GDPPC$Year),\n       Balanced = nrow(GDPPC) == n_distinct(GDPPC$County) * n_distinct(GDPPC$Year),\n       `Missing GDPPC` = sum(is.na(GDPPC$GDPPC))) %&gt;% kable()\n\n\n\n\nRows\nCounties\nYears\nFrom\nTo\nBalanced\nMissing GDPPC\n\n\n\n\n1496\n88\n17\n2005\n2021\nTRUE\n0\n\n\n\n\n\n\n4.1 What Happened to Hunan Between 2005 and 2021\nBefore any spatial statistic, it is worth knowing what the variable did.\n\nw &lt;- GDPPC %&gt;% pivot_wider(names_from = Year, values_from = GDPPC)\ntibble(Measure = c(\"Mean GDPPC\", \"Coefficient of variation\", \"Max / min ratio\"),\n       `2005` = c(round(mean(w$`2005`)), round(sd(w$`2005`)/mean(w$`2005`), 3),\n                  round(max(w$`2005`)/min(w$`2005`), 1)),\n       `2021` = c(round(mean(w$`2021`)), round(sd(w$`2021`)/mean(w$`2021`), 3),\n                  round(max(w$`2021`)/min(w$`2021`), 1))) %&gt;% kable()\n\n\n\n\nMeasure\n2005\n2021\n\n\n\n\nMean GDPPC\n7502.000\n50432.000\n\n\nCoefficient of variation\n0.467\n0.471\n\n\nMax / min ratio\n7.400\n6.400\n\n\n\n\n\n\n\n\n\n\n\nNoteEverything grew, and the gaps stayed the same shape\n\n\n\nMean GDP per capita rose from about 7,500 to about 50,400, a factor of 6.7 in sixteen years. That is the headline a growth statistic would report.\nThe dispersion measures did not move. The coefficient of variation went from 0.467 to 0.471, and the ratio of richest to poorest county actually narrowed slightly, from 7.4 to 6.4. Hunan got six times richer without meaningfully changing how unequally that wealth was distributed across counties.\nThis matters for what follows. Because every county grew, and grew at broadly similar proportional rates, a trend test on raw GDPPC is useless: Kendall’s tau on the raw series averages 0.97 across counties, which just says “GDP went up everywhere”. The whole point of running the trend test on Gi* rather than on GDPPC is that Gi* is a relative measure. It asks whether a county’s standing among its neighbours changed, and that is a question the raw series cannot answer.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#creating-a-space-time-cube",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#creating-a-space-time-cube",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "5. Creating a Space-Time Cube",
+    "text": "5. Creating a Space-Time Cube\nA spacetime cube pairs each location with each time period. sfdep validates that the pairing is complete, which is why the balanced-panel check above mattered.\n\nGDPPC_st &lt;- spacetime(GDPPC, hunan, .loc_col = \"County\", .time_col = \"Year\")\nis_spacetime_cube(GDPPC_st)\n\n[1] TRUE\n\n\nTRUE confirms every county appears in every year.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#computing-gi-year-by-year",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#computing-gi-year-by-year",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "6. Computing Gi* Year by Year",
+    "text": "6. Computing Gi* Year by Year\nFirst derive the neighbours and weights, then compute Gi* within each year.\n\nGDPPC_nb &lt;- GDPPC_st %&gt;%\n  activate(\"geometry\") %&gt;%\n  mutate(nb = include_self(st_contiguity(geometry)),\n         wt = st_inverse_distance(nb, geometry, scale = 1, alpha = 1),\n         .before = 1) %&gt;%\n  set_nbs(\"nb\") %&gt;%\n  set_wts(\"wt\")\n\n\ngi_stars &lt;- GDPPC_nb %&gt;%\n  group_by(Year) %&gt;%\n  mutate(gi = local_gstar_perm(GDPPC, nb, wt, nsim = 99)) %&gt;%\n  tidyr::unnest(gi) %&gt;%\n  ungroup()\n\n\ngi_stars %&gt;%\n  group_by(Year) %&gt;%\n  summarise(Hot = sum(gi_star &gt; 2), Cold = sum(gi_star &lt; -2)) %&gt;%\n  pivot_longer(-Year) %&gt;%\n  ggplot(aes(Year, value, colour = name)) +\n  geom_line(linewidth = 0.9) + geom_point(size = 1.8) +\n  scale_colour_manual(values = c(Hot = \"#C0392B\", Cold = \"#2c7bb6\")) +\n  labs(y = \"Counties beyond |Gi*| = 2\", colour = NULL,\n       title = \"Hot and cold counties per year\") +\n  theme_minimal(base_size = 11)\n\n\n\n\n\n\n\n\nThe hot count is remarkably stable at around 11 counties throughout. The cold count drifts upward in the later years.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#mann-kendall-on-a-single-county",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#mann-kendall-on-a-single-county",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "7. Mann-Kendall on a Single County",
+    "text": "7. Mann-Kendall on a Single County\nBefore running the full analysis, it helps to see the test on one location.\n\ncbg &lt;- gi_stars %&gt;% filter(County == \"Changsha\")\nggplot(cbg, aes(Year, gi_star)) +\n  geom_line(colour = \"#C0392B\", linewidth = 0.9) +\n  geom_point(colour = \"#C0392B\", size = 1.8) +\n  labs(y = \"Gi*\", title = \"Changsha: Gi* over time\") +\n  theme_minimal(base_size = 11)\n\n\n\n\n\n\n\n\n\nmk &lt;- Kendall::MannKendall(cbg$gi_star)\ntibble(tau = round(unname(mk$tau), 3),\n       `2-sided p` = signif(as.numeric(mk$sl), 3),\n       S = unname(mk$S)) %&gt;% kable()\n\n\n\n\ntau\n2-sided p\nS\n\n\n\n\n0.485\n0.00742\n66\n\n\n\n\n\nChangsha’s Gi* is high in every year and trends gently upward. Nothing surprising.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#emerging-hot-spot-analysis",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#emerging-hot-spot-analysis",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "8. Emerging Hot Spot Analysis",
+    "text": "8. Emerging Hot Spot Analysis\n\nehsa_raw &lt;- emerging_hotspot_analysis(x = GDPPC_st, .var = \"GDPPC\",\n                                      k = 1, nsim = 99)\nehsa_raw %&gt;% count(classification, sort = TRUE) %&gt;% kable()\n\n\n\n\nclassification\nn\n\n\n\n\nsporadic coldspot\n46\n\n\nsporadic hotspot\n24\n\n\noscilating hotspot\n12\n\n\nno pattern detected\n5\n\n\noscilating coldspot\n1\n\n\n\n\n\n\n8.1 Checking the Output Before Mapping It\nThe classification is only meaningful if it agrees with the Gi* series it was computed from. A county labelled a hot spot should have high Gi*. So I joined the two together.\n\ncounty_gi &lt;- gi_stars %&gt;%\n  group_by(County) %&gt;%\n  summarise(mean_gi = mean(gi_star),\n            years_hot = sum(gi_star &gt; 2),\n            mean_GDPPC = mean(GDPPC))\n\nehsa_raw %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  group_by(classification) %&gt;%\n  summarise(n = n(),\n            `mean Gi*` = round(mean(mean_gi), 2),\n            `mean GDPPC` = round(mean(mean_GDPPC))) %&gt;%\n  arrange(-n) %&gt;% kable()\n\n\n\n\nclassification\nn\nmean Gi*\nmean GDPPC\n\n\n\n\nsporadic coldspot\n46\n0.11\n26797\n\n\nsporadic hotspot\n24\n-0.04\n24657\n\n\noscilating hotspot\n12\n0.07\n30035\n\n\nno pattern detected\n5\n-1.10\n21532\n\n\noscilating coldspot\n1\n1.14\n57555\n\n\n\n\n\nThe counties labelled hotspot have a lower mean Gi* than the counties labelled coldspot. That is not a subtle problem.\n\nehsa_raw %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  filter(years_hot == 17) %&gt;%\n  select(location, mean_gi, years_hot, classification) %&gt;%\n  mutate(mean_gi = round(mean_gi, 2)) %&gt;%\n  arrange(-mean_gi) %&gt;% kable()\n\n\n\n\nlocation\nmean_gi\nyears_hot\nclassification\n\n\n\n\nChangsha\n5.80\n17\noscilating hotspot\n\n\nWangcheng\n5.05\n17\nsporadic coldspot\n\n\nLiuyang\n4.44\n17\nsporadic hotspot\n\n\nXiangtan\n4.05\n17\nsporadic coldspot\n\n\nMiluo\n3.87\n17\nsporadic hotspot\n\n\nZhuzhou\n3.78\n17\nsporadic coldspot\n\n\nPingjiang\n3.16\n17\nsporadic coldspot\n\n\nShaoshan\n3.09\n17\nsporadic coldspot\n\n\nLiling\n2.71\n17\nsporadic coldspot\n\n\n\n\n\nNine counties have Gi* above 2 in all seventeen years. Wangcheng has a mean Gi* of about 5, the second highest in the province, and sits next to Changsha in the richest corner of Hunan. It is labelled a coldspot.\n\n\n8.2 Locating the Bug\nemerging_hotspot_analysis() ends with this line (sfdep 0.2.5):\nres_ehs &lt;- cbind(\n  location = attr(x, \"geometry\")[[.loc_col]],\n  do.call(rbind, lapply(split(all_gis, x[[.loc_col]]),\n                        function(.x) classify_hotspot(.x, threshold)))\n)\n\n\n\n\n\n\nImportantThe results are computed in alphabetical order and labelled in shapefile order\n\n\n\nsplit() groups by the location column and returns those groups sorted alphabetically. That is the order the classification rows come out in.\nlocation is taken from attr(x, \"geometry\")[[.loc_col]], which is the county column of the shapefile, in whatever order the file happens to store its features.\ncbind() then pastes the two together positionally. The two orderings only agree if the shapefile is already sorted alphabetically. Hunan’s is not.\n\ntibble(Position = 1:5,\n       `Shapefile order` = head(hunan$County, 5),\n       `Alphabetical order` = head(sort(hunan$County), 5)) %&gt;% kable()\n\n\n\n\nPosition\nShapefile order\nAlphabetical order\n\n\n\n\n1\nAnxiang\nAnhua\n\n\n2\nHanshou\nAnren\n\n\n3\nJinshi\nAnxiang\n\n\n4\nLi\nBaojing\n\n\n5\nLinli\nChaling\n\n\n\n\n\nRow 1 of the classification block belongs to Anhua, the first county alphabetically, but gets labelled Anxiang, the first county in the shapefile. Every row is attached to the wrong county. The output is a valid-looking table of the right shape, with the labels shuffled.\nThis is the same failure mode as the sfc trap in Exercise 4 and the quadrant error in Exercise 5. It does not raise an error, it does not look wrong, and every map built from it would be confidently mislabelled.\n\n\n\n\n8.3 The Fix, and the Test That Confirms It\nThe fix is to name the rows in the order they were actually computed.\n\nehsa &lt;- ehsa_raw %&gt;% mutate(location = sort(hunan$County))\n\nIf that diagnosis is right, the relationship between label and Gi* should invert cleanly.\n\nbind_rows(\n  ehsa_raw %&gt;% mutate(version = \"As shipped\"),\n  ehsa     %&gt;% mutate(version = \"Reassigned\")\n) %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  filter(classification %in% c(\"sporadic hotspot\", \"sporadic coldspot\")) %&gt;%\n  group_by(version, classification) %&gt;%\n  summarise(n = n(), `mean Gi*` = round(mean(mean_gi), 2), .groups = \"drop\") %&gt;%\n  kable()\n\n\n\n\nversion\nclassification\nn\nmean Gi*\n\n\n\n\nAs shipped\nsporadic coldspot\n46\n0.11\n\n\nAs shipped\nsporadic hotspot\n24\n-0.04\n\n\nReassigned\nsporadic coldspot\n46\n-1.27\n\n\nReassigned\nsporadic hotspot\n24\n2.24\n\n\n\n\n\nAs shipped, hot spots and cold spots are indistinguishable by Gi* and sit on the wrong sides of zero. After reassignment the hot spots sit well above zero and the cold spots well below. The nine counties that are hot in all seventeen years all classify as hot spots.\n\nehsa %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  group_by(classification) %&gt;%\n  summarise(n = n(),\n            `mean Gi*` = round(mean(mean_gi), 2),\n            `mean GDPPC` = round(mean(mean_GDPPC))) %&gt;%\n  arrange(-`mean Gi*`) %&gt;% kable()\n\n\n\n\nclassification\nn\nmean Gi*\nmean GDPPC\n\n\n\n\nsporadic hotspot\n24\n2.24\n40212\n\n\noscilating hotspot\n12\n0.39\n29312\n\n\noscilating coldspot\n1\n0.31\n26062\n\n\nno pattern detected\n5\n-0.03\n28274\n\n\nsporadic coldspot\n46\n-1.27\n18822\n\n\n\n\n\n\n\n\n\n\n\nNoteWhy this table is the proof, not the earlier one\n\n\n\nThe corrected classes line up monotonically with two independent quantities at once: mean Gi*, which comes from my own separate per-year computation, and mean GDPPC, which is the raw input.\nHot spots are the richest counties and have the highest Gi*. Cold spots are the poorest and have the lowest. Oscillating hot spots sit in between on both. No shuffling of labels would produce that alignment by chance, and the shipped version produced none of it.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#mapping-the-corrected-result",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#mapping-the-corrected-result",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "9. Mapping the Corrected Result",
+    "text": "9. Mapping the Corrected Result\n\nhunan_ehsa &lt;- hunan %&gt;% left_join(ehsa, by = c(\"County\" = \"location\"))\n\ntm_shape(hunan_ehsa) +\n  tm_polygons(\"classification\",\n              fill.scale = tm_scale_categorical(values = \"brewer.set2\"),\n              fill.legend = tm_legend(title = \"EHSA class\")) +\n  tm_borders(col_alpha = 0.4) +\n  tm_title(\"Emerging hot spot analysis, Hunan GDPPC 2005-2021\")\n\n\n\n\n\n\n\n\n\nhunan_sig &lt;- hunan_ehsa %&gt;%\n  mutate(shown = ifelse(p_value &lt; 0.05, classification, NA))\n\ntm_shape(hunan_sig) +\n  tm_polygons(\"shown\",\n              fill.scale = tm_scale_categorical(values = \"brewer.set2\"),\n              fill.legend = tm_legend(title = \"Significant only\"),\n              col_alpha = 0.4) +\n  tm_borders(col_alpha = 0.4) +\n  tm_title(\"Significant classifications only (p &lt; 0.05)\")\n\n\n\n\n\n\n\n\nHalf the province reaches significance. The rest is not evidence of stability, only absence of evidence of change.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#what-the-corrected-analysis-says-about-hunan",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#what-the-corrected-analysis-says-about-hunan",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "10. What the Corrected Analysis Says About Hunan",
+    "text": "10. What the Corrected Analysis Says About Hunan\n\n10.1 The Core is Fixed, Not Emerging\n\nehsa %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  filter(years_hot == 17) %&gt;%\n  select(County = location, `mean Gi*` = mean_gi, `mean GDPPC` = mean_GDPPC,\n         classification) %&gt;%\n  mutate(`mean Gi*` = round(`mean Gi*`, 2), `mean GDPPC` = round(`mean GDPPC`)) %&gt;%\n  arrange(-`mean Gi*`) %&gt;% kable()\n\n\n\n\nCounty\nmean Gi*\nmean GDPPC\nclassification\n\n\n\n\nChangsha\n5.80\n95869\nsporadic hotspot\n\n\nWangcheng\n5.05\n69483\nsporadic hotspot\n\n\nLiuyang\n4.44\n65540\nsporadic hotspot\n\n\nXiangtan\n4.05\n32558\nsporadic hotspot\n\n\nMiluo\n3.87\n44720\nsporadic hotspot\n\n\nZhuzhou\n3.78\n31647\nsporadic hotspot\n\n\nPingjiang\n3.16\n19591\nsporadic hotspot\n\n\nShaoshan\n3.09\n57906\nsporadic hotspot\n\n\nLiling\n2.71\n45474\nsporadic hotspot\n\n\n\n\n\nThese nine counties are the Changsha-Zhuzhou-Xiangtan corridor that Exercise 5 found in a single year of data. Seventeen years of data show it was already there in 2005 and never weakened. Exercise 5’s snapshot was not a snapshot of a moment, it was a snapshot of a structure.\n\n\n10.2 The Movement is in a Middle Ring\n\nehsa %&gt;%\n  left_join(county_gi, by = c(\"location\" = \"County\")) %&gt;%\n  filter(classification == \"oscilating hotspot\", p_value &lt; 0.05) %&gt;%\n  select(County = location, tau, `mean Gi*` = mean_gi, `mean GDPPC` = mean_GDPPC) %&gt;%\n  mutate(tau = round(tau, 2), `mean Gi*` = round(`mean Gi*`, 2),\n         `mean GDPPC` = round(`mean GDPPC`)) %&gt;%\n  arrange(-tau) %&gt;% kable()\n\n\n\n\nCounty\ntau\nmean Gi*\nmean GDPPC\n\n\n\n\nShuangfeng\n0.79\n-0.24\n19816\n\n\nYueyang\n0.78\n0.90\n31355\n\n\nHuarong\n0.72\n0.51\n33887\n\n\nLinxiang\n0.69\n0.77\n35671\n\n\nYuanjiang\n0.54\n0.14\n28268\n\n\nAnxiang\n0.44\n0.35\n26646\n\n\nHengdong\n0.43\n0.47\n30220\n\n\n\n\n\n\n\n\n\n\n\nNoteThe interesting counties are the ones in the middle\n\n\n\nThe oscillating hot spots are not the rich core and not the poor west. Their mean GDPPC sits between the two groups, and their Kendall tau values are strongly positive, meaning their standing relative to their neighbours has been climbing.\nSeveral of them, Yueyang, Linxiang, Huarong and Anxiang, sit north of Changsha toward Dongting Lake. The reading that fits is that the Changsha core is not growing in intensity, since it was already saturated in 2005, but its influence is reaching further out, and the counties on that frontier are the ones whose relative position is changing.\nThat is a genuinely different statement from anything Exercise 5 could produce, and it is the thing EHSA exists to find.\n\n\n\n\n10.3 The Cold Periphery Widened\n\ngi_stars %&gt;%\n  filter(Year %in% c(2005, 2021)) %&gt;%\n  group_by(Year) %&gt;%\n  summarise(`Hot (Gi* &gt; 2)` = sum(gi_star &gt; 2),\n            `Cold (Gi* &lt; -2)` = sum(gi_star &lt; -2)) %&gt;% kable()\n\n\n\n\nYear\nHot (Gi* &gt; 2)\nCold (Gi* &lt; -2)\n\n\n\n\n2005\n11\n8\n\n\n2021\n12\n12\n\n\n\n\n\nThe hot count barely moved. The cold count grew. Combined with the flat coefficient of variation from section 4.1, the picture is a province where the top did not pull away in relative terms, but the bottom became more spatially concentrated. Poverty in Hunan became more clustered over the period even though it did not become relatively deeper.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#what-i-take-away",
+    "href": "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html#what-i-take-away",
+    "title": "Emerging Hot Spot Analysis",
+    "section": "11. What I Take Away",
+    "text": "11. What I Take Away\nThree exercises, three silent failures, and none of them threw an error. The sfc coordinate trap in Exercise 4, the quadrant axis error in Exercise 5, and now an ordering mismatch inside a published CRAN package. Every one produced output of the correct shape and plausible appearance. The only thing that caught any of them was checking a result against the values it claimed to describe.\nThe check that works is cheap and always the same. Join the output back to the input and ask whether it is consistent. Counties called hot spots should have high Gi*. That took one line and four seconds, and it is the difference between this exercise and a confidently wrong map.\nTrusting a package is not the same as trusting a result. sfdep is on CRAN, is written by a competent author, and implements all seventeen ArcGIS EHSA classes correctly. The classification logic is fine. One cbind at the end attaches it to the wrong rows. A package being good is not evidence that a particular call to it returned what you think.\nThe bug is invisible on data that happens to be sorted. If Hunan’s shapefile had stored its counties alphabetically, this code would be correct and I would have found nothing. Whether an analysis is right would then depend on the storage order of a file nobody looks at. That is worth remembering when a workflow “works on my machine”.\nOn Hunan itself: the Changsha corridor is not an emerging hot spot, it is a permanent one, hot in all seventeen years and already established before the data begins. The change is happening in a ring of middle-income counties to its north whose relative standing is rising, and in a western periphery that has become more tightly clustered in its disadvantage. Growth of 6.7 times province-wide moved the levels and left the structure almost exactly as it found it.",
+    "crumbs": [
+      "Hands-on",
+      "Hands-on Exercise 6",
+      "Emerging Hot Spot Analysis"
+    ]
   }
 ]
