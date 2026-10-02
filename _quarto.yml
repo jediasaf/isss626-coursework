@@ -14,6 +14,8 @@ website:
         text: Home
       - href: coursework.qmd
         text: Hands-on
+      - href: inclass.qmd
+        text: In-class
       - href: takehome.qmd
         text: Take-home
       - href: about.qmd
@@ -60,8 +62,18 @@ website:
               href: Hands-on_Ex/Hands-on_Ex05/Part02.qmd
         - section: "Hands-on Exercise 6"
           contents:
-            - text: "Emerging Hot Spot Analysis"
+            - text: "Geographical Segmentation"
               href: Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.qmd
+    - id: inclass
+      title: "In-class"
+      style: docked
+      collapse-level: 1
+      contents:
+        - inclass.qmd
+        - section: "In-class Exercise 5"
+          contents:
+            - text: "Emerging Hot Spot Analysis"
+              href: In-class_Ex/In-class_Ex05/In-class_Ex05.qmd
     - id: takehome
       title: "Take-home"
       style: docked

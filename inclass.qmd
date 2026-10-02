@@ -1,0 +1,25 @@
+---
+title: "In-class Exercises"
+toc: false
+---
+
+Exercises worked through during the weekly meet-up for **ISSS626: Geospatial
+Analytics and Applications** at Singapore Management University. These run shorter
+than the hands-on exercises and focus on interpretation rather than full coverage of
+a method.
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">05</span>
+<span class="coursework-group-title">In-class Exercise 5</span>
+:::
+
+<p class="coursework-group-desc">Emerging Hot Spot Analysis on Hunan GDP per capita,
+2005 to 2021. Builds a space-time cube with <code>sfdep</code>, computes the local
+Gi* statistic at each time slice, and classifies each county by the Mann-Kendall
+trend in its hotspot series.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Emerging Hot Spot Analysis</span><span class="exercise-row-arrow">→</span>](In-class_Ex/In-class_Ex05/In-class_Ex05.qmd){.exercise-row}
+
+:::
