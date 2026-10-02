@@ -1,5 +1,5 @@
 ---
-title: "Emerging Hot Spot Analysis"
+title: "Geographical Segmentation with Spatially Constrained Clustering"
 subtitle: "HANDS-ON EXERCISE 6"
 author:
   - name: Jedidiah Asaf Tallulembang
@@ -15,421 +15,811 @@ execute:
 ---
 
 ::: {.pill-row}
-[R]{.pill} [sfdep]{.pill} [Space-time cube]{.pill} [Gi*]{.pill} [Mann-Kendall]{.pill} [EHSA]{.pill}
+[R]{.pill} [ClustGeo]{.pill} [SKATER]{.pill} [Ward]{.pill} [Minimum spanning tree]{.pill}
 :::
 
-This exercise follows [Emerging Hot Spot
-Analysis](https://r4gdsa.netlify.app/chap11), the first reading in the Geospatial
-Multivariate Data Analysis block.
+This exercise follows [Geographical Segmentation with Spatially Constrained Clustering
+Techniques](https://r4gdsa.netlify.app/chap12.html), the reading for the Geographic
+Segmentation block of the course.
 
 ## 1. Overview
 
-Exercise 5 found a hot spot around Changsha in 2012. It could not say whether that hot
-spot was new, fading, or permanent, because it only ever saw one year.
+Exercises 4 and 5 asked whether values were spatially clustered. This one asks a
+different question: given a set of multivariate measurements attached to areal units,
+**how do I carve the study area into a small number of internally homogeneous regions?**
 
-Emerging Hot Spot Analysis adds the time axis. It computes Gi* for every location in
-every time period, then runs a Mann-Kendall trend test on each location's sequence of
-Gi* values, and classifies the result into categories such as persistent, intensifying,
-diminishing, sporadic and oscillating.
+That is segmentation rather than detection. The practical use is planning: a telecoms
+regulator, a market-entry team or a ministry allocating infrastructure does not want 55
+townships, it wants five or six coherent zones it can write a policy for.
 
-The question this answers is the one a planner actually cares about: not "where is it
-hot" but "where is it *becoming* hot".
+The complication is that ordinary cluster analysis knows nothing about geography. It
+will happily place two townships at opposite ends of Shan State in the same cluster
+because their radio ownership happens to match. A region you cannot draw on a map is
+not much use as a planning unit. Two families of method address this:
 
-I will say at the outset that the headline result of this exercise is a bug I found in
-the `sfdep` package rather than a fact about Hunan. The fact about Hunan only became
-visible after fixing it.
+- **SKATER**, which prunes a minimum spanning tree built on the contiguity graph, so
+  contiguity is enforced by construction;
+- **ClustGeo**, which blends an attribute dissimilarity matrix with a geographic
+  distance matrix through a mixing parameter `alpha`, trading homogeneity for
+  compactness continuously.
+
+By the end I should be able to run all three (plain hierarchical, SKATER, ClustGeo) and
+say something defensible about what each one costs.
 
 ## 2. The Study Area and Data
 
 | Dataset | Description | Format |
 |---|---|---|
-| `Hunan` | County boundary layer, 88 counties | ESRI Shapefile (polygon) |
-| `Hunan_GDPPC.csv` | GDP per capita by county by year, 2005 to 2021 | CSV (long format) |
+| `myanmar_township_boundaries` | Township boundaries for Myanmar, filtered to the three Shan states | ESRI Shapefile (polygon) |
+| `Shan-ICT.csv` | Household ICT ownership from the 2014 Myanmar Population and Housing Census, township level | CSV |
 
-The boundary layer is the same one used in Exercises 4 and 5. The attribute file is new
-and is a **balanced panel**: 88 counties by 17 years gives 1,496 rows with no gaps and no
-missing values. Its 2012 column reconciles with the `Hunan_2012.csv` used in Exercise 5
-to within rounding, which is the check that confirms the two files describe the same
-place.
+Both come from the [Myanmar Information Management Unit
+(MIMU)](http://themimu.info/). The filter keeps Shan (East), Shan (North) and Shan
+(South), which gives 55 townships.
+
+Shan State is a reasonable choice for this problem. It is large, internally very uneven,
+and the ICT variables are genuinely multivariate: radio is a legacy technology with a
+different geography from mobile phones, so the clustering has something to work with
+rather than six proxies for one underlying wealth gradient.
 
 ## 3. Getting Started
 
 ```{r}
-pacman::p_load(sf, sfdep, tmap, plotly, tidyverse, Kendall, knitr)
-set.seed(1234)
+pacman::p_load(spdep, tmap, sf, ClustGeo,
+               ggpubr, cluster, factoextra, NbClust,
+               heatmaply, corrplot, psych, tidyverse, GGally)
 ```
 
-## 4. Getting the Data Into R
+## 4. Data Import and Preparation
+
+### 4.1 Importing the township boundaries
 
 ```{r}
-hunan <- st_read(dsn = "data/geospatial", layer = "Hunan")
-GDPPC <- read_csv("data/aspatial/Hunan_GDPPC.csv")
+shan_sf <- st_read(dsn = "data/geospatial",
+                   layer = "myanmar_township_boundaries") %>%
+  filter(ST %in% c("Shan (East)", "Shan (North)", "Shan (South)")) %>%
+  select(c(2:7))
 ```
 
 ```{r}
-tibble(Rows = nrow(GDPPC),
-       Counties = n_distinct(GDPPC$County),
-       Years = n_distinct(GDPPC$Year),
-       From = min(GDPPC$Year), To = max(GDPPC$Year),
-       Balanced = nrow(GDPPC) == n_distinct(GDPPC$County) * n_distinct(GDPPC$Year),
-       `Missing GDPPC` = sum(is.na(GDPPC$GDPPC))) %>% kable()
+glimpse(shan_sf)
 ```
 
-### 4.1 What Happened to Hunan Between 2005 and 2021
+55 townships, six attribute fields and a geometry column, in WGS 84.
 
-Before any spatial statistic, it is worth knowing what the variable did.
+### 4.2 Importing the ICT data
 
 ```{r}
-w <- GDPPC %>% pivot_wider(names_from = Year, values_from = GDPPC)
-tibble(Measure = c("Mean GDPPC", "Coefficient of variation", "Max / min ratio"),
-       `2005` = c(round(mean(w$`2005`)), round(sd(w$`2005`)/mean(w$`2005`), 3),
-                  round(max(w$`2005`)/min(w$`2005`), 1)),
-       `2021` = c(round(mean(w$`2021`)), round(sd(w$`2021`)/mean(w$`2021`), 3),
-                  round(max(w$`2021`)/min(w$`2021`), 1))) %>% kable()
+ict <- read_csv("data/aspatial/Shan-ICT.csv")
+summary(ict)
+```
+
+### 4.3 Deriving penetration rates
+
+The raw counts are households owning each device. Using them directly would cluster
+townships by **size**, not by technology profile: a township with 80,000 households will
+have more of everything. Converting to a rate per 1,000 households removes that.
+
+```{r}
+ict_derived <- ict %>%
+  mutate(`RADIO_PR` = `Radio`/`Total households`*1000) %>%
+  mutate(`TV_PR` = `Television`/`Total households`*1000) %>%
+  mutate(`LLPHONE_PR` = `Land line phone`/`Total households`*1000) %>%
+  mutate(`MPHONE_PR` = `Mobile phone`/`Total households`*1000) %>%
+  mutate(`COMPUTER_PR` = `Computer`/`Total households`*1000) %>%
+  mutate(`INTERNET_PR` = `Internet at home`/`Total households`*1000) %>%
+  rename(`DT_PCODE` =`District Pcode`, `DT`=`District Name`,
+         `TS_PCODE`=`Township Pcode`, `TS`=`Township Name`,
+         `TT_HOUSEHOLDS`=`Total households`,
+         `RADIO`=`Radio`, `TV`=`Television`,
+         `LLPHONE`=`Land line phone`, `MPHONE`=`Mobile phone`,
+         `COMPUTER`=`Computer`, `INTERNET`=`Internet at home`)
+
+summary(ict_derived)
+```
+
+## 5. Exploratory Data Analysis
+
+### 5.1 Counts versus rates
+
+```{r}
+#| fig-height: 3
+ggarrange(
+  ggplot(ict_derived, aes(x = RADIO)) +
+    geom_histogram(bins = 20, color = "black", fill = "light blue") +
+    ggtitle("Households owning a radio (count)"),
+  ggplot(ict_derived, aes(x = RADIO_PR)) +
+    geom_histogram(bins = 20, color = "black", fill = "light blue") +
+    ggtitle("Radio per 1,000 households"),
+  ncol = 2)
+```
+
+The count distribution is strongly right-skewed, which is a size effect: a handful of
+large townships sit far out in the tail. The rate is much closer to symmetric. This is
+the whole justification for section 4.3 in one picture.
+
+### 5.2 All six penetration rates
+
+```{r}
+#| fig-height: 5
+radio <- ggplot(ict_derived, aes(x = RADIO_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+tv <- ggplot(ict_derived, aes(x = TV_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+llphone <- ggplot(ict_derived, aes(x = LLPHONE_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+mphone <- ggplot(ict_derived, aes(x = MPHONE_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+computer <- ggplot(ict_derived, aes(x = COMPUTER_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+internet <- ggplot(ict_derived, aes(x = INTERNET_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue")
+
+ggarrange(radio, tv, llphone, mphone, computer, internet,
+          ncol = 3, nrow = 2)
+```
+
+Radio and TV are broad and roughly symmetric. Landline, computer and internet are all
+heavily right-skewed with a floor near zero, which is what low-penetration technology
+looks like: most townships have almost none, a few urban ones have some.
+
+### 5.3 Joining geospatial and aspatial data
+
+```{r}
+shan_sf <- left_join(shan_sf, ict_derived, by = c("TS_PCODE" = "TS_PCODE"))
+```
+
+```{r}
+sum(!is.na(shan_sf$TT_HOUSEHOLDS))
+```
+
+All 55 townships matched on `TS_PCODE`. Worth checking rather than assuming, because a
+left join silently produces `NA` rather than failing.
+
+### 5.4 Choropleths: why the rate matters
+
+```{r}
+#| fig-height: 4
+TT_HOUSEHOLDS.map <- tm_shape(shan_sf) +
+  tm_polygons(fill = "TT_HOUSEHOLDS",
+              fill.scale = tm_scale_intervals(n = 5, style = "jenks"),
+              fill.legend = tm_legend(title = "Total households")) +
+  tm_borders(col_alpha = 0.5)
+
+RADIO.map <- tm_shape(shan_sf) +
+  tm_polygons(fill = "RADIO",
+              fill.scale = tm_scale_intervals(n = 5, style = "jenks"),
+              fill.legend = tm_legend(title = "Radio (count)")) +
+  tm_borders(col_alpha = 0.5)
+
+tmap_arrange(TT_HOUSEHOLDS.map, RADIO.map, asp = NA, ncol = 2)
+```
+
+The two maps are near-identical. The count map is essentially a population map.
+
+```{r}
+#| fig-height: 4
+RADIO_PR.map <- tm_shape(shan_sf) +
+  tm_polygons(fill = "RADIO_PR",
+              fill.scale = tm_scale_intervals(n = 5, style = "jenks"),
+              fill.legend = tm_legend(title = "Radio per 1,000")) +
+  tm_borders(col_alpha = 0.5)
+
+tmap_arrange(TT_HOUSEHOLDS.map, RADIO_PR.map, asp = NA, ncol = 2)
+```
+
+Once normalised the pattern inverts in places: some of the *least* populous townships
+have the *highest* radio penetration. That is a real signal, and it was completely
+hidden in the count map.
+
+## 6. Correlation Analysis
+
+Cluster analysis on strongly collinear variables effectively double-counts whatever they
+share.
+
+```{r}
+#| fig-height: 5
+cluster_vars.cor = cor(ict_derived[,12:17])
+corrplot.mixed(cluster_vars.cor,
+               lower = "ellipse",
+               upper = "number",
+               tl.pos = "lt",
+               diag = "l",
+               tl.col = "black")
 ```
 
 ::: {.callout-note}
-## Everything grew, and the gaps stayed the same shape
-Mean GDP per capita rose from about 7,500 to about 50,400, a factor of **6.7** in sixteen
-years. That is the headline a growth statistic would report.
+## Which pair actually has to go
 
-The dispersion measures did not move. The coefficient of variation went from 0.467 to
-0.471, and the ratio of richest to poorest county actually narrowed slightly, from 7.4 to
-6.4. Hunan got six times richer without meaningfully changing how unequally that wealth
-was distributed across counties.
+`COMPUTER_PR` and `INTERNET_PR` correlate at **0.87**, far above any other pair
+(`MPHONE_PR`–`COMPUTER_PR` is 0.74, `TV_PR`–`MPHONE_PR` is 0.72). In 2014 Myanmar a
+home internet connection almost always implied a computer, so the two are close to the
+same measurement. I drop `INTERNET_PR` and keep `COMPUTER_PR`, following the handout.
 
-This matters for what follows. Because every county grew, and grew at broadly similar
-proportional rates, a trend test on raw GDPPC is useless: Kendall's tau on the raw series
-averages **0.97** across counties, which just says "GDP went up everywhere". The whole
-point of running the trend test on **Gi\*** rather than on GDPPC is that Gi\* is a
-*relative* measure. It asks whether a county's standing among its neighbours changed, and
-that is a question the raw series cannot answer.
+Worth noting what is *not* collinear: `RADIO_PR` is essentially uncorrelated with
+everything else (its largest correlation with any other variable is 0.15). Radio is not
+a proxy for wealth here, it is its own axis, and it will do real work in the clustering.
 :::
 
-## 5. Creating a Space-Time Cube
+## 7. Hierarchical Cluster Analysis
 
-A spacetime cube pairs each location with each time period. `sfdep` validates that the
-pairing is complete, which is why the balanced-panel check above mattered.
+### 7.1 Extracting the clustering variables
 
 ```{r}
-GDPPC_st <- spacetime(GDPPC, hunan, .loc_col = "County", .time_col = "Year")
-is_spacetime_cube(GDPPC_st)
+cluster_vars <- shan_sf %>%
+  st_set_geometry(NULL) %>%
+  select("TS.x", "RADIO_PR", "TV_PR", "LLPHONE_PR", "MPHONE_PR", "COMPUTER_PR")
+row.names(cluster_vars) <- cluster_vars$"TS.x"
+shan_ict <- select(cluster_vars, c(2:6))
+head(shan_ict, 10)
 ```
 
-`TRUE` confirms every county appears in every year.
-
-## 6. Computing Gi* Year by Year
-
-First derive the neighbours and weights, then compute Gi* within each year.
+### 7.2 Standardisation
 
 ```{r}
-GDPPC_nb <- GDPPC_st %>%
-  activate("geometry") %>%
-  mutate(nb = include_self(st_contiguity(geometry)),
-         wt = st_inverse_distance(nb, geometry, scale = 1, alpha = 1),
-         .before = 1) %>%
-  set_nbs("nb") %>%
-  set_wts("wt")
+shan_ict.std <- normalize(shan_ict)
+summary(shan_ict.std)
 ```
 
 ```{r}
-gi_stars <- GDPPC_nb %>%
-  group_by(Year) %>%
-  mutate(gi = local_gstar_perm(GDPPC, nb, wt, nsim = 99)) %>%
-  tidyr::unnest(gi) %>%
-  ungroup()
+shan_ict.z <- scale(shan_ict)
+describe(shan_ict.z)
+```
+
+```{r}
+#| fig-height: 3
+r <- ggplot(ict_derived, aes(x = RADIO_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  ggtitle("Raw")
+s <- ggplot(as.data.frame(shan_ict.std), aes(x = RADIO_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  ggtitle("Min-Max")
+z <- ggplot(as.data.frame(shan_ict.z), aes(x = RADIO_PR)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  ggtitle("Z-score")
+ggarrange(r, s, z, ncol = 3, nrow = 1)
+```
+
+The *shape* is identical in all three. Standardisation rescales an axis, it does not
+reshape a distribution. What it changes is how much each variable counts when distances
+between townships are computed, and I come back to that in section 11.
+
+### 7.3 Proximity matrix
+
+```{r}
+proxmat <- dist(shan_ict, method = 'euclidean')
+```
+
+### 7.4 Choosing the linkage
+
+`agnes()` reports an agglomerative coefficient, where values near 1 indicate a stronger
+clustering structure.
+
+```{r}
+m <- c("average", "single", "complete", "ward")
+names(m) <- c("average", "single", "complete", "ward")
+ac <- function(x) { agnes(shan_ict, method = x)$ac }
+map_dbl(m, ac)
+```
+
+Ward wins clearly at **0.943**, against 0.895 for complete and 0.663 for single linkage.
+Single linkage performing worst is expected: it chains, producing one large straggly
+cluster and several singletons. Ward is used from here.
+
+### 7.5 How many clusters?
+
+```{r}
+set.seed(12345)
+gap_stat <- clusGap(shan_ict, FUN = hcut, nstart = 25, K.max = 10, B = 50)
+print(gap_stat, method = "firstmax")
+```
+
+```{r}
+#| fig-height: 3.5
+fviz_gap_stat(gap_stat)
+```
+
+::: {.callout-important}
+## The gap statistic says one cluster, and I should not pretend otherwise
+
+`firstmax` returns **k = 1**. The honest reading is that the gap statistic finds no
+strong evidence of cluster structure in these five variables at all: the gap never rises
+above its k=1 value of 0.274, and from k=2 to k=10 it sits in a narrow band between
+0.203 and 0.222.
+
+That is not a number I can report as "the answer is 6". What I can say is that *given* a
+decision to partition, k = 6 is the local maximum within the usable range and is what
+the handout adopts, so I use 6 for comparability. But the segmentation here rests on a
+planning decision to have six regions, not on a statistical finding that six exist.
+:::
+
+### 7.6 The dendrogram
+
+```{r}
+#| fig-height: 5
+plot(hclust_ward <- hclust(proxmat, method = 'ward.D'), cex = 0.6)
+rect.hclust(hclust_ward, k = 6, border = 2:5)
+```
+
+### 7.7 Visually-driven analysis with a cluster heatmap
+
+```{r}
+shan_ict_mat <- data.matrix(shan_ict)
+heatmaply(normalize(shan_ict_mat),
+          Colv = NA,
+          dist_method = "euclidean",
+          hclust_method = "ward.D",
+          seriate = "OLO",
+          colors = Blues,
+          k_row = 6,
+          margins = c(NA, 200, 60, NA),
+          fontsize_row = 4,
+          fontsize_col = 5,
+          main = "Geographic Segmentation of Shan State by ICT indicators",
+          xlab = "ICT Indicators",
+          ylab = "Townships of Shan State")
+```
+
+### 7.8 Mapping the clusters
+
+```{r}
+groups <- as.factor(cutree(hclust_ward, k = 6))
+shan_sf_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
+  rename(`CLUSTER` = `as.matrix.groups.`)
+table(shan_sf_cluster$CLUSTER)
+```
+
+```{r}
+#| fig-height: 4.5
+qtm(shan_sf_cluster, "CLUSTER")
+```
+
+The clusters are badly fragmented. Cluster 1 alone appears in pieces scattered across
+the whole state. As a *typology* this is fine, but as a set of planning regions it is
+unusable, which is exactly the motivation for the next two sections.
+
+## 8. Spatially Constrained Clustering: SKATER
+
+### 8.1 Converting to a spatial object
+
+```{r}
+shan_sp <- as_Spatial(shan_sf)
+```
+
+### 8.2 Neighbour list
+
+```{r}
+shan.nb <- poly2nb(shan_sp)
+summary(shan.nb)
+```
+
+264 non-zero links, 4.8 neighbours on average, nothing isolated. A township with no
+neighbours would break the minimum spanning tree, so this check matters.
+
+```{r}
+#| fig-height: 5
+coords <- st_coordinates(st_centroid(st_geometry(shan_sf)))
+plot(st_geometry(shan_sf), border = grey(.5))
+plot(shan.nb, coords, col = "blue", add = TRUE)
+```
+
+### 8.3 Edge costs and the minimum spanning tree
+
+The cost of each edge is the attribute dissimilarity between the two townships it joins.
+Note the weights style is `B`, not row-standardised: these are distances, and scaling
+them per row would destroy their meaning.
+
+```{r}
+lcosts <- nbcosts(shan.nb, shan_ict)
+shan.w <- nb2listw(shan.nb, lcosts, style = "B")
+summary(shan.w)
+```
+
+```{r}
+shan.mst <- mstree(shan.w)
+dim(shan.mst)
+```
+
+54 edges for 55 nodes, as a spanning tree must have.
+
+```{r}
+#| fig-height: 5
+plot(st_geometry(shan_sf), border = gray(.5))
+plot.mst(shan.mst, coords, col = "blue",
+         cex.lab = 0.7, cex.circles = 0.005, add = TRUE)
+```
+
+### 8.4 Pruning the tree
+
+```{r}
+clust6 <- spdep::skater(edges = shan.mst[,1:2],
+                        data = shan_ict,
+                        method = "euclidean",
+                        ncuts = 5)
+table(clust6$groups)
+```
+
+::: {.callout-important}
+## SKATER buys contiguity with badly unbalanced clusters
+
+The six groups are **22, 18, 11, 2, 1, 1**. Two of the six "regions" are single
+townships and a third has two. Effectively this is a three-region solution with three
+outliers shaved off.
+
+That is a structural property of the method, not bad luck. SKATER can only cut edges of
+the spanning tree, so an extreme township that sits on a leaf gets isolated by the
+cheapest available cut long before the algorithm will split a large interior block. If
+the goal is six comparably sized planning regions, SKATER at `ncuts = 5` does not
+deliver them.
+:::
+
+```{r}
+clust6$ssto
+clust6$ssw
+```
+
+Total sum of squares is 12,613 and each of the five cuts reduces the within-cluster sum
+of squares, ending at 8,735. The cuts are doing real work, just unevenly.
+
+```{r}
+#| fig-height: 5
+plot(st_geometry(shan_sf), border = gray(.5))
+plot(clust6, coords, cex.lab = .7,
+     groups.colors = c("red", "green", "blue", "brown", "pink"),
+     cex.circles = 0.005, add = TRUE)
+```
+
+### 8.5 Comparing unconstrained and constrained
+
+```{r}
+#| fig-height: 4.5
+groups_mat <- as.matrix(clust6$groups)
+shan_sf_spatialcluster <- cbind(shan_sf_cluster, as.factor(groups_mat)) %>%
+  rename(`SP_CLUSTER` = `as.factor.groups_mat.`)
+
+tmap_arrange(qtm(shan_sf_cluster, "CLUSTER") + tm_borders(col_alpha = 0.5),
+             qtm(shan_sf_spatialcluster, "SP_CLUSTER") + tm_borders(col_alpha = 0.5),
+             asp = NA, ncol = 2)
+```
+
+The right-hand map is made of solid contiguous blocks. That is the entire point of
+SKATER, and it is visually obvious.
+
+## 9. Spatially Constrained Clustering: ClustGeo
+
+### 9.1 Ward-like clustering without a spatial constraint
+
+```{r}
+#| fig-height: 5
+nongeo_cluster <- hclustgeo(proxmat)
+plot(nongeo_cluster, cex = 0.5)
+rect.hclust(nongeo_cluster, k = 6, border = 2:5)
+```
+
+::: {.callout-important}
+## `hclustgeo()` with no constraint is not the same as the `hclust()` above
+
+The handout presents `hclustgeo(proxmat)` as doing "a typical Ward-like hierarchical
+clustering just like `hclust()`". It is Ward-like, but it is not the same Ward.
+
+My `hclust()` call in section 7.6 used `method = "ward.D"` and gave cluster sizes
+20/4/13/6/7/5. `hclustgeo(proxmat)` gives **16/8/13/6/7/5**. I checked where the
+difference comes from, and `hclustgeo(proxmat)` reproduces `hclust(proxmat, "ward.D2")`
+*exactly*, township for township, not `ward.D`.
+
+The distinction is that `ward.D2` squares the dissimilarities before applying the Ward
+update and `ward.D` does not, so only `ward.D2` implements Ward's actual criterion on a
+non-squared input distance matrix. Twelve townships move between clusters 1 and 2 as a
+result. It is a small difference here but it means the section 7 dendrogram and the
+section 9 dendrogram are not two views of one clustering.
+:::
+
+```{r}
+groups <- as.factor(cutree(nongeo_cluster, k = 6))
+shan_sf_ngeo_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
+  rename(`CLUSTER` = `as.matrix.groups.`)
+```
+
+```{r}
+#| fig-height: 4.5
+qtm(shan_sf_ngeo_cluster, "CLUSTER")
+```
+
+### 9.2 Choosing the mixing parameter
+
+`D0` holds attribute dissimilarity, `D1` holds geographic distance, and `alpha` sets how
+much weight goes to each.
+
+```{r}
+dist <- st_distance(shan_sf, shan_sf)
+distmat <- as.dist(dist)
 ```
 
 ```{r}
 #| fig-height: 4
-gi_stars %>%
-  group_by(Year) %>%
-  summarise(Hot = sum(gi_star > 2), Cold = sum(gi_star < -2)) %>%
-  pivot_longer(-Year) %>%
-  ggplot(aes(Year, value, colour = name)) +
-  geom_line(linewidth = 0.9) + geom_point(size = 1.8) +
-  scale_colour_manual(values = c(Hot = "#C0392B", Cold = "#2c7bb6")) +
-  labs(y = "Counties beyond |Gi*| = 2", colour = NULL,
-       title = "Hot and cold counties per year") +
-  theme_minimal(base_size = 11)
-```
-
-The hot count is remarkably stable at around 11 counties throughout. The cold count drifts
-upward in the later years.
-
-## 7. Mann-Kendall on a Single County
-
-Before running the full analysis, it helps to see the test on one location.
-
-```{r}
-#| fig-height: 3.6
-cbg <- gi_stars %>% filter(County == "Changsha")
-ggplot(cbg, aes(Year, gi_star)) +
-  geom_line(colour = "#C0392B", linewidth = 0.9) +
-  geom_point(colour = "#C0392B", size = 1.8) +
-  labs(y = "Gi*", title = "Changsha: Gi* over time") +
-  theme_minimal(base_size = 11)
+cr <- choicealpha(proxmat, distmat, range.alpha = seq(0, 1, 0.1), K = 6, graph = TRUE)
 ```
 
 ```{r}
-mk <- Kendall::MannKendall(cbg$gi_star)
-tibble(tau = round(unname(mk$tau), 3),
-       `2-sided p` = signif(as.numeric(mk$sl), 3),
-       S = unname(mk$S)) %>% kable()
+round(cr$Qnorm, 3)
 ```
 
-Changsha's Gi\* is high in every year and trends gently upward. Nothing surprising.
+::: {.callout-note}
+## Reading the alpha curves
 
-## 8. Emerging Hot Spot Analysis
+`Q0norm` is the proportion of attribute homogeneity retained, `Q1norm` the geographic
+homogeneity. Moving from alpha = 0 to alpha = 0.2 costs about **14%** of attribute
+homogeneity (1.000 → 0.855) and buys a jump in geographic homogeneity from 0.139 to
+**0.665**. That is a very favourable exchange and it is why 0.2 is the conventional
+choice here.
+
+Pushing on to alpha = 0.3 costs a further 3 points of attribute homogeneity for 7 points
+of geographic, still positive but clearly past the knee. I follow the handout and use
+0.2.
+:::
+
+### 9.3 The spatially constrained solution
 
 ```{r}
-ehsa_raw <- emerging_hotspot_analysis(x = GDPPC_st, .var = "GDPPC",
-                                      k = 1, nsim = 99)
-ehsa_raw %>% count(classification, sort = TRUE) %>% kable()
+clustG <- hclustgeo(proxmat, distmat, alpha = 0.2)
+groups <- as.factor(cutree(clustG, k = 6))
+shan_sf_Gcluster <- cbind(shan_sf, as.matrix(groups)) %>%
+  rename(`CLUSTER` = `as.matrix.groups.`)
+table(shan_sf_Gcluster$CLUSTER)
 ```
 
-### 8.1 Checking the Output Before Mapping It
+```{r}
+#| fig-height: 4.5
+qtm(shan_sf_Gcluster, "CLUSTER")
+```
 
-The classification is only meaningful if it agrees with the Gi\* series it was computed
-from. A county labelled a hot spot should have high Gi\*. So I joined the two together.
+Much more balanced than SKATER (12/10/9/9/8/7, no singletons) and visibly more spatially
+coherent than the unconstrained solution, though not perfectly contiguous. Section 11
+measures that.
+
+## 10. Visual Interpretation of Clusters
+
+### 10.1 One variable at a time
 
 ```{r}
-county_gi <- gi_stars %>%
-  group_by(County) %>%
-  summarise(mean_gi = mean(gi_star),
-            years_hot = sum(gi_star > 2),
-            mean_GDPPC = mean(GDPPC))
+#| fig-height: 3.5
+ggplot(data = shan_sf_ngeo_cluster, aes(x = CLUSTER, y = RADIO_PR)) +
+  geom_boxplot()
+```
 
-ehsa_raw %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  group_by(classification) %>%
+Cluster 3 has the highest median radio penetration and cluster 6 the lowest, with
+cluster 5 also low. A single variable only ever tells part of the story though.
+
+### 10.2 Parallel coordinate plot
+
+```{r}
+#| fig-height: 4
+pc_cols <- match(c("RADIO_PR", "TV_PR", "LLPHONE_PR", "MPHONE_PR", "COMPUTER_PR"),
+                 names(shan_sf_ngeo_cluster))
+
+ggparcoord(data = shan_sf_ngeo_cluster,
+           columns = pc_cols,
+           scale = "globalminmax",
+           alphaLines = 0.2,
+           boxplot = TRUE,
+           title = "Parallel coordinates of ICT variables by cluster") +
+  facet_grid(~ CLUSTER) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### 10.3 Cluster means
+
+```{r}
+shan_sf_ngeo_cluster %>%
+  st_set_geometry(NULL) %>%
+  group_by(CLUSTER) %>%
   summarise(n = n(),
-            `mean Gi*` = round(mean(mean_gi), 2),
-            `mean GDPPC` = round(mean(mean_GDPPC))) %>%
-  arrange(-n) %>% kable()
+            mean_RADIO_PR = round(mean(RADIO_PR), 1),
+            mean_TV_PR = round(mean(TV_PR), 1),
+            mean_LLPHONE_PR = round(mean(LLPHONE_PR), 1),
+            mean_MPHONE_PR = round(mean(MPHONE_PR), 1),
+            mean_COMPUTER_PR = round(mean(COMPUTER_PR), 1))
 ```
 
-The counties labelled **hotspot** have a *lower* mean Gi\* than the counties labelled
-**coldspot**. That is not a subtle problem.
+The six profiles are interpretable:
+
+- **Cluster 4** (n = 6) is the connected one: highest on TV (744), landline (99), mobile
+  (651) and computer (65.5) by a wide margin. These are the urban centres.
+- **Cluster 5** (n = 7) is the opposite on everything modern (TV 224, mobile 132,
+  computer 6.7) but mid-range on radio. Low-penetration remote townships.
+- **Cluster 6** (n = 5) is the interesting one: lowest radio of all (98.6) yet high
+  mobile (468). These townships appear to have skipped radio rather than lagged on it.
+- **Cluster 3** (n = 13) is the high-radio group (300) with solid mobile (392).
+- **Clusters 1 and 2** are the middle, separated mainly by mobile and TV.
+
+::: {.callout-note}
+## Radio is doing the discriminating
+
+Clusters 5 and 6 have almost the same low-ish profile on landline and computer, yet they
+are separated decisively by radio: 124 versus 98.6 on radio but 132 versus 468 on
+mobile. Without `RADIO_PR` in the variable set these two groups would likely collapse
+together. That is consistent with the correlation matrix in section 6, where radio was
+the one variable independent of the rest.
+:::
+
+## 11. My Own Exploration: What Does the Spatial Constraint Actually Cost?
+
+Every method here claims a different balance between two things I can measure directly:
+
+- **attribute homogeneity**, as the total within-cluster sum of squares on standardised
+  variables (lower is better);
+- **spatial coherence**, as the number of contiguous pieces the six clusters break into
+  (6 is perfect, higher is worse).
+
+The handout asserts the trade-off exists. I wanted the numbers.
+
+### 11.1 Counting contiguous pieces
 
 ```{r}
-ehsa_raw %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  filter(years_hot == 17) %>%
-  select(location, mean_gi, years_hot, classification) %>%
-  mutate(mean_gi = round(mean_gi, 2)) %>%
-  arrange(-mean_gi) %>% kable()
+pieces <- function(lab, nb) {
+  total <- 0
+  for (k in unique(lab)) {
+    idx <- which(lab == k); seen <- integer(0); comp <- 0
+    for (i in idx) {
+      if (i %in% seen) next
+      comp <- comp + 1; stack <- i
+      while (length(stack)) {
+        v <- stack[1]; stack <- stack[-1]
+        if (v %in% seen) next
+        seen <- c(seen, v)
+        nbrs <- nb[[v]]; nbrs <- nbrs[nbrs != 0]
+        stack <- c(stack, intersect(nbrs[!(nbrs %in% seen)], idx))
+      }
+    }
+    total <- total + comp
+  }
+  total
+}
+
+wss <- function(lab) {
+  x <- scale(shan_ict)
+  sum(sapply(unique(lab), function(k) {
+    s <- x[lab == k, , drop = FALSE]
+    if (nrow(s) < 2) return(0)
+    sum(scale(s, scale = FALSE)^2)
+  }))
+}
 ```
 
-Nine counties have Gi\* above 2 in **all seventeen years**. Wangcheng has a mean Gi\* of
-about 5, the second highest in the province, and sits next to Changsha in the richest
-corner of Hunan. It is labelled a **coldspot**.
+### 11.2 The trade-off, measured
 
-### 8.2 Locating the Bug
+```{r}
+cg3 <- cutree(hclustgeo(proxmat, distmat, alpha = 0.3), 6)
 
-`emerging_hotspot_analysis()` ends with this line (sfdep 0.2.5):
+solutions <- list(
+  `hclust (ward.D)`   = cutree(hclust_ward, 6),
+  `hclustgeo (a = 0)` = cutree(nongeo_cluster, 6),
+  `ClustGeo a = 0.2`  = cutree(clustG, 6),
+  `ClustGeo a = 0.3`  = cg3,
+  `SKATER`            = clust6$groups
+)
 
-```r
-res_ehs <- cbind(
-  location = attr(x, "geometry")[[.loc_col]],
-  do.call(rbind, lapply(split(all_gis, x[[.loc_col]]),
-                        function(.x) classify_hotspot(.x, threshold)))
+tibble(
+  method = names(solutions),
+  pieces = sapply(solutions, pieces, nb = shan.nb),
+  within_SS = round(sapply(solutions, wss), 1),
+  sizes = sapply(solutions, function(l)
+    paste(sort(as.vector(table(l)), decreasing = TRUE), collapse = "/"))
 )
 ```
 
 ::: {.callout-important}
-## The results are computed in alphabetical order and labelled in shapefile order
-`split()` groups by the location column and returns those groups **sorted alphabetically**.
-That is the order the classification rows come out in.
+## The constraint is expensive, and ClustGeo does not actually enforce it
 
-`location` is taken from `attr(x, "geometry")[[.loc_col]]`, which is the county column of
-the **shapefile**, in whatever order the file happens to store its features.
+Three things came out of this that I did not get from the maps.
 
-`cbind()` then pastes the two together positionally. The two orderings only agree if the
-shapefile is already sorted alphabetically. Hunan's is not.
+**The unconstrained solutions are extremely fragmented.** Six clusters break into 24 and
+28 separate patches. That is roughly half of the 55 townships sitting in a patch of
+their own or nearly so. "Fragmented" undersells it.
 
-```{r}
-tibble(Position = 1:5,
-       `Shapefile order` = head(hunan$County, 5),
-       `Alphabetical order` = head(sort(hunan$County), 5)) %>% kable()
-```
+**SKATER's contiguity is absolute and the price is 42%.** It returns exactly 6 pieces
+for 6 clusters, as guaranteed by construction. Within-cluster sum of squares rises from
+106.6 to 151.1, which is **42% worse attribute homogeneity**. That is the real cost of
+mappable regions on this data, and it is not small.
 
-Row 1 of the classification block belongs to Anhua, the first county alphabetically, but
-gets labelled Anxiang, the first county in the shapefile. Every row is attached to the
-wrong county. The output is a valid-looking table of the right shape, with the labels
-shuffled.
+**ClustGeo at alpha = 0.2 does not deliver contiguity.** This is the finding that
+surprised me. It still breaks into **18 pieces**, only a third of the way from 24 to 6,
+while already giving up 22% of homogeneity. Raising alpha to 0.3 barely helps (17
+pieces). ClustGeo *pulls* clusters toward geographic compactness through a distance
+penalty, but nothing in the algorithm forbids a cluster from being in two places at
+once. SKATER's graph-based formulation is categorically different: contiguity is a
+constraint, not a preference.
 
-This is the same failure mode as the `sfc` trap in Exercise 4 and the quadrant error in
-Exercise 5. It does not raise an error, it does not look wrong, and every map built from
-it would be confidently mislabelled.
+So the two methods are not interchangeable alternatives. If the deliverable must be
+drawable as contiguous regions, only SKATER guarantees it. ClustGeo buys balance (no
+singletons, sizes 12/10/9/9/8/7 against SKATER's 22/18/11/2/1/1) but not contiguity.
 :::
 
-### 8.3 The Fix, and the Test That Confirms It
+### 11.3 A second question: the handout standardises, then clusters on raw rates
 
-The fix is to name the rows in the order they were actually computed.
-
-```{r}
-ehsa <- ehsa_raw %>% mutate(location = sort(hunan$County))
-```
-
-If that diagnosis is right, the relationship between label and Gi\* should invert cleanly.
+Sections 7.2 computed both a min-max and a z-score standardisation, and then the
+proximity matrix in 7.3 was built from `shan_ict`, the **unstandardised** rates. All five
+variables are per-1,000 rates so they share a unit, which is presumably the reasoning.
+But sharing a unit is not the same as sharing a scale.
 
 ```{r}
-bind_rows(
-  ehsa_raw %>% mutate(version = "As shipped"),
-  ehsa     %>% mutate(version = "Reassigned")
-) %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  filter(classification %in% c("sporadic hotspot", "sporadic coldspot")) %>%
-  group_by(version, classification) %>%
-  summarise(n = n(), `mean Gi*` = round(mean(mean_gi), 2), .groups = "drop") %>%
-  kable()
+v <- apply(shan_ict, 2, var)
+tibble(variable = names(v),
+       sd = round(sqrt(v), 1),
+       pct_of_total_variance = round(100 * v / sum(v), 1))
 ```
 
-As shipped, hot spots and cold spots are indistinguishable by Gi\* and sit on the wrong
-sides of zero. After reassignment the hot spots sit well above zero and the cold spots
-well below. The nine counties that are hot in all seventeen years all classify as hot
-spots.
+`MPHONE_PR` and `TV_PR` together carry **81%** of the total variance. `COMPUTER_PR`
+contributes **0.6%** and `LLPHONE_PR` 2.4%. Euclidean distance on these raw rates is
+therefore, to a good approximation, a distance on mobile phones and television only.
 
 ```{r}
-ehsa %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  group_by(classification) %>%
-  summarise(n = n(),
-            `mean Gi*` = round(mean(mean_gi), 2),
-            `mean GDPPC` = round(mean(mean_GDPPC))) %>%
-  arrange(-`mean Gi*`) %>% kable()
+raw_k6 <- cutree(hclust(dist(shan_ict), "ward.D"), 6)
+std_k6 <- cutree(hclust(dist(scale(shan_ict)), "ward.D"), 6)
+
+adj_rand <- function(a, b) {
+  t <- table(a, b); n <- sum(t)
+  s <- sum(choose(t, 2))
+  sa <- sum(choose(rowSums(t), 2)); sb <- sum(choose(colSums(t), 2))
+  e <- sa * sb / choose(n, 2)
+  (s - e) / ((sa + sb) / 2 - e)
+}
+
+tibble(raw_sizes = paste(table(raw_k6), collapse = "/"),
+       z_sizes = paste(table(std_k6), collapse = "/"),
+       adjusted_rand = round(adj_rand(raw_k6, std_k6), 3))
 ```
 
-::: {.callout-note}
-## Why this table is the proof, not the earlier one
-The corrected classes line up monotonically with **two independent quantities at once**:
-mean Gi\*, which comes from my own separate per-year computation, and mean GDPPC, which
-is the raw input.
+::: {.callout-important}
+## Standardising changes the answer substantially
 
-Hot spots are the richest counties and have the highest Gi\*. Cold spots are the poorest
-and have the lowest. Oscillating hot spots sit in between on both. No shuffling of labels
-would produce that alignment by chance, and the shipped version produced none of it.
+The adjusted Rand index between the raw-rate and z-scored partitions is **0.30**. For
+reference, 1 would be identical and 0 would be the agreement expected by chance. 0.30 is
+weak agreement: these are largely different segmentations of Shan State, from the same
+variables and the same algorithm.
+
+The z-scored version also produces much more even clusters (11/12/9/8/9/6 against
+20/4/13/6/7/5), which is what I would expect once `COMPUTER_PR` is no longer
+contributing 0.6% of the distance.
+
+I am not claiming the handout is wrong to use raw rates: if the analyst genuinely
+believes a 100-per-1,000 difference in mobile ownership matters more than a 100-per-1,000
+difference in computer ownership, raw rates encode that belief correctly. The point is
+that this is a *decision*, it is unstated, and it moves the result a long way. Reporting
+the six clusters without mentioning it would make a choice look like a finding.
 :::
 
-## 9. Mapping the Corrected Result
+## 12. What I Take From This Exercise
 
-```{r}
-#| fig-height: 5.5
-hunan_ehsa <- hunan %>% left_join(ehsa, by = c("County" = "location"))
+**Segmentation is not detection.** Exercise 5 tested a hypothesis and returned a p-value.
+This exercise returns a partition, and there is no p-value for a partition. The gap
+statistic in section 7.5 pointed at k = 1, which in plain terms means these five
+variables do not contain strong natural groupings. Six regions is a planning decision
+made on top of a weak statistical signal, and that should be stated out loud rather than
+buried.
 
-tm_shape(hunan_ehsa) +
-  tm_polygons("classification",
-              fill.scale = tm_scale_categorical(values = "brewer.set2"),
-              fill.legend = tm_legend(title = "EHSA class")) +
-  tm_borders(col_alpha = 0.4) +
-  tm_title("Emerging hot spot analysis, Hunan GDPPC 2005-2021")
-```
+**Contiguity costs 42% here, and I can now quantify it rather than assert it.** The
+measurement in section 11.2 is the thing I will carry forward. Before this exercise I
+would have described the spatial constraint as a mild regularisation. On Shan State it
+raises within-cluster variance by two-fifths. Whether that is acceptable depends entirely
+on whether the output has to be drawn on a map and administered, which is a question
+about the client, not about the data.
 
-```{r}
-#| fig-height: 5.5
-hunan_sig <- hunan_ehsa %>%
-  mutate(shown = ifelse(p_value < 0.05, classification, NA))
+**ClustGeo and SKATER solve different problems.** This is the correction I most needed.
+They are presented side by side as two spatially constrained methods, which made me
+assume they were two routes to the same place. They are not: SKATER *enforces*
+contiguity and distorts cluster sizes to do it; ClustGeo *encourages* compactness and
+preserves balance but left 18 disconnected pieces at the recommended alpha. Picking
+between them is picking which guarantee matters.
 
-tm_shape(hunan_sig) +
-  tm_polygons("shown",
-              fill.scale = tm_scale_categorical(values = "brewer.set2"),
-              fill.legend = tm_legend(title = "Significant only"),
-              col_alpha = 0.4) +
-  tm_borders(col_alpha = 0.4) +
-  tm_title("Significant classifications only (p < 0.05)")
-```
+**Two silent decisions moved the result more than any modelling choice.** Dropping
+`INTERNET_PR` for collinearity was explicit and defensible. Clustering on unstandardised
+rates was neither, and it changed the partition to an adjusted Rand of 0.30 against the
+standardised alternative. The `ward.D` versus `ward.D2` discrepancy in section 9.1 is
+smaller but the same species of problem: a default that quietly differs between two
+sections of the same analysis.
 
-Half the province reaches significance. The rest is not evidence of stability, only
-absence of evidence of change.
-
-## 10. What the Corrected Analysis Says About Hunan
-
-### 10.1 The Core is Fixed, Not Emerging
-
-```{r}
-ehsa %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  filter(years_hot == 17) %>%
-  select(County = location, `mean Gi*` = mean_gi, `mean GDPPC` = mean_GDPPC,
-         classification) %>%
-  mutate(`mean Gi*` = round(`mean Gi*`, 2), `mean GDPPC` = round(`mean GDPPC`)) %>%
-  arrange(-`mean Gi*`) %>% kable()
-```
-
-These nine counties are the Changsha-Zhuzhou-Xiangtan corridor that Exercise 5 found in a
-single year of data. Seventeen years of data show it was already there in 2005 and never
-weakened. Exercise 5's snapshot was not a snapshot of a moment, it was a snapshot of a
-structure.
-
-### 10.2 The Movement is in a Middle Ring
-
-```{r}
-ehsa %>%
-  left_join(county_gi, by = c("location" = "County")) %>%
-  filter(classification == "oscilating hotspot", p_value < 0.05) %>%
-  select(County = location, tau, `mean Gi*` = mean_gi, `mean GDPPC` = mean_GDPPC) %>%
-  mutate(tau = round(tau, 2), `mean Gi*` = round(`mean Gi*`, 2),
-         `mean GDPPC` = round(`mean GDPPC`)) %>%
-  arrange(-tau) %>% kable()
-```
-
-::: {.callout-note}
-## The interesting counties are the ones in the middle
-The oscillating hot spots are not the rich core and not the poor west. Their mean GDPPC
-sits between the two groups, and their Kendall tau values are strongly positive, meaning
-their standing relative to their neighbours has been climbing.
-
-Several of them, Yueyang, Linxiang, Huarong and Anxiang, sit north of Changsha toward
-Dongting Lake. The reading that fits is that the Changsha core is not growing in
-intensity, since it was already saturated in 2005, but its influence is reaching further
-out, and the counties on that frontier are the ones whose relative position is changing.
-
-That is a genuinely different statement from anything Exercise 5 could produce, and it is
-the thing EHSA exists to find.
-:::
-
-### 10.3 The Cold Periphery Widened
-
-```{r}
-gi_stars %>%
-  filter(Year %in% c(2005, 2021)) %>%
-  group_by(Year) %>%
-  summarise(`Hot (Gi* > 2)` = sum(gi_star > 2),
-            `Cold (Gi* < -2)` = sum(gi_star < -2)) %>% kable()
-```
-
-The hot count barely moved. The cold count grew. Combined with the flat coefficient of
-variation from section 4.1, the picture is a province where the top did not pull away in
-relative terms, but the bottom became more spatially concentrated. Poverty in Hunan became
-more *clustered* over the period even though it did not become relatively deeper.
-
-## 11. What I Take Away
-
-**Three exercises, three silent failures, and none of them threw an error.** The `sfc`
-coordinate trap in Exercise 4, the quadrant axis error in Exercise 5, and now an ordering
-mismatch inside a published CRAN package. Every one produced output of the correct shape
-and plausible appearance. The only thing that caught any of them was checking a result
-against the values it claimed to describe.
-
-**The check that works is cheap and always the same.** Join the output back to the input
-and ask whether it is consistent. Counties called hot spots should have high Gi\*. That
-took one line and four seconds, and it is the difference between this exercise and a
-confidently wrong map.
-
-**Trusting a package is not the same as trusting a result.** `sfdep` is on CRAN, is
-written by a competent author, and implements all seventeen ArcGIS EHSA classes correctly.
-The classification logic is fine. One `cbind` at the end attaches it to the wrong rows. A
-package being good is not evidence that a particular call to it returned what you think.
-
-**The bug is invisible on data that happens to be sorted.** If Hunan's shapefile had
-stored its counties alphabetically, this code would be correct and I would have found
-nothing. Whether an analysis is right would then depend on the storage order of a file
-nobody looks at. That is worth remembering when a workflow "works on my machine".
-
-**On Hunan itself:** the Changsha corridor is not an emerging hot spot, it is a permanent
-one, hot in all seventeen years and already established before the data begins. The change
-is happening in a ring of middle-income counties to its north whose relative standing is
-rising, and in a western periphery that has become more tightly clustered in its
-disadvantage. Growth of 6.7 times province-wide moved the levels and left the structure
-almost exactly as it found it.
+**Connecting forward.** The next exercise moves to geographically weighted regression,
+where a bandwidth plays a role structurally similar to alpha here, deciding how much
+geography constrains the estimate. The habit worth keeping from this exercise is to
+report what the constraint cost, not just that it was applied.
