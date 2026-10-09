@@ -1,0 +1,428 @@
+---
+title: "Take-home Exercise 2: Geospatial Analytics for Peace"
+subtitle: "Where armed conflict clusters in Myanmar, how its geography is changing, and whether it spreads. 330 townships, January 2021 to September 2025."
+format:
+  revealjs:
+    theme: [dark, slides.scss]
+    slide-number: c/t
+    progress: true
+    transition: none
+    background-transition: none
+    width: 1280
+    height: 760
+    margin: 0.07
+    fig-align: left
+    fig-dpi: 190
+    embed-resources: true
+    echo: false
+    toc: false
+execute:
+  echo: false
+  warning: false
+  message: false
+
+knitr:
+  opts_chunk:
+    dev: ragg_png
+    dev.args:
+      background: transparent
+    out.width: "100%"
+---
+
+```{r setup}
+#| include: false
+suppressPackageStartupMessages({
+  library(dplyr); library(tidyr); library(sf); library(ggplot2); library(glue)
+  library(patchwork); library(knitr); library(scales); library(purrr)
+})
+source("R/00_config.R"); source("R/helpers.R")
+
+# The helpers read PAL at call time, so overriding it converts every figure in
+# the deck to the dark palette without touching a plot definition.
+PAL <- modifyList(PAL, list(
+  ink = "#F4E7DF", ground = "#2B1512", ground_alt = "#3A1D18",
+  rule = "#593029", muted = "#C3A79B", null = "#4A2A24", border = "#2B1512",
+  accent = "#E2574C", accent_dk = "#F2A08F", accent_lt = "#9E4A40",
+  cool = "#5FB3BC", cool_lt = "#2F6E75",
+  seq = c("#2B1512", "#4F201B", "#7A2C25", "#A8392F", "#D2513F", "#EE8466", "#FBC9B4")))
+
+P <- readRDS(file.path(DIR_DERIVED, "prepared.rds"))
+L <- readRDS(file.path(DIR_DERIVED, "lmsa.rds"))
+E <- readRDS(file.path(DIR_DERIVED, "ehsa.rds"))
+D <- readRDS(file.path(DIR_DERIVED, "diffusion.rds"))
+
+tsp <- P$tsp; ev <- P$ev
+states <- tsp |> group_by(ST) |> summarise(.groups = "drop")
+tsp_attr <- st_drop_geometry(tsp) |> select(TS_PCODE, TS, ST, pv)
+with_geo <- function(df) tsp |> select(TS_PCODE, TS, ST) |> left_join(df, by = "TS_PCODE")
+var_lab <- function(v) factor(VAR_LABELS[v], levels = VAR_LABELS)
+ehsa_pv <- E$ehsa |> filter(var == "pv") |> left_join(tsp_attr, by = "TS_PCODE")
+tb <- D$tab
+on_none <- tb$p_active_next[tb$from == "Quiet" & tb$ctx == D$ctx_lab[1]]
+on_most <- tb$p_active_next[tb$from == "Quiet" & tb$ctx == D$ctx_lab[3]]
+or_most <- D$or_tab |> filter(term == "ctxMost neighbours active")
+ph <- function(phase, ctx) D$phase_tab$p_active_next[D$phase_tab$from == "Quiet" &
+                                                     D$phase_tab$phase == phase & D$phase_tab$ctx == ctx]
+yr <- st_drop_geometry(ev) |> mutate(y = format(event_date, "%Y")) |>
+  group_by(y) |> summarise(air = sum(sub_event_type == "Air/drone strike"))
+mapt <- function(base = 13) list(coord_sf(expand = FALSE, datum = NA), theme_map(base_size = base))
+kf <- function(...) {
+  items <- list(...)
+  cat('<div class="kf">')
+  for (it in items) cat(sprintf('<div><div class="n">%s</div><div class="l">%s</div></div>', it[[1]], it[[2]]))
+  cat('</div>')
+}
+```
+
+## Contents {.smaller}
+
+::: {.subhead}
+One question in three parts: where violence clusters, how that is changing, and
+whether it spreads from one township to the next.
+:::
+
+1. The question, the place and the data
+2. Clearing the land mines
+3. A war that changed its means
+4. Where violence clusters
+5. Every kind of violence, the same core
+6. Which way the trends run
+7. Emerging hot spots
+8. Violence spreads to neighbours
+9. Fronts, not sparks
+10. What this means for peace-building, and what it cannot say
+
+## 1. The question, the place and the data
+
+```{r}
+#| output: asis
+kf(list(fmt_n(nrow(ev)), "political-violence events"),
+   list(nrow(tsp), "townships, MIMU 9.4"),
+   list(length(P$quarters), "quarters"),
+   list("2021-25", "Jan 2021 to Sep 2025"))
+```
+
+::: {.split}
+::: {.col}
+```{r sl-map}
+#| out-width: "46%"
+#| fig-height: 4.5
+#| fig-width: 3.6
+ggplot(tsp) + geom_sf(aes(fill = pv), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.15) +
+  scale_fill_count(v = tsp$pv) + mapt(11) + theme(legend.position = "none")
+```
+:::
+::: {.note}
+**Where does armed conflict in Myanmar cluster, how is it changing, and does it
+spread?** Since the coup of February 2021 the war has moved from the borderlands
+into the Bamar heartland, and it has kept moving.
+
+**Data.** ACLED events (battles, explosions and remote violence, violence against
+civilians), joined by location to the 330 MIMU township polygons. Protests and
+strategic developments are excluded: they are not armed conflict.
+
+**Approach.** Local Moran's I and Gi* for where; a 19-quarter space-time cube with
+Mann-Kendall and emerging hot spot analysis for how it changes; a spatial Markov
+chain for whether it spreads.
+
+*Darker townships on the map have more events; the dry zone and the Thai border
+stand out.*
+:::
+:::
+
+## 2. Clearing the land mines
+
+::: {.split .even .roomy}
+::: {.col}
+[What I removed]{.colhead}
+
+**`r P$qa$indian_ocean` events coded to the Indian Ocean.**
+
+**`r P$qa$geo3_pv` events placed on a regional centroid** (geo_precision 3). Kept,
+they would pile false violence onto whichever township holds the centroid.
+
+**`r fmt_n(P$qa$admin3_na_pv)` events have no township name**, so I joined every
+event by its coordinates, not its name. A name join would have lost all of them.
+:::
+::: {.note}
+[What I kept but distrust]{.colhead}
+
+**Fatalities.** The top 1% of events carry `r fmt_pct(P$qa$fat_share_top1pct)`
+of reported deaths. Analysed, never used to build the cube.
+
+**Zeros in Wa and Mongla.** `r P$qa$zero_tsp` townships record nothing in five
+years; seven are in ceasefire enclaves that report almost nothing. They anchor a
+cold spot that partly measures silence.
+
+**Skew.** Counts run from 0 to `r fmt_n(max(tsp$pv))`. The statistics use
+log(1 + count), checked against raw counts.
+:::
+:::
+
+## 3. A war that changed its means
+
+```{r sl-series}
+#| fig-height: 4.1
+#| fig-width: 11
+mon <- P$qa$monthly |> mutate(type = var_lab(var))
+type_cols <- c(PAL$accent, "#F2A08F", PAL$cool) |> setNames(VAR_LABELS[c("battles", "erv", "vac")])
+ggplot(mon, aes(month, n, colour = type)) +
+  geom_vline(xintercept = c(COUP_DATE, OP1027_DATE), colour = PAL$muted, linewidth = 0.3, linetype = "22") +
+  annotate("text", x = c(COUP_DATE, OP1027_DATE) + 25, y = Inf, vjust = 1.4, hjust = 0,
+           label = c("Coup", "Operation 1027"), size = 4, colour = PAL$muted) +
+  geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = type_cols, name = NULL) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  labs(x = NULL, y = "Events per month") + theme_ex02(base_size = 15)
+```
+
+::: {.subhead}
+Violence climbed through 2021 and peaked with Operation 1027 in November 2023.
+**Explosions and remote violence overtook battles in 2023**, driven by the
+military's air campaign: `r yr$air[yr$y == "2021"]` air or drone strikes in 2021,
+`r fmt_n(yr$air[yr$y == "2024"])` in 2024. An air strike lands where the military
+chooses, not where the fighting is.
+:::
+
+## 4. Where violence clusters
+
+::: {.split}
+::: {.col}
+```{r sl-lisa}
+#| fig-height: 4.9
+#| fig-width: 6.2
+lm <- with_geo(L$lisa |> filter(var == "pv")) |> mutate(cls = factor(cls, names(LISA_COLS())), panel = "Local Moran's I")
+gm <- with_geo(L$gi |> filter(var == "pv")) |>
+  mutate(cls = recode(cls, "Hot spot" = "High-High", "Cold spot" = "Low-Low"),
+         cls = factor(cls, names(LISA_COLS())), panel = "Gi*")
+ggplot(bind_rows(lm, gm) |> mutate(panel = factor(panel, c("Local Moran's I", "Gi*")))) +
+  geom_sf(aes(fill = cls), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.12) +
+  facet_wrap(~panel) +
+  scale_fill_manual(values = LISA_COLS(), drop = TRUE, name = NULL,
+                    labels = c("High-High / hot spot", "Low-High", "Low-Low / cold spot", "Not significant")) +
+  mapt(12) + theme(legend.position = "bottom") + guides(fill = guide_legend(nrow = 2))
+```
+:::
+::: {.note}
+All political violence, p < 0.05, 999 permutations.
+
+**Global Moran's I is `r round(L$global$I[L$global$var == "pv"], 2)`.** A
+township's violence is very well predicted by its neighbours'.
+
+**One dominant core: the dry zone** of Sagaing, Magway and Mandalay, with a second
+belt down the Thai border through Kayin, Mon and Tanintharyi.
+
+**Cold spots:** the Ayeyarwady delta, Yangon and eastern Shan.
+
+**No High-Low outliers at all.** Violence in Myanmar does not form islands; it
+comes in neighbourhoods.
+
+*82 to 96% of townships keep their class under raw counts or 6-nearest-neighbour
+weights. About half survive a false discovery rate correction: the cluster cores.*
+:::
+:::
+
+## 5. Every kind of violence, the same core
+
+```{r sl-types}
+#| fig-height: 4.6
+#| fig-width: 11.5
+lt <- with_geo(L$lisa |> filter(var != "pv")) |>
+  mutate(var = var_lab(var), cls = factor(cls, names(LISA_COLS())))
+ggplot(lt) + geom_sf(aes(fill = cls), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.1) +
+  facet_wrap(~var, nrow = 1, labeller = label_wrap_gen(18)) +
+  scale_fill_manual(values = LISA_COLS(), name = NULL) + mapt(12) +
+  theme(legend.position = "right")
+```
+
+::: {.subhead}
+Local Moran's I by type. **Battles** add the ethnic fronts in Chin, Kachin and
+Kayah. **Violence against civilians** is the most concentrated: 88% of its
+High-High townships are in the dry zone. Fatalities follow battles.
+:::
+
+## 6. Which way the trends run
+
+::: {.split}
+::: {.col}
+```{r sl-mk}
+#| out-width: "56%"
+#| fig-height: 4.9
+#| fig-width: 4
+mkm <- with_geo(E$mk |> filter(var == "pv")) |> mutate(fill = if_else(sl < ALPHA, tau, NA_real_))
+ggplot(mkm) + geom_sf(aes(fill = fill), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.12) +
+  scale_fill_gradient2(low = PAL$cool, mid = PAL$ground_alt, high = PAL$accent, midpoint = 0,
+                       na.value = PAL$null, limits = c(-1, 1), name = "Kendall's tau") +
+  mapt(11) + theme(legend.position = "bottom", legend.key.width = unit(26, "pt"))
+```
+:::
+::: {.note}
+Mann-Kendall test on each township's 19-quarter Gi* series, p < 0.05.
+
+```{r}
+#| include: false
+mk_pv <- E$mk |> filter(var == "pv") |> left_join(tsp_attr, by = "TS_PCODE")
+yg <- mk_pv |> filter(ST == "Yangon")
+```
+
+**Cooling: Yangon.** `r sum(yg$trend == "Falling")` of its `r nrow(yg)` townships
+have a falling Gi*. The urban resistance of 2021 is gone from the map.
+
+**Warming: the middle belt.** Bago West, Mandalay, Magway, Bago East and
+Tanintharyi, where the war arrived late as the dry-zone insurgency spread and new
+fronts opened.
+
+**Sagaing barely registers**, because it was hot from 2021 and stayed hot. A trend
+test cannot see a level, which is the gap emerging hot spot analysis fills.
+:::
+:::
+
+## 7. Emerging hot spots
+
+::: {.split}
+::: {.col}
+```{r sl-ehsa}
+#| out-width: "72%"
+#| fig-height: 4.9
+#| fig-width: 4.3
+em <- with_geo(E$ehsa |> filter(var == "pv")) |> mutate(classification = factor(classification, EHSA_LEVELS))
+present <- levels(droplevels(em$classification))
+cols <- EHSA_COLS(); cols["no pattern detected"] <- PAL$null
+ggplot(em) + geom_sf(aes(fill = classification), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.12) +
+  scale_fill_manual(values = cols[present], breaks = present, labels = ehsa_label(present), name = NULL) +
+  mapt(10) + theme(legend.position = "right", legend.key.width = unit(10, "pt"))
+```
+:::
+::: {.note}
+```{r}
+#| include: false
+nm <- function(c) paste(ehsa_pv$TS[ehsa_pv$classification == c], collapse = ", ")
+```
+**Intensifying, the most urgent:** `r nm("intensifying hotspot")`. Hot in nearly
+every quarter and still rising, five of six in the dry zone.
+
+**Consecutive, a front that moved and held:** Kyaukkyi and Shwegyin through
+Kyaikto and Bilin to Kawkareik and Myawaddy on the Thai border.
+
+**Oscillating** hot spots fill Sagaing and Magway. Not unstable: they were cold in
+the coup quarter, before the resistance existed, and have been hot since.
+
+**Persistent cold spots** are the Shan hills, including Wa and Mongla.
+
+*Fine classes are fragile: 62% of townships keep their label on a monthly cube,
+78% keep hot/cold/neither. Every label was checked against an independent Gi\*
+series, because sfdep 0.2.5 can attach labels to the wrong townships.*
+:::
+:::
+
+## 8. Violence spreads to neighbours
+
+::: {.split}
+::: {.col}
+```{r sl-markov}
+#| fig-height: 4.6
+#| fig-width: 6.2
+q <- D$tab |> filter(from == "Quiet") |> mutate(ctx = factor(ctx, D$ctx_lab))
+ggplot(q, aes(ctx, p_active_next)) +
+  geom_col(fill = PAL$accent, width = 0.6) +
+  geom_text(aes(label = fmt_pct(p_active_next)), vjust = -0.5, size = 6, colour = PAL$ink) +
+  scale_x_discrete(labels = c("No neighbour\nactive", "Some\nneighbours", "Most\nneighbours")) +
+  scale_y_continuous(labels = label_percent(), limits = c(0, 0.45)) +
+  labs(x = NULL, y = "Quiet township active\nnext quarter") + theme_ex02(base_size = 15)
+```
+:::
+::: {.note}
+**Value-added: a spatial Markov chain.** Each township-quarter is active (3 or
+more events) or quiet. Does a quiet township's chance of becoming active depend on
+its neighbours?
+
+**Yes, by a factor of four:** `r fmt_pct(on_none)` with no active neighbour,
+`r fmt_pct(on_most)` with most neighbours active.
+
+**It is not just "a violent region".** With fixed effects for state and quarter and
+the township's own history, the odds ratio is `r round(or_most$OR, 1)` (bootstrap
+`r round(or_most$lo, 1)` to `r round(or_most$hi, 1)`). Shuffling townships'
+histories across the map never reproduces the gap (p `r fmt_p(D$p_perm, 499)`).
+It holds at 1, 3 and 6 events.
+
+*Out of sample it is a modest signal: AUC `r round(D$oos$auc[1], 2)` from own
+history, `r round(D$oos$auc[2], 2)` with neighbours.*
+:::
+:::
+
+## 9. Fronts, not sparks
+
+::: {.split}
+::: {.col}
+```{r sl-watch}
+#| out-width: "56%"
+#| fig-height: 4.9
+#| fig-width: 4
+wm <- with_geo(D$watch |> select(TS_PCODE, share))
+ggplot(wm) + geom_sf(aes(fill = share), colour = NA) +
+  geom_sf(data = states, fill = NA, colour = PAL$ink, linewidth = 0.12) +
+  scale_fill_gradientn(colours = c("#2F4F55", PAL$cool, "#E9A07F", PAL$accent),
+                       na.value = PAL$null, labels = label_percent(), name = "Neighbours active") +
+  mapt(11) + theme(legend.position = "bottom", legend.key.width = unit(26, "pt"))
+```
+:::
+::: {.note}
+**Since Operation 1027, isolated outbreaks have almost stopped.** A quiet township
+with no active neighbour ignited
+`r fmt_pct(ph("Before Operation 1027", D$ctx_lab[1]))` of the time before the
+offensive and `r fmt_pct(ph("From Operation 1027", D$ctx_lab[1]))` after. Onset
+next to active neighbours did not change
+(`r fmt_pct(ph("Before Operation 1027", D$ctx_lab[3]))` and
+`r fmt_pct(ph("From Operation 1027", D$ctx_lab[3]))`).
+
+New violence now appears at the edge of existing violence: a war of consolidated
+fronts rather than the scattered uprising of 2021.
+
+**The map:** townships quiet in 2025 Q3, shaded by the share of neighbours active.
+The warmest are where the evidence says to look next, most of them in Magway,
+Sagaing, Kachin and Mandalay. *Not a validated forecast.*
+:::
+:::
+
+## 10. What this means, and what it cannot say
+
+::: {.split .even}
+::: {.col}
+[For peace-building]{.colhead}
+
+**Prioritise the intensifying hot spots** (Madaya, Myingyan, Seikphyu, Yesagyo,
+Ngazun, Dawei) for protection and humanitarian access: established violence that is
+still rising.
+
+**Watch the quiet edges, not the centres.** Early warning and preparedness belong
+in quiet townships beside active ones.
+
+**Treat the southeast as a moving front**, where cross-border routes from Thailand
+matter most.
+
+**Plan for air-strike exposure beyond battle lines.** Battle maps alone will not
+locate it.
+:::
+::: {.note}
+[Limitations]{.colhead}
+
+**ACLED counts reports, not violence.** Hot spots partly reflect visibility; the Wa
+and Mongla zeros are the clearest case. A cold spot is not proof of safety.
+
+**Counts, not rates.** No reliable township population exists for 2021-2025.
+
+**Scale and neighbours.** Townships run from under 1 km² to over 12,000 km², and
+contiguity treats every border as equally permeable.
+
+**EHSA depends on the window**, which starts in the coup quarter, and its fine classes
+move with parameter choices.
+
+**Diffusion is descriptive.** An advancing front and contagion look alike at
+quarterly resolution.
+:::
+:::

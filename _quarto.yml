@@ -74,6 +74,12 @@ website:
               href: Take-home_Ex/Take-home_Ex01/index.qmd
             - text: "Executive Summary"
               href: Take-home_Ex/Take-home_Ex01/slides.qmd
+        - section: "Take-home Exercise 2"
+          contents:
+            - text: "Technical Report"
+              href: Take-home_Ex/Take-home_Ex02/index.qmd
+            - text: "Executive Summary"
+              href: Take-home_Ex/Take-home_Ex02/slides.qmd
   page-footer:
     border: true
     left: |

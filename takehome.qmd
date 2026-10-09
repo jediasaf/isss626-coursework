@@ -25,3 +25,22 @@ space-time interaction by random labelling with <code>spatstat</code>.</p>
 [<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex01/slides.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">02</span>
+<span class="coursework-group-title">Take-home Exercise 2</span>
+:::
+
+<p class="coursework-group-desc">Local spatial association and emerging hot spots
+of armed conflict across Myanmar's 330 townships, January 2021 to September 2025,
+from ACLED political-violence events. Local Moran's I and Gi* locate the clusters,
+Mann-Kendall and EHSA follow them through 19 quarters, and a spatial Markov chain
+tests whether violence spreads from a township to its neighbours.</p>
+
+[<span class="exercise-row-label">Report</span><span class="exercise-row-title">Geospatial Analytics for Peace</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex02/index.qmd){.exercise-row}
+
+[<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex02/slides.qmd){.exercise-row}
+
+:::
