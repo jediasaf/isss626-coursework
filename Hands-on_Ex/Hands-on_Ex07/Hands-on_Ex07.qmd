@@ -1,0 +1,737 @@
+---
+title: "Calibrating Hedonic Pricing Models with Geographically Weighted Regression"
+subtitle: "HANDS-ON EXERCISE 7"
+author:
+  - name: Jedidiah Asaf Tallulembang
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
+date: last-modified
+format:
+  html:
+    code-fold: false
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+::: {.pill-row}
+[R]{.pill} [GWmodel]{.pill} [GWR]{.pill} [Hedonic pricing]{.pill} [Bandwidth selection]{.pill} [Local collinearity]{.pill}
+:::
+
+This exercise follows [Calibrating Hedonic Pricing Model for Private Highrise
+Property with GWR Method](https://r4gdsa.netlify.app/chap13.html), the reading for the
+Geographically Weighted Regression block of the course.
+
+## 1. Overview
+
+Everything up to Exercise 6 described where things are. This exercise asks a different
+kind of question: **does the relationship between a price and its drivers stay the
+same everywhere?**
+
+An ordinary regression assumes it does. It fits one coefficient for floor area, one
+for distance to the CBD, and applies them to a condominium in Bukit Timah and one in
+Pasir Ris alike. That assumption is called spatial stationarity, and for housing it is
+suspect on its face: an extra square metre is worth more where land is scarce, and
+being close to an MRT station matters more where few people drive.
+
+Geographically weighted regression (GWR) drops the assumption. It fits a separate
+weighted regression at every observation, giving nearby observations more weight
+through a kernel, so every coefficient becomes a surface rather than a number. The
+cost is that every coefficient is now estimated from a small neighbourhood, and the
+bandwidth that defines "small" becomes the most important decision in the model.
+
+The application is a **hedonic pricing model**: price explained as the sum of what a
+home offers, both structural (size, age, tenure) and locational (what it is near).
+
+## 2. The Data
+
+| Dataset | Description | Format |
+|---|---|---|
+| `MP14_SUBZONE_WEB_PL` | URA Master Plan 2014 subzone boundaries, 323 subzones | ESRI Shapefile (polygon) |
+| `Condo_resale_2015.csv` | 1,436 condominium resale transactions in 2015, with structural and locational attributes | CSV, WGS 84 coordinates |
+
+The condo file is the one distributed with the course. I checked my copy against three
+independent student repositories, and all three are byte-identical to it.
+
+## 3. Getting Started
+
+```{r}
+pacman::p_load(olsrr, corrplot, ggpubr,
+               sf, sfdep, GWmodel, tmap,
+               tidyverse, gtsummary,
+               performance, see, RColorBrewer)
+```
+
+`see` is not in the handout's list, but `performance` needs it to draw its diagnostic
+plots, so I load it explicitly rather than rely on it being installed already.
+
+## 4. Geospatial Data Wrangling
+
+### 4.1 Importing the subzone boundaries
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial",
+                layer = "MP14_SUBZONE_WEB_PL")
+```
+
+The projection is SVY21, but `st_read()` cannot attach an EPSG code to it, which would
+make every later transformation guess.
+
+### 4.2 Updating the CRS
+
+```{r}
+mpsz_svy21 <- st_transform(mpsz, 3414)
+st_crs(mpsz_svy21)$epsg
+st_bbox(mpsz_svy21)
+```
+
+EPSG:3414 is SVY21 / Singapore TM, with metres as the unit. That unit matters later:
+the fixed GWR bandwidth will be a distance in metres.
+
+## 5. Aspatial Data Wrangling
+
+### 5.1 Importing the transactions
+
+```{r}
+condo_resale <- read_csv("data/aspatial/Condo_resale_2015.csv")
+glimpse(condo_resale)
+```
+
+```{r}
+summary(condo_resale$SELLING_PRICE)
+```
+
+The median price is S$1.38 million and the maximum S$18 million, thirteen times the
+median. A distribution with that tail will shape every least-squares fit below.
+
+### 5.2 Converting to an sf object
+
+```{r}
+condo_resale.sf <- st_as_sf(condo_resale,
+                            coords = c("LONGITUDE", "LATITUDE"),
+                            crs = 4326) %>%
+  st_transform(crs = 3414)
+head(condo_resale.sf, 3)
+```
+
+The coordinates are longitude and latitude, so they are declared as WGS 84 (4326) and
+then projected to SVY21 to match the subzones.
+
+## 6. Exploratory Data Analysis
+
+### 6.1 The selling price
+
+```{r}
+#| fig-height: 3
+p1 <- ggplot(condo_resale.sf, aes(x = SELLING_PRICE)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  labs(title = "SELLING_PRICE")
+
+condo_resale.sf <- condo_resale.sf %>%
+  mutate(LOG_SELLING_PRICE = log(SELLING_PRICE))
+
+p2 <- ggplot(condo_resale.sf, aes(x = LOG_SELLING_PRICE)) +
+  geom_histogram(bins = 20, color = "black", fill = "light blue") +
+  labs(title = "log(SELLING_PRICE)")
+
+ggarrange(p1, p2, ncol = 2)
+```
+
+The raw price is strongly right-skewed; the log is close to symmetric. The handout
+derives the log and then models the raw price anyway. I follow it, because the point
+of the exercise is GWR rather than the best hedonic specification, but I return to
+the consequence in section 11.
+
+### 6.2 The independent variables
+
+```{r}
+#| fig-height: 7
+vars <- c("AREA_SQM", "AGE", "PROX_CBD", "PROX_CHILDCARE",
+          "PROX_ELDERLYCARE", "PROX_URA_GROWTH_AREA",
+          "PROX_HAWKER_MARKET", "PROX_KINDERGARTEN", "PROX_MRT",
+          "PROX_PARK", "PROX_PRIMARY_SCH", "PROX_TOP_PRIMARY_SCH")
+
+hists <- lapply(vars, function(v) {
+  ggplot(condo_resale.sf, aes(x = .data[[v]])) +
+    geom_histogram(bins = 20, color = "black", fill = "light blue") +
+    labs(x = v, y = NULL) +
+    theme(axis.title.x = element_text(size = 8))
+})
+ggarrange(plotlist = hists, ncol = 3, nrow = 4)
+```
+
+The handout builds these twelve histograms one assignment at a time. I build them in
+a loop over the variable names: same plots, and adding a variable is one word. Most
+proximity variables are right-skewed, as distances usually are: most condos are near
+a childcare centre or a bus stop and a few are far from everything.
+
+### 6.3 Where the prices are
+
+```{r}
+tmap_mode("plot")
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill = "grey95", col = "grey75", lwd = 0.3) +
+tm_shape(condo_resale.sf) +
+  tm_dots(fill = "SELLING_PRICE",
+          fill_alpha = 0.7,
+          size = 0.25,
+          fill.scale = tm_scale_intervals(style = "quantile",
+                                          values = "brewer.yl_or_rd"),
+          fill.legend = tm_legend(title = "Selling price (S$)")) +
+  tm_layout(frame = FALSE)
+```
+
+The handout draws this as an interactive map. I draw it static so the page stays light,
+and keep one interactive map for section 9.5 where zooming genuinely helps. The
+pattern is clear without zooming: the most expensive class is almost entirely in the
+Central Region. Joining the points to URA regions, 40% of Central Region transactions
+fall in the top price quintile, against 5% or less in every other region.
+
+## 7. Hedonic Pricing with Ordinary Least Squares
+
+### 7.1 Simple linear regression
+
+```{r}
+condo.slr <- lm(SELLING_PRICE ~ AREA_SQM, data = condo_resale.sf)
+summary(condo.slr)
+```
+
+```{r}
+#| fig-height: 3.5
+ggplot(condo_resale.sf, aes(x = AREA_SQM, y = SELLING_PRICE)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = lm)
+```
+
+Floor area alone explains 45% of the variance in price. Each extra square metre adds
+about S$14,700. The scatterplot shows why the fit is not better: a band of very
+expensive units sits far above the line at every size, which is location speaking.
+
+### 7.2 Checking for multicollinearity
+
+```{r}
+#| fig-height: 7
+corrplot(cor(condo_resale[, 5:23]),
+         diag = FALSE,
+         order = "AOE",
+         tl.pos = "td",
+         tl.cex = 0.5,
+         method = "number",
+         type = "upper")
+```
+
+`FREEHOLD` and `LEASEHOLD_99YR` are strongly negatively correlated, which is close to
+true by definition: a unit that is not freehold is almost always on a 99-year lease.
+Keeping both would make their coefficients unstable, so `LEASEHOLD_99YR` is dropped.
+
+### 7.3 The full multiple regression
+
+```{r}
+condo.mlr <- lm(SELLING_PRICE ~ AREA_SQM + AGE +
+                  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+                  PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET +
+                  PROX_KINDERGARTEN + PROX_MRT + PROX_PARK +
+                  PROX_PRIMARY_SCH + PROX_TOP_PRIMARY_SCH +
+                  PROX_SHOPPING_MALL + PROX_SUPERMARKET +
+                  PROX_BUS_STOP + NO_Of_UNITS +
+                  FAMILY_FRIENDLY + FREEHOLD,
+                data = condo_resale.sf)
+summary(condo.mlr)
+```
+
+Four variables are not significant at 5%: `PROX_HAWKER_MARKET`, `PROX_KINDERGARTEN`,
+`PROX_TOP_PRIMARY_SCH` and `PROX_SUPERMARKET`.
+
+### 7.4 The revised model
+
+```{r}
+condo.mlr1 <- lm(SELLING_PRICE ~ AREA_SQM + AGE +
+                   PROX_CBD + PROX_CHILDCARE + PROX_MRT +
+                   PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA +
+                   PROX_PARK + PROX_PRIMARY_SCH +
+                   PROX_SHOPPING_MALL + PROX_BUS_STOP +
+                   NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                 data = condo_resale.sf)
+
+tbl_regression(condo.mlr1, intercept = TRUE) %>%
+  add_glance_source_note(
+    label = list(sigma ~ "\U03C3"),
+    include = c(r.squared, adj.r.squared,
+                AIC, statistic, p.value, sigma))
+```
+
+Dropping the four costs almost nothing: adjusted R² moves from 0.6474 to 0.6472. Every
+remaining predictor is significant. Some signs are worth a second look rather than a
+nod. `PROX_PRIMARY_SCH` and `PROX_PARK` have positive coefficients, so price *rises*
+with distance from a primary school or a park, which runs against the family-buyer
+story. More likely those facilities are densest in the cheaper outer estates, while
+the most expensive condos sit in central districts with fewer of them. That is the
+first hint that one coefficient for the whole island is averaging over different
+markets.
+
+### 7.5 Regression diagnostics
+
+#### Multicollinearity
+
+```{r}
+check_collinearity(condo.mlr1)
+```
+
+```{r}
+#| fig-height: 4
+plot(check_collinearity(condo.mlr1))
+```
+
+Every VIF is below 3.3, far from the conventional warning level of 5 or 10. Globally,
+collinearity is not a problem. Section 11.2 shows why that reassurance does not carry
+over to GWR.
+
+#### Linearity
+
+```{r}
+#| fig-height: 4
+check_model(condo.mlr1, check = "linearity")
+```
+
+The residuals are centred on zero across most of the fitted range, with a fan at the
+expensive end. Linearity is acceptable; constant variance is not.
+
+#### Normality of residuals
+
+```{r}
+check_normality(condo.mlr1)
+```
+
+```{r}
+#| fig-height: 4
+check_model(condo.mlr1, check = "normality")
+```
+
+The Shapiro-Wilk test rejects normality decisively. The handout reads the density plot
+as roughly normal, and it is in the middle. The tails are not: the Q-Q plot bends away
+at both ends, the signature of the long upper tail from section 6.1.
+
+### 7.6 Spatial autocorrelation in the residuals
+
+This is the test that motivates GWR. If the model has captured everything that
+matters, its errors should be spatially random. If location still matters, residuals
+will cluster.
+
+```{r}
+condo_resale.sf <- cbind(condo_resale.sf,
+                         condo.mlr1$residuals) %>%
+  rename(MLR_RES = condo.mlr1.residuals)
+```
+
+```{r}
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill = "grey95", col = "grey75", lwd = 0.3) +
+tm_shape(condo_resale.sf) +
+  tm_dots(fill = "MLR_RES",
+          size = 0.25,
+          fill.scale = tm_scale_intervals(
+            n = 10, style = "quantile",
+            values = rev(brewer.pal(11, "RdBu"))),
+          fill.legend = tm_legend(title = "OLS residual")) +
+  tm_title("OLS residuals (quantile classes)") +
+  tm_layout(frame = FALSE, legend.outside = TRUE)
+```
+
+Red points are under-predicted (they sold for more than the model says), blue
+over-predicted. They are not scattered at random. Counting by URA region, 80% of
+North Region residuals are positive and 68% of North-East Region residuals are
+negative: the global model systematically under-prices one area and over-prices
+another.
+
+```{r}
+condo_resale.sf <- condo_resale.sf %>%
+  mutate(nb = st_dist_band(st_geometry(geometry), upper = 1500),
+         wt = st_weights(nb, style = "W"),
+         .before = 1)
+
+set.seed(1234)
+global_moran_perm(condo_resale.sf$MLR_RES,
+                  nb = condo_resale.sf$nb,
+                  wt = condo_resale.sf$wt,
+                  alternative = "two.sided",
+                  nsim = 499)
+```
+
+Moran's I is 0.144 with every one of 499 permutations below it. The residuals are
+clustered. The global model has left location-specific structure in its errors, which
+is exactly the condition GWR is designed for.
+
+## 8. A Short Note on GWmodel
+
+`GWmodel` provides a family of geographically weighted methods: summary statistics,
+principal components, discriminant analysis, and several forms of GWR (basic, robust,
+generalised, mixed, and multiscale). This exercise uses the basic form, `gwr.basic()`,
+with its bandwidth selector `bw.gwr()`.
+
+## 9. Geographically Weighted Regression
+
+The bandwidth decides how many observations each local regression sees. Too wide and
+GWR collapses back to the global model; too narrow and each local fit is estimated
+from a handful of points and chases noise. `bw.gwr()` chooses it by cross-validation:
+leave each observation out, predict it from its neighbours, and pick the bandwidth
+that minimises the squared prediction error.
+
+There are two ways to define "neighbourhood". A **fixed** bandwidth uses the same
+distance everywhere. An **adaptive** bandwidth uses the same *number* of neighbours
+everywhere, so the radius stretches where condos are sparse and shrinks where they
+are dense.
+
+### 9.1 Fixed bandwidth
+
+```{r}
+#| results: hide
+bw.fixed <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE +
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
+    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY +
+    FREEHOLD,
+  data = condo_resale.sf,
+  approach = "CV",
+  kernel = "gaussian",
+  adaptive = FALSE,
+  longlat = FALSE)
+```
+
+```{r}
+bw.fixed
+```
+
+I hide the cross-validation trace, which prints dozens of lines of CV scores. The
+chosen bandwidth is about 971 m. My run lands on 971.34 m, which matches the handout's
+text; the handout's printed output shows 971.39 m. The difference is the stopping
+tolerance of the golden-section search, half a metre either way, and has no effect on
+anything below.
+
+```{r}
+gwr.fixed <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE +
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
+    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY +
+    FREEHOLD,
+  data = condo_resale.sf,
+  bw = bw.fixed,
+  kernel = "gaussian",
+  longlat = FALSE)
+gwr.fixed
+```
+
+### 9.2 Adaptive bandwidth
+
+```{r}
+#| results: hide
+bw.adaptive <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE +
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
+    PROX_BUS_STOP + NO_Of_UNITS +
+    FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_resale.sf,
+  approach = "CV",
+  kernel = "gaussian",
+  adaptive = TRUE,
+  longlat = FALSE)
+```
+
+```{r}
+bw.adaptive
+```
+
+```{r}
+gwr.adaptive <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE +
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_resale.sf,
+  bw = bw.adaptive,
+  kernel = "gaussian",
+  adaptive = TRUE,
+  longlat = FALSE)
+gwr.adaptive
+```
+
+### 9.3 Comparing the three models
+
+```{r}
+tibble(
+  model = c("OLS (global)", "GWR, fixed bandwidth", "GWR, adaptive bandwidth"),
+  bandwidth = c("-", paste(round(bw.fixed), "m"), paste(bw.adaptive, "neighbours")),
+  # AICc for OLS: AIC plus the small-sample correction, with k = 16
+  # (15 coefficients and the residual variance)
+  AICc = c(AIC(condo.mlr1) + 2 * 16 * 17 / (nrow(condo_resale.sf) - 16 - 1),
+           gwr.fixed$GW.diagnostic$AICc, gwr.adaptive$GW.diagnostic$AICc),
+  adj_R2 = c(summary(condo.mlr1)$adj.r.squared,
+             gwr.fixed$GW.diagnostic$gwR2.adj, gwr.adaptive$GW.diagnostic$gwR2.adj),
+  effective_parameters = c(15, gwr.fixed$GW.diagnostic$enp, gwr.adaptive$GW.diagnostic$enp)
+) %>% mutate(across(c(AICc, adj_R2, effective_parameters), \(x) round(x, 3)))
+```
+
+Both GWR models improve on the global model by a wide margin: AICc falls by about 700
+(fixed) and 985 (adaptive), and adjusted R² rises from 0.65 to 0.84 and 0.86. AICc
+penalises the extra effective parameters, so this is not just a more flexible model
+fitting better; it is a better model after paying for the flexibility.
+
+The adaptive model wins on every measure and uses fewer effective parameters (350
+against 438). That makes sense for Singapore condos, which are dense in the centre and
+sparse at the edges: a fixed 971 m window holds dozens of transactions in the core and
+only a few on the periphery, while 30 neighbours gives every local fit the same amount
+of evidence.
+
+### 9.4 Converting the output to sf
+
+```{r}
+condo_resale.sf.adaptive <- st_as_sf(gwr.adaptive$SDF) %>%
+  st_transform(crs = 3414)
+summary(gwr.adaptive$SDF$yhat)
+```
+
+The `SDF` holds, for every transaction, its local coefficients, their standard errors
+and t-values, the fitted value, the residual and a local R².
+
+### 9.5 Local R²
+
+```{r}
+tmap_mode("view")
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +
+  tm_dots(fill = "Local_R2",
+          size = 0.15,
+          fill.scale = tm_scale_intervals(style = "quantile",
+                                          values = "brewer.blues")) +
+  tm_view(set_zoom_limits = c(11, 14))
+tmap_mode("plot")
+```
+
+```{r}
+summary(condo_resale.sf.adaptive$Local_R2)
+```
+
+Local R² runs from 0.67 to 0.99, with a median of 0.91. The local models are weakest
+on the fringe of the central area, in Bishan, Toa Payoh, Bukit Merah and Novena
+(medians 0.73 to 0.82), where prime and mass-market condos sit within the same
+30-neighbour window. They are strongest in the North Region (median 0.99), where the
+market is more uniform.
+
+### 9.6 Mapping a coefficient: floor area
+
+```{r}
+#| fig-height: 4.5
+AREA_SQM_SE <- tm_shape(mpsz_svy21) +
+  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
+tm_shape(condo_resale.sf.adaptive) +
+  tm_dots(fill = "AREA_SQM_SE", size = 0.15,
+          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.purples"),
+          fill.legend = tm_legend(title = "Std. error")) +
+  tm_title("Standard error of AREA_SQM") +
+  tm_layout(frame = FALSE)
+
+AREA_SQM_TV <- tm_shape(mpsz_svy21) +
+  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
+tm_shape(condo_resale.sf.adaptive) +
+  tm_dots(fill = "AREA_SQM_TV", size = 0.15,
+          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.purples"),
+          fill.legend = tm_legend(title = "t-value")) +
+  tm_title("t-value of AREA_SQM") +
+  tm_layout(frame = FALSE)
+
+tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, ncol = 2)
+```
+
+The handout maps the standard error and the t-value, but not the coefficient itself,
+which is the thing GWR exists to produce. I add it:
+
+```{r}
+#| fig-height: 4.5
+tm_shape(mpsz_svy21) +
+  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
+tm_shape(condo_resale.sf.adaptive) +
+  tm_dots(fill = "AREA_SQM", size = 0.2,
+          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.yl_or_rd"),
+          fill.legend = tm_legend(title = "S$ per sq m")) +
+  tm_title("Local coefficient of AREA_SQM") +
+  tm_layout(frame = FALSE, legend.outside = TRUE)
+```
+
+```{r}
+range(condo_resale.sf.adaptive$AREA_SQM)
+coef(condo.mlr1)["AREA_SQM"]
+```
+
+This is the result the whole exercise has been building towards. The global model
+says an extra square metre adds S$12,800 everywhere. GWR says it adds between about
+S$3,300 and S$23,000 depending on where the condo is, a sevenfold range, and the
+highest values are in the prime central districts: the median local coefficient is
+about S$18,900 in Newton, S$16,800 in Novena and S$16,400 in Tanglin, against roughly
+S$5,300 to S$7,000 in the East, North, North-East and West regions. The global coefficient is an
+average over markets that price space very differently.
+
+## 10. Do the Local Models Fix the Residuals?
+
+Section 7.6 established that the global model's residuals cluster. The natural test of
+GWR is to run the same test on its residuals, with the same weights and seed. The
+handout stops before doing this.
+
+```{r}
+set.seed(1234)
+global_moran_perm(condo_resale.sf.adaptive$residual,
+                  nb = condo_resale.sf$nb,
+                  wt = condo_resale.sf$wt,
+                  alternative = "two.sided",
+                  nsim = 499)
+```
+
+::: {.callout-note}
+## GWR removes the clustering, and slightly overshoots
+
+Moran's I on the residuals falls from **+0.144** under OLS to **−0.016** under adaptive
+GWR. The positive clustering is gone. What remains is small and *negative*, and at
+p = 0.024 it is still distinguishable from zero.
+
+A negative residual autocorrelation means neighbouring condos now tend to have errors
+of opposite sign. With a 30-neighbour kernel, each local fit is pulled hard towards
+its own neighbourhood, so it slightly over-explains local variation. That is a mild
+symptom of the bandwidth being on the small side, consistent with the 350 effective
+parameters for 1,436 observations. It is not a reason to reject the model, but it is
+a reason not to read the very highest local R² values as pure signal.
+:::
+
+## 11. Two Things the Handout's Diagnostics Do Not Catch
+
+### 11.1 How many local coefficients are actually significant?
+
+```{r}
+tv <- condo_resale.sf.adaptive %>%
+  st_drop_geometry() %>%
+  select(ends_with("_TV"), -Intercept_TV)
+
+tibble(variable = sub("_TV$", "", names(tv)),
+       share_significant = round(colMeans(abs(tv) > 1.96), 2)) %>%
+  arrange(desc(share_significant))
+```
+
+In the global model every one of these fourteen predictors was significant. Locally,
+only floor area is significant almost everywhere (96% of locations). Most locational
+variables are significant at fewer than a third of locations. So the global result
+"proximity to a park matters" is better read as "proximity to a park matters in some
+neighbourhoods", which is more useful and less tidy.
+
+One caution on the column above: it applies an unadjusted |t| > 1.96 at 1,436
+overlapping locations, so it overstates significance rather than understates it.
+Corrections designed for GWR (da Silva and Fotheringham, 2016) would shrink these
+shares further.
+
+### 11.2 Local collinearity
+
+Section 7.5 found no collinearity problem in the global model: every VIF below 3.3.
+That check was done on the whole island. GWR does not fit on the whole island; it fits
+on 30 neighbours at a time, and variables that are independent across Singapore can be
+nearly redundant inside one neighbourhood. `GWmodel` provides a local diagnostic.
+
+```{r}
+xvars <- c("AREA_SQM", "AGE", "PROX_CBD", "PROX_CHILDCARE",
+           "PROX_ELDERLYCARE", "PROX_URA_GROWTH_AREA", "PROX_MRT",
+           "PROX_PARK", "PROX_PRIMARY_SCH", "PROX_SHOPPING_MALL",
+           "PROX_BUS_STOP", "NO_Of_UNITS", "FAMILY_FRIENDLY", "FREEHOLD")
+
+# Condition numbers depend on the units of the variables, so standardise
+# first; otherwise NO_Of_UNITS (hundreds) against distances (km) would
+# inflate the number for reasons that have nothing to do with collinearity.
+condo_z <- condo_resale.sf %>%
+  mutate(across(all_of(xvars), ~ as.numeric(scale(.x))))
+
+collin <- gwr.collin.diagno(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + PROX_CHILDCARE +
+    PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data = condo_z,
+  bw = bw.adaptive,
+  kernel = "gaussian",
+  adaptive = TRUE,
+  longlat = FALSE)
+
+local_cn <- collin$SDF$local_CN
+c(over_30 = sum(local_cn > 30), n = length(local_cn),
+  median = round(median(local_cn), 1))
+```
+
+```{r}
+local_vif <- st_drop_geometry(st_as_sf(collin$SDF)) %>% select(ends_with("_VIF"))
+tibble(variable = sub("_VIF$", "", names(local_vif)),
+       median_local_VIF = round(apply(local_vif, 2, median), 1),
+       share_over_10 = round(colMeans(local_vif > 10), 2)) %>%
+  arrange(desc(share_over_10)) %>%
+  head(6)
+```
+
+::: {.callout-important}
+## The global model was clean; the local models are not
+
+Even after standardising, the local condition number exceeds 30, the usual warning
+level, at **`r sum(local_cn > 30)` of `r length(local_cn)`** locations, with a median of
+**`r round(median(local_cn))`**. For comparison, the condition number of the global
+design matrix is about 4.
+
+The local VIFs say where it comes from. `PROX_CBD` has a local VIF above 10 in more
+than half of all neighbourhoods, and `PROX_URA_GROWTH_AREA` in about half. The reason
+is geometric. Across the whole island, distance to the CBD and distance to a growth
+area vary independently enough. Inside a cluster of 30 nearby condos, both are close
+to smooth linear functions of the same two coordinates, so the local regression
+cannot tell them apart.
+
+The practical consequence is that the local coefficient maps for `PROX_CBD` and
+`PROX_URA_GROWTH_AREA` should not be interpreted one at a time: their surfaces trade
+off against each other. The floor-area surface in section 9.6 is safe; its local VIF
+never exceeds 10. This is the kind of problem the handout's single global VIF check
+cannot see, and it is the reason the GWR literature recommends local diagnostics
+(Wheeler and Tiefelsdorf, 2005) or a multiscale GWR that lets each variable choose its
+own bandwidth.
+:::
+
+## 12. What I Take From This Exercise
+
+**Stationarity is an assumption you can test, and here it fails.** The OLS residuals
+cluster (Moran's I 0.144), GWR removes that clustering, and AICc falls by almost a
+thousand after paying for the extra parameters. For condo prices in Singapore, one
+coefficient per variable is the wrong model.
+
+**The coefficient surface is the result.** The handout maps the standard error and
+t-value of floor area; the map that matters is the coefficient itself, which runs from
+about S$3,300 to S$23,000 per square metre across the island against a single global
+S$12,800. That spread is the thing a valuer or a developer would actually use.
+
+**The adaptive bandwidth is not just a better fit, it is the right shape for the
+data.** Condos are dense in the centre and sparse at the edge. A fixed radius gives
+some local regressions far more evidence than others; a fixed neighbour count does
+not. It wins on AICc with fewer effective parameters.
+
+**A clean global diagnostic does not certify a local model.** This is the finding I
+will carry forward. Every VIF in the global model was under 3.3, and yet most local
+regressions are badly conditioned, because variables that are distinct across a
+country become near-duplicates within a neighbourhood. Local coefficients for
+location variables that are themselves smooth functions of position need local
+diagnostics before anyone reads them.
+
+**What I would change.** Model log price rather than price, since section 6.1 showed
+the raw price has a thirteen-fold tail that dominates least squares, and try a
+multiscale GWR so that floor area, which seems to vary at a district scale, is not
+forced to share a 30-neighbour bandwidth with the proximity variables.
+
+## References
+
+- Gollini, I., Lu, B., Charlton, M., Brunsdon, C. and Harris, P. (2015). GWmodel: An R package for exploring spatial heterogeneity using geographically weighted models. *Journal of Statistical Software*, 63(17).
+- da Silva, A. R. and Fotheringham, A. S. (2016). The multiple testing issue in geographically weighted regression. *Geographical Analysis*, 48(3), 233-247.
+- Wheeler, D. and Tiefelsdorf, M. (2005). Multicollinearity and correlation among local regression coefficients in geographically weighted regression. *Journal of Geographical Systems*, 7, 161-187.
+- Kam, T. S. *R for Geospatial Data Science and Analytics*, chapter 13.

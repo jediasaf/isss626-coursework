@@ -102,3 +102,36 @@ each other. The exercise measures what that constraint costs.</p>
 [<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Geographical Segmentation with Spatially Constrained Clustering</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">07</span>
+<span class="coursework-group-title">Hands-on Exercise 7</span>
+:::
+
+<p class="coursework-group-desc">A hedonic pricing model of 1,436 condominium resales,
+first by least squares and then by geographically weighted regression with fixed and
+adaptive bandwidths in <code>GWmodel</code>. GWR removes the clustering in the
+residuals, and local diagnostics show collinearity that the global check misses.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Calibrating Hedonic Pricing Models with GWR</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.qmd){.exercise-row}
+
+:::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">08</span>
+<span class="coursework-group-title">Hands-on Exercise 8</span>
+:::
+
+<p class="coursework-group-desc">Predicting HDB resale prices with linear regression,
+GWR, a random forest and a geographically weighted random forest, compared on the same
+test set, and then on a spatially blocked holdout that removes the leakage a random
+split creates.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Geographically Weighted Predictive Models</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.qmd){.exercise-row}
+
+:::
+
