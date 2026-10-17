@@ -1,0 +1,23 @@
+---
+title: "In-class Exercises"
+toc: false
+---
+
+Exercises worked through during the weekly meet-up for **ISSS626: Geospatial
+Analytics and Applications** at Singapore Management University.
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">07</span>
+<span class="coursework-group-title">In-class Exercise 7</span>
+:::
+
+<p class="coursework-group-desc">Accessibility to eldercare from 3,125 hexagons, on the
+same data as Hands-on Exercise 7, with the <code>catchment</code> package: 2SFCA,
+E2SFCA, KD2SFCA and 3SFCA, each computed with <code>catchment_ratio()</code> and
+mapped.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Floating Catchment Accessibility with catchment</span><span class="exercise-row-arrow">→</span>](In-class_Ex/In-class_Ex07/In-class_Ex07.qmd){.exercise-row}
+
+:::

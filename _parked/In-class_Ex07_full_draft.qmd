@@ -1,0 +1,574 @@
+---
+title: "Floating Catchment Accessibility with catchment"
+subtitle: "IN-CLASS EXERCISE 7"
+author:
+  - name: Jedidiah Asaf Tallulembang
+    affiliation: "ISSS626 Geospatial Analytics and Applications"
+date: last-modified
+format:
+  html:
+    code-fold: false
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+::: {.pill-row}
+[R]{.pill} [catchment]{.pill} [2SFCA]{.pill} [E2SFCA]{.pill} [KD2SFCA]{.pill} [3SFCA]{.pill}
+:::
+
+This exercise reworks [Hands-on Exercise 7](../../Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.qmd)
+with the [`catchment`](https://uva-bi-sdad.github.io/catchment/) package, one of the R
+resources listed for Lesson 7. It uses the same data and the same data preparation. No
+in-class script for this lesson has been published, so the choice of models and checks
+below is my own.
+
+## 1. Overview
+
+Hands-on Exercise 7 computed Hansen, KD2SFCA and SAM accessibility to eldercare with
+`SpatialAcc`. That package returns one number per hexagon and nothing else.
+
+`catchment`, from the University of Virginia's Biocomplexity Institute, covers the
+floating catchment area (FCA) family with one function, `catchment_ratio()`, and three
+things about it make it worth a second pass over the same data:
+
+- the shape of the catchment is a single argument, so 2SFCA, E2SFCA, KD2SFCA and 3SFCA
+  differ only in what is passed to `weight`;
+- besides each hexagon's accessibility it can return the **demand each centre faces**,
+  which is the first step of every FCA model and the part `SpatialAcc` hides;
+- it lines up the cost matrix with demand and supply **by ID**, not by position.
+
+All FCA models answer the same question in two steps. First, each centre's capacity is
+divided by the demand within its catchment, giving a supply-to-demand ratio. Second,
+each hexagon adds up the ratios of the centres whose catchments it falls in. The
+variants differ in how a catchment's edge is drawn.
+
+## 2. Getting Started
+
+`catchment` is not on CRAN. It installs from GitHub:
+
+```{r}
+#| eval: false
+remotes::install_github("uva-bi-sdad/catchment")
+```
+
+```{r}
+pacman::p_load(sf, tidyverse, tmap,
+               SpatialAcc, catchment)
+```
+
+`SpatialAcc` is loaded only to check that `catchment` reproduces Hands-on Exercise 7.
+
+## 3. Data Preparation
+
+The data and every preparation step are the same as in Hands-on Exercise 7: URA's 2014
+subzones, 3,125 hexagons of 250 m radius, 120 eldercare centres, and the road distance
+from every hexagon to every centre.
+
+### 3.1 Importing the geospatial data
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_NO_SEA_PL")
+```
+
+```{r}
+hexagons <- st_read(dsn = "data/geospatial", layer = "hexagons")
+```
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial", layer = "ELDERCARE")
+```
+
+### 3.2 Updating the CRS
+
+```{r}
+mpsz <- st_transform(mpsz, 3414)
+eldercare <- st_transform(eldercare, 3414)
+hexagons <- st_transform(hexagons, 3414)
+
+c(mpsz = st_crs(mpsz)$epsg,
+  hexagons = st_crs(hexagons)$epsg,
+  eldercare = st_crs(eldercare)$epsg)
+```
+
+### 3.3 Cleaning the attribute fields
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+As before, a constant 100 stands in for real demand and capacity.
+
+### 3.4 Importing and checking the distance matrix
+
+```{r}
+ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", skip = 0)
+```
+
+```{r}
+od_check <- ODMatrix %>%
+  group_by(origin_id) %>%
+  summarise(spread_m = max(total_cost) - min(total_cost),
+            nearest_m = min(total_cost))
+
+c(origins = nrow(od_check),
+  same_distance_to_every_centre = sum(od_check$spread_m == 0))
+```
+
+These are the `r sum(od_check$spread_m == 0)` hexagons that Hands-on Exercise 7 found
+with one distance repeated for all 120 centres, which no road network produces. Section
+3.6 deals with them.
+
+### 3.5 Tidying the distance matrix
+
+```{r}
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  pivot_wider(names_from = destination_id,
+              values_from = total_cost)
+
+c(rows_match_hexagons = identical(distmat$origin_id,
+                                  as.numeric(hexagons$fid)),
+  cols_match_eldercare = identical(as.numeric(names(distmat)[-1]),
+                                   as.numeric(eldercare$fid)))
+```
+
+```{r}
+distmat <- distmat %>%
+  select(-origin_id)
+
+distmat_km <- as.matrix(distmat / 1000)
+```
+
+That is where Hands-on Exercise 7's preparation ends. `catchment` needs one more thing:
+the matrix's rows and columns named with the hexagon and centre IDs, so that it can
+match them to demand and supply by name. The column names are already the centre IDs;
+the row names come from the order `pivot_wider()` used, which is the order origins first
+appear in the CSV.
+
+```{r}
+rownames(distmat_km) <- ODMatrix %>% distinct(origin_id) %>% pull(origin_id)
+
+dim(distmat_km)
+distmat_km[1:3, 1:5]
+```
+
+### 3.6 A clean copy of the matrix
+
+`catchment` treats a missing cost as "no connection". I keep `distmat_km` intact for the
+comparison with Hands-on Exercise 7, and make a second copy in which the repeated rows
+are set to missing, so those hexagons neither claim nor compete for any centre.
+
+```{r}
+flat_ids <- od_check$origin_id[od_check$spread_m == 0]
+
+cost_km <- distmat_km
+cost_km[as.character(flat_ids), ] <- NA
+
+c(rows_set_missing = sum(rowSums(is.na(cost_km)) == ncol(cost_km)))
+```
+
+### 3.7 Demand and supply tables
+
+`catchment_ratio()` accepts plain vectors, but data frames with an ID column let it align
+everything by name. The default column names it looks for are `GEOID` and `count`.
+
+```{r}
+consumers <- hexagons %>%
+  st_drop_geometry() %>%
+  transmute(GEOID = as.character(fid), count = demand)
+
+providers <- eldercare %>%
+  st_drop_geometry() %>%
+  transmute(GEOID = as.character(fid), count = capacity)
+```
+
+## 4. Reproducing Hands-on Exercise 7 First
+
+Before trusting a new package, I check it against the old one. `SpatialAcc`'s KD2SFCA
+weights a centre at distance *d* by `exp(-d^2)` and drops it beyond `d0`. `catchment`'s
+Gaussian weight is `exp(-d^2 / (2 * scale^2))`. The two are the same function when
+`2 * scale^2 = 1`, that is `scale = 1 / sqrt(2)`, and `catchment`'s `max_cost` plays the
+part of `d0`.
+
+```{r}
+kd_spatialacc <- ac(hexagons$demand, eldercare$capacity, distmat_km,
+                    d0 = 5, power = 2, family = "KD2SFCA")
+
+kd_catchment <- catchment_ratio(consumers, providers, distmat_km,
+                                weight = "gaussian", scale = 1 / sqrt(2),
+                                max_cost = 5)
+
+twosfca_spatialacc <- ac(hexagons$demand, eldercare$capacity, distmat_km,
+                         d0 = 5, family = "2SFCA")
+
+twosfca_catchment <- catchment_ratio(consumers, providers, distmat_km,
+                                     weight = 5)
+
+c(KD2SFCA_max_abs_difference = max(abs(kd_spatialacc - kd_catchment)),
+  `2SFCA_max_abs_difference` = max(abs(twosfca_spatialacc - twosfca_catchment)))
+```
+
+Both agree to floating-point precision. This matters beyond reassurance: it pins down
+that the two packages express the same kernel with different parameters. A `scale` of 5
+in `catchment` would not mean what a `d0` of 5 means in `SpatialAcc`, and copying
+numbers between them without this check would silently change the model.
+
+## 5. Four Models on the Same Data
+
+From here on I use the clean matrix `cost_km`. The four models differ only in `weight`:
+
+| Model | `weight` | Catchment |
+|---|---|---|
+| 2SFCA | `5` | everyone within 5 km counts fully, no one beyond |
+| E2SFCA | `list(c(1.5, 1), c(3, 0.68), c(5, 0.22))` | steps: full weight to 1.5 km, 0.68 to 3 km, 0.22 to 5 km |
+| KD2SFCA | `"gaussian"`, `scale = 1/sqrt(2)`, `max_cost = 5` | smooth decay, as in Hands-on Exercise 7 |
+| 3SFCA | as KD2SFCA, plus `normalize_weight = TRUE` | a hexagon's demand is shared out among the centres it can reach |
+
+The E2SFCA step weights 1, 0.68 and 0.22 are the ones Luo and Qi (2009) used for 10, 20
+and 30-minute drive zones. Placing their edges at 1.5, 3 and 5 km is my choice, made so
+that the outer edge matches the 5 km catchment of the other models.
+
+```{r}
+fca <- hexagons %>%
+  mutate(
+    `2SFCA` = catchment_ratio(consumers, providers, cost_km,
+                              weight = 5),
+    E2SFCA = catchment_ratio(consumers, providers, cost_km,
+                             weight = list(c(1.5, 1), c(3, 0.68), c(5, 0.22))),
+    KD2SFCA = catchment_ratio(consumers, providers, cost_km,
+                              weight = "gaussian", scale = 1 / sqrt(2),
+                              max_cost = 5),
+    `3SFCA` = catchment_ratio(consumers, providers, cost_km,
+                              weight = "gaussian", scale = 1 / sqrt(2),
+                              max_cost = 5, normalize_weight = TRUE),
+    flat = fid %in% flat_ids)
+```
+
+`catchment` gives the masked hexagons a score of 0, as if they had no centre in range.
+That is not what we know about them: their distances are unknown, not long. So I
+record them as missing.
+
+```{r}
+models <- c("2SFCA", "E2SFCA", "KD2SFCA", "3SFCA")
+
+fca <- fca %>%
+  mutate(across(all_of(models), ~ if_else(flat, NA_real_, .x)))
+
+fca %>%
+  st_drop_geometry() %>%
+  pivot_longer(all_of(models), names_to = "model") %>%
+  group_by(model = factor(model, levels = models)) %>%
+  summarise(zero = sum(value == 0, na.rm = TRUE),
+            missing = sum(is.na(value)),
+            median = signif(median(value, na.rm = TRUE), 3),
+            max = signif(max(value, na.rm = TRUE), 3),
+            places_allocated = sum(value * 100, na.rm = TRUE))
+```
+
+The scores are in places per unit of demand: with 100 places per centre and 100 units
+of demand per hexagon, a 2SFCA score of 0.1 means the hexagon can draw on 0.1 places for
+each unit of its demand. Every model gives zero to the same hexagons, the ones with no
+centre within 5 km. The last column is the subject of section 7.1.
+
+```{r}
+fca %>%
+  st_drop_geometry() %>%
+  filter(!flat) %>%
+  mutate(nearest_km = apply(cost_km[as.character(fid), ], 1, min)) %>%
+  select(all_of(models), nearest_km) %>%
+  cor(method = "spearman") %>%
+  round(3)
+```
+
+The step and kernel versions sit between plain 2SFCA and distance to the nearest
+centre: the more a model discounts the far edge of the catchment, the more its ranking
+looks like a ranking by nearest distance. 3SFCA barely reorders KD2SFCA (rank
+correlation `r round(cor(fca$KD2SFCA, fca[["3SFCA"]], method = "spearman", use = "complete.obs"), 3)`),
+because with equal demand everywhere, sharing a hexagon's demand among its centres
+changes the levels much more than the order.
+
+## 6. Mapping the Four Models
+
+Hands-on Exercise 7's KD2SFCA map used ten quantile classes, and with 41% of hexagons
+tied at zero the classes collapsed and drew "no access" in mid-blue. Here all four models
+share one set of breaks, zero gets its own grey class, and the masked hexagons are shown
+as missing.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 7.5
+fca_long <- fca %>%
+  select(fid, all_of(models)) %>%
+  pivot_longer(all_of(models), names_to = "model", values_to = "access") %>%
+  mutate(model = factor(model, levels = models))
+
+# tmap facets every layer, so the centres need one copy per model
+eldercare_long <- map_dfr(models, ~ mutate(eldercare,
+                                           model = factor(.x, levels = models)))
+
+tm_shape(fca_long) +
+  tm_polygons(fill = "access",
+              col = NA,
+              fill.scale = tm_scale_intervals(
+                breaks = c(0, 1e-9, 0.001, 0.01, 0.05, 0.1, 0.2, 2),
+                labels = c("0, no centre within 5 km", "under 0.001",
+                           "0.001 to 0.01", "0.01 to 0.05", "0.05 to 0.1",
+                           "0.1 to 0.2", "0.2 and above"),
+                values = c("grey85", "#deebf7", "#c6dbef", "#9ecae1",
+                           "#6baed6", "#3182bd", "#08519c"),
+                value.na = "white",
+                label.na = "no valid distance"),
+              fill.legend = tm_legend(title = "Places per unit of demand")) +
+  tm_shape(eldercare_long) +
+  tm_dots(size = 0.15, fill = "red") +
+  tm_facets_wrap(by = "model", ncols = 2) +
+  tm_layout(frame = FALSE)
+```
+
+The four maps agree on where access is zero, since that depends only on the 5 km edge.
+Inside the catchments, 2SFCA is the flattest, because every centre within 5 km counts
+in full; the kernel models concentrate access close to the centres.
+
+## 7. What `catchment` Shows That `SpatialAcc` Does Not
+
+### 7.1 Every model hands out exactly 12,000 places
+
+The `places_allocated` column in section 5 is 12,000 for every model, which is the
+total capacity of 120 centres with 100 places each. That is not a coincidence. With
+$P_i$ the demand of hexagon $i$, $S_j$ the capacity of centre $j$ and $W_{ij}$ the
+catchment weight, an FCA score is
+
+$$A_i = \sum_j W_{ij} R_j, \qquad R_j = \frac{S_j}{\sum_k P_k W_{kj}},$$
+
+so the demand-weighted total is
+
+$$\sum_i P_i A_i = \sum_j R_j \sum_i P_i W_{ij} = \sum_j S_j.$$
+
+Whatever the weights, each centre's capacity is shared out once among the demand in its
+catchment, as long as every centre has some demand within reach (here every centre
+does). This is what makes FCA scores interpretable in a way Hansen's are not: added up
+over any area, they give the number of places that area can draw on. Section 8 uses
+this.
+
+### 7.2 2SFCA counts each hexagon's demand many times over
+
+`return_type = "demand"` returns the first step of the model: the demand each centre
+faces. Under 2SFCA a hexagon within 5 km of ten centres is counted, in full, in all ten
+catchments. Normalising the weights, the "3" in 3SFCA, splits it among them instead.
+With binary weights the effect can be counted exactly.
+
+```{r}
+demand_2sfca <- catchment_ratio(consumers, providers, cost_km,
+                                weight = 5, return_type = "demand")
+
+demand_3sfca <- catchment_ratio(consumers, providers, cost_km,
+                                weight = 5, normalize_weight = TRUE,
+                                return_type = "demand")
+
+centres_in_range <- rowSums(cost_km < 5, na.rm = TRUE)
+
+c(actual_demand_within_5km = 100 * sum(centres_in_range > 0),
+  demand_counted_by_2SFCA = sum(demand_2sfca),
+  demand_counted_by_3SFCA = sum(demand_3sfca),
+  mean_centres_within_5km = round(mean(centres_in_range[centres_in_range > 0]), 1))
+```
+
+::: {.callout-important}
+## 2SFCA inflates demand by a factor of `r round(sum(demand_2sfca) / (100 * sum(centres_in_range > 0)), 1)`
+
+The hexagons within 5 km of a centre hold `r format(100 * sum(centres_in_range > 0), big.mark = ",")`
+units of demand. 2SFCA counts `r format(sum(demand_2sfca), big.mark = ",")`, because the
+average hexagon in range is within 5 km of
+`r round(mean(centres_in_range[centres_in_range > 0]), 1)` centres and is counted in
+every one of their catchments. 3SFCA's normalised weights count each hexagon once, and
+the total comes back to exactly `r format(sum(demand_3sfca), big.mark = ",")`.
+
+This is the demand inflation that Páez, Higgins and Vivona (2019) describe. Section 7.1
+showed that the total *supply* still balances, so the inflation does not change the
+island-wide sum. What it changes is which centres look crowded.
+:::
+
+```{r}
+crowding <- eldercare %>%
+  st_join(mpsz %>% select(PLN_AREA_N)) %>%
+  st_drop_geometry() %>%
+  transmute(fid, PLN_AREA_N,
+            demand_2SFCA = demand_2sfca,
+            demand_3SFCA = round(demand_3sfca),
+            rank_2SFCA = min_rank(desc(demand_2sfca)),
+            rank_3SFCA = min_rank(desc(demand_3sfca)))
+
+crowding %>% arrange(rank_2SFCA) %>% head(5)
+crowding %>% arrange(rank_3SFCA) %>% head(5)
+```
+
+```{r}
+#| echo: false
+top5_2 <- crowding %>% arrange(rank_2SFCA) %>% head(5)
+top5_3 <- crowding %>% arrange(rank_3SFCA) %>% head(5)
+```
+
+The two models disagree about which centres are under the most pressure. Under 2SFCA,
+the most crowded centres are in `r paste(unique(top5_2$PLN_AREA_N), collapse = ", ")`:
+central estates where many centres sit close together, so every hexagon nearby is
+counted by all of them. Under 3SFCA those hexagons are shared, and the most crowded
+centres are instead in `r paste(unique(top5_3$PLN_AREA_N), collapse = ", ")`, where a
+centre is the only option for a large surrounding area. The rank correlation between
+the two crowding measures across all 120 centres is
+`r round(cor(crowding$demand_2SFCA, crowding$demand_3SFCA, method = "spearman"), 2)`.
+
+```{r}
+#| fig-width: 10
+#| fig-height: 4
+crowding_sf <- eldercare %>%
+  select(fid) %>%
+  left_join(crowding, by = "fid") %>%
+  mutate(`2SFCA` = 100 * demand_2SFCA / sum(demand_2SFCA),
+         `3SFCA` = 100 * demand_3SFCA / sum(demand_3SFCA)) %>%
+  pivot_longer(c(`2SFCA`, `3SFCA`),
+               names_to = "model", values_to = "share")
+
+ggplot() +
+  geom_sf(data = mpsz, fill = "grey96", colour = "grey85", linewidth = 0.1) +
+  geom_sf(data = crowding_sf, aes(size = share),
+          shape = 21, fill = "#137C8B", colour = "white", alpha = 0.85) +
+  scale_size_area(max_size = 7, name = "Share of all\ndemand counted (%)") +
+  facet_wrap(~ model) +
+  theme_void()
+```
+
+For a planner deciding where to add places, this is the difference between expanding in
+Toa Payoh and expanding in Yishun. Neither answer is trustworthy with constant demand,
+but the exercise shows that the choice of model, not just the data, decides it.
+
+### 7.3 Alignment by ID
+
+Hands-on Exercise 7 noted that `SpatialAcc::ac()` pairs the matrix with demand and
+supply purely by position, which is harmless here only because capacity is constant. To
+see what ID alignment buys, I give the centres different capacities and shuffle their
+order.
+
+```{r}
+set.seed(626)
+providers_varied <- providers %>%
+  mutate(count = sample(50:150, n(), replace = TRUE))
+
+shuffled <- providers_varied %>%
+  slice_sample(prop = 1)
+
+reference <- catchment_ratio(consumers, providers_varied, cost_km, weight = 5)
+by_id <- catchment_ratio(consumers, shuffled, cost_km, weight = 5)
+by_position <- catchment_ratio(consumers$count, shuffled$count, cost_km, weight = 5)
+
+c(data_frames_match_reference = isTRUE(all.equal(by_id, reference)),
+  plain_vectors_match_reference = isTRUE(all.equal(by_position, reference)))
+```
+
+Passed as data frames, the shuffled centres are matched to their columns by ID and the
+result is unchanged. Passed as plain vectors, the same shuffle silently gives every
+centre another centre's capacity, and nothing warns about it. The safe habit is to
+always pass `consumers` and `providers` as tables with IDs.
+
+## 8. Regional Summary with `catchment_aggregate()`
+
+Hands-on Exercise 7 compared regions with boxplots, and found that its `st_join()`
+counted many hexagons several times. `catchment_aggregate()` does the comparison the FCA
+way: it adds up `access × demand` over the hexagons in each region and divides by the
+region's demand. I assign each hexagon to one region with `largest = TRUE` and give the
+masked hexagons zero demand, so they drop out of both sums.
+
+```{r}
+hex_region <- st_join(hexagons, mpsz %>% select(REGION_N), largest = TRUE) %>%
+  st_drop_geometry()
+
+region_map <- split(as.character(hex_region$fid), hex_region$REGION_N)
+regions <- data.frame(GEOID = names(region_map))
+
+aggregate_model <- function(model) {
+  from <- fca %>%
+    st_drop_geometry() %>%
+    transmute(GEOID = as.character(fid),
+              access = replace_na(.data[[model]], 0),
+              population = if_else(flat, 0, demand))
+  list(
+    per_100 = 100 * catchment_aggregate(from, regions, map = region_map),
+    places = catchment_aggregate(from, regions, map = region_map,
+                                 return_type = "region"))
+}
+
+agg_2 <- aggregate_model("2SFCA")
+agg_3 <- aggregate_model("3SFCA")
+
+region_summary <- tibble(
+  region = names(region_map),
+  hexagons = lengths(region_map),
+  places_per_100_2SFCA = round(agg_2$per_100[region], 2),
+  share_of_places_2SFCA = round(100 * agg_2$places[region] / 12000, 1),
+  share_of_places_3SFCA = round(100 * agg_3$places[region] / 12000, 1))
+
+as.data.frame(region_summary)
+```
+
+```{r}
+#| echo: false
+central <- region_summary %>% filter(region == "CENTRAL REGION")
+west <- region_summary %>% filter(region == "WEST REGION")
+```
+
+Because the regions partition the island and FCA conserves supply, each share column
+adds up to 100%: it is a split of the 12,000 places. Under 2SFCA the Central region,
+with `r central$hexagons` of the 3,125 hexagons, can draw on
+`r central$share_of_places_2SFCA`% of all places, and the West, with
+`r west$hexagons` hexagons, on `r west$share_of_places_2SFCA`%. The regional shares
+barely move between 2SFCA and 3SFCA, because sharing demand reshuffles pressure between
+neighbouring centres more than between regions.
+
+## 9. What I Take From This Exercise
+
+**Reproduce before you extend.** `catchment` and `SpatialAcc` implement the same KD2SFCA
+with different parameters (`scale = 1/sqrt(2)` against `power = 2`), and only an
+explicit side-by-side run showed that they agree to floating-point precision. Without
+that check I would have had no way to know whether a difference between the packages
+was a modelling difference or a translation error.
+
+**FCA scores are allocations, and that makes them auditable.** Every FCA model here
+hands out exactly the 12,000 places in the system. That identity is a free test of any
+implementation and is what allows regional totals to be read as shares of supply.
+Hansen's potential has no such property.
+
+**The choice between 2SFCA and 3SFCA changes the policy answer.** 2SFCA counts each
+hexagon's demand in every catchment it touches, inflating total demand by a factor of
+`r round(sum(demand_2sfca) / (100 * sum(centres_in_range > 0)), 1)`. That makes clustered
+central centres look the most crowded; once demand is shared, the most pressured centres
+are isolated ones in outer towns. Hexagon-level access barely changes, but the question
+"where should places be added?" gets a different answer.
+
+**Pass tables with IDs, never bare vectors.** `catchment` aligns by ID when it is given
+IDs and by position when it is not. The second mode reproduces exactly the silent
+misalignment risk of `SpatialAcc`.
+
+**Missing is not zero.** `catchment` turns an unknown distance into "no connection", which
+scores as zero access. For the 159 hexagons with defective distances that would have
+reported unknown access as no access, so they are masked back to missing.
+
+**What I would change.** The same as in Hands-on Exercise 7: real demand and capacity.
+With resident counts aged 65 and over as demand and licensed places as capacity, the
+2SFCA and 3SFCA crowding maps in section 7.2 would become a usable shortlist of centres
+to expand, rather than a demonstration that the method decides the answer.
+
+## References
+
+- Luo, W. and Wang, F. (2003). Measures of spatial accessibility to health care in a GIS environment: synthesis and a case study in the Chicago region. *Environment and Planning B: Planning and Design*, 30(6), 865-884.
+- Luo, W. and Qi, Y. (2009). An enhanced two-step floating catchment area (E2SFCA) method for measuring spatial accessibility to primary care physicians. *Health & Place*, 15(4), 1100-1107.
+- Dai, D. (2010). Black residential segregation, disparities in spatial access to health care facilities, and late-stage breast cancer diagnosis in metropolitan Detroit. *Health & Place*, 16(5), 1038-1052.
+- Wan, N., Zou, B. and Sternberg, T. (2012). A three-step floating catchment area method for analyzing spatial access to health services. *International Journal of Geographical Information Science*, 26(6), 1073-1089.
+- Páez, A., Higgins, C. D. and Vivona, S. F. (2019). Demand and level of service inflation in floating catchment area (FCA) methods. *PLOS One*, 14(6), e0218773.
+- Biocomplexity Institute, University of Virginia. *catchment: Calculate spatial access and availability metrics*, version 0.0.1. https://github.com/uva-bi-sdad/catchment

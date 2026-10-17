@@ -14,6 +14,8 @@ website:
         text: Home
       - href: coursework.qmd
         text: Hands-on
+      - href: inclass.qmd
+        text: In-class Exercise
       - href: takehome.qmd
         text: Take-home
       - href: about.qmd
@@ -66,6 +68,16 @@ website:
           contents:
             - text: "Geographical Accessibility"
               href: Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.qmd
+    - id: inclass
+      title: "In-class Exercise"
+      style: docked
+      collapse-level: 1
+      contents:
+        - inclass.qmd
+        - section: "In-class Exercise 7"
+          contents:
+            - text: "Floating Catchment Accessibility"
+              href: In-class_Ex/In-class_Ex07/In-class_Ex07.qmd
     - id: takehome
       title: "Take-home"
       style: docked
