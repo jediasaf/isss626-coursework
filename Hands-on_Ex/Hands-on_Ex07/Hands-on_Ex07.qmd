@@ -1,5 +1,5 @@
 ---
-title: "Calibrating Hedonic Pricing Models with Geographically Weighted Regression"
+title: "Modelling Geographical Accessibility"
 subtitle: "HANDS-ON EXERCISE 7"
 author:
   - name: Jedidiah Asaf Tallulembang
@@ -15,723 +15,926 @@ execute:
 ---
 
 ::: {.pill-row}
-[R]{.pill} [GWmodel]{.pill} [GWR]{.pill} [Hedonic pricing]{.pill} [Bandwidth selection]{.pill} [Local collinearity]{.pill}
+[R]{.pill} [SpatialAcc]{.pill} [Hansen]{.pill} [KD2SFCA]{.pill} [SAM]{.pill} [Eldercare]{.pill}
 :::
 
-This exercise follows [Calibrating Hedonic Pricing Model for Private Highrise
-Property with GWR Method](https://r4gdsa.netlify.app/chap13.html), the reading for the
-Geographically Weighted Regression block of the course.
+This exercise follows [Modelling Geographical
+Accessibility](https://r4gdsa.netlify.app/chap17.html), the reading for the Geographic
+Accessibility block of the course.
 
 ## 1. Overview
 
-Everything up to Exercise 6 described where things are. This exercise asks a different
-kind of question: **does the relationship between a price and its drivers stay the
-same everywhere?**
+Exercise 6 grouped places by what they contain. This one asks how easily people in one
+place can **reach** something located somewhere else: here, how far each part of
+Singapore is from an eldercare centre, once distance along the road network is taken
+into account.
 
-An ordinary regression assumes it does. It fits one coefficient for floor area, one
-for distance to the CBD, and applies them to a condominium in Bukit Timah and one in
-Pasir Ris alike. That assumption is called spatial stationarity, and for housing it is
-suspect on its face: an extra square metre is worth more where land is scarce, and
-being close to an MRT station matters more where few people drive.
+Accessibility models answer questions such as which neighbourhoods are underserved,
+and which would lose most if a facility closed or two were merged. The exercise uses
+three of them, all from the `SpatialAcc` package, and they do not measure the same
+thing:
 
-Geographically weighted regression (GWR) drops the assumption. It fits a separate
-weighted regression at every observation, giving nearby observations more weight
-through a kernel, so every coefficient becomes a surface rather than a number. The
-cost is that every coefficient is now estimated from a small neighbourhood, and the
-bandwidth that defines "small" becomes the most important decision in the model.
+- **Hansen's potential model** adds up every centre's capacity, discounted by how far
+  away it is. It ignores demand entirely: a centre counts the same whether ten people
+  or ten thousand share it.
+- **KD2SFCA** (kernel density two-step floating catchment area) first works out how
+  much capacity each centre offers per unit of demand within a catchment, then sums
+  those ratios for each origin, again discounted by distance. Competition for the same
+  centre lowers everyone's score.
+- **SAM** (Spatial Accessibility Measure) divides each centre's capacity by the
+  origin's demand and by distance raised to a power, then sums.
 
-The application is a **hedonic pricing model**: price explained as the sum of what a
-home offers, both structural (size, age, tenure) and locational (what it is near).
+The study unit is a grid of 250 m hexagons rather than planning subzones, so the
+result is not tied to administrative boundaries of very different sizes.
 
 ## 2. The Data
 
 | Dataset | Description | Format |
 |---|---|---|
-| `MP14_SUBZONE_WEB_PL` | URA Master Plan 2014 subzone boundaries, 323 subzones | ESRI Shapefile (polygon) |
-| `Condo_resale_2015.csv` | 1,436 condominium resale transactions in 2015, with structural and locational attributes | CSV, WGS 84 coordinates |
+| `MP14_SUBZONE_NO_SEA_PL` | URA Master Plan 2014 subzone boundaries, 323 subzones | ESRI Shapefile (polygon) |
+| `hexagons` | 3,125 hexagons of 250 m radius covering the main island | ESRI Shapefile (polygon) |
+| `ELDERCARE` | 120 eldercare service locations from data.gov.sg | ESRI Shapefile (point) |
+| `OD_Matrix.csv` | Road network distance from every hexagon to every centre, in metres | CSV, 375,000 rows |
 
-The condo file is the one distributed with the course. I checked my copy against three
-independent student repositories, and all three are byte-identical to it.
+`OD_Matrix.csv` has six fields: `origin_id` (a hexagon's `fid`), `destination_id` (a
+centre's `fid`), `entry_cost` (from the origin to the nearest road), `network_cost`
+(along the road network), `exit_cost` (from the road to the destination) and
+`total_cost`, the sum of the three.
+
+The hexagons, eldercare points and distance matrix were prepared by Prof. Kam for
+teaching use. I recovered my copy from two independent student repositories whose
+files have identical git blob hashes, so they are byte-for-byte the same, and
+everything printed below matches the handout's own output. One thing to keep in mind:
+the eldercare shapefile's metadata is dated March 2017, so it describes eldercare
+services as they were then, not today.
 
 ## 3. Getting Started
 
 ```{r}
-pacman::p_load(olsrr, corrplot, ggpubr,
-               sf, sfdep, GWmodel, tmap,
-               tidyverse, gtsummary,
-               performance, see, RColorBrewer)
+pacman::p_load(tmap, SpatialAcc, sf,
+               ggstatsplot, reshape2,
+               tidyverse)
 ```
-
-`see` is not in the handout's list, but `performance` needs it to draw its diagnostic
-plots, so I load it explicitly rather than rely on it being installed already.
 
 ## 4. Geospatial Data Wrangling
 
-### 4.1 Importing the subzone boundaries
+### 4.1 Importing the geospatial data
 
 ```{r}
-mpsz <- st_read(dsn = "data/geospatial",
-                layer = "MP14_SUBZONE_WEB_PL")
+mpsz <- st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_NO_SEA_PL")
 ```
 
-The projection is SVY21, but `st_read()` cannot attach an EPSG code to it, which would
-make every later transformation guess.
+```{r}
+hexagons <- st_read(dsn = "data/geospatial", layer = "hexagons")
+```
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial", layer = "ELDERCARE")
+```
+
+The counts match the handout: 323 subzones, 3,125 hexagons, 120 centres. The hexagons
+and centres are already in SVY21 / Singapore TM. The subzone layer is in SVY21 too, but
+without an EPSG code attached.
 
 ### 4.2 Updating the CRS
 
 ```{r}
-mpsz_svy21 <- st_transform(mpsz, 3414)
-st_crs(mpsz_svy21)$epsg
-st_bbox(mpsz_svy21)
+c(mpsz = st_crs(mpsz)$epsg,
+  hexagons = st_crs(hexagons)$epsg,
+  eldercare = st_crs(eldercare)$epsg)
 ```
 
-EPSG:3414 is SVY21 / Singapore TM, with metres as the unit. That unit matters later:
-the fixed GWR bandwidth will be a distance in metres.
+```{r}
+mpsz <- st_transform(mpsz, 3414)
+eldercare <- st_transform(eldercare, 3414)
+hexagons <- st_transform(hexagons, 3414)
+
+c(mpsz = st_crs(mpsz)$epsg,
+  hexagons = st_crs(hexagons)$epsg,
+  eldercare = st_crs(eldercare)$epsg)
+```
+
+All three layers now carry EPSG 3414.
+
+### 4.3 Cleaning the attribute fields
+
+Both layers carry many fields the models do not use. I keep the identifiers and add a
+`capacity` field to the centres and a `demand` field to the hexagons.
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+As the handout says, a constant 100 stands in for real values. In practice demand would
+be the number of older residents in each hexagon and capacity the number of places at
+each centre. This one simplification shapes almost everything that follows, and I come
+back to it in section 9.
 
 ## 5. Aspatial Data Wrangling
 
-### 5.1 Importing the transactions
+### 5.1 Importing the distance matrix
 
 ```{r}
-condo_resale <- read_csv("data/aspatial/Condo_resale_2015.csv")
-glimpse(condo_resale)
+ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", skip = 0)
 ```
 
 ```{r}
-summary(condo_resale$SELLING_PRICE)
+ODMatrix %>%
+  summarise(rows = n(),
+            origins = n_distinct(origin_id),
+            destinations = n_distinct(destination_id))
 ```
 
-The median price is S$1.38 million and the maximum S$18 million, thirteen times the
-median. A distribution with that tail will shape every least-squares fit below.
+That is 3,125 origins times 120 destinations: every pair is present once.
 
-### 5.2 Converting to an sf object
+The handout goes straight to reshaping. Before that I check one property any real
+distance matrix must have: the centres are spread over 40 km of island, so each
+hexagon should be near some of them and far from others.
 
 ```{r}
-condo_resale.sf <- st_as_sf(condo_resale,
-                            coords = c("LONGITUDE", "LATITUDE"),
-                            crs = 4326) %>%
-  st_transform(crs = 3414)
-head(condo_resale.sf, 3)
+od_check <- ODMatrix %>%
+  group_by(origin_id) %>%
+  summarise(spread_m = max(total_cost) - min(total_cost),
+            nearest_m = min(total_cost))
+
+c(origins = nrow(od_check),
+  same_distance_to_every_centre = sum(od_check$spread_m == 0))
 ```
 
-The coordinates are longitude and latitude, so they are declared as WGS 84 (4326) and
-then projected to SVY21 to match the subzones.
-
-## 6. Exploratory Data Analysis
-
-### 6.1 The selling price
+`r sum(od_check$spread_m == 0)` hexagons fail it. Each has one `total_cost` repeated
+for all 120 centres:
 
 ```{r}
-#| fig-height: 3
-p1 <- ggplot(condo_resale.sf, aes(x = SELLING_PRICE)) +
-  geom_histogram(bins = 20, color = "black", fill = "light blue") +
-  labs(title = "SELLING_PRICE")
-
-condo_resale.sf <- condo_resale.sf %>%
-  mutate(LOG_SELLING_PRICE = log(SELLING_PRICE))
-
-p2 <- ggplot(condo_resale.sf, aes(x = LOG_SELLING_PRICE)) +
-  geom_histogram(bins = 20, color = "black", fill = "light blue") +
-  labs(title = "log(SELLING_PRICE)")
-
-ggarrange(p1, p2, ncol = 2)
+ODMatrix %>%
+  filter(origin_id == 1067) %>%
+  head(4)
 ```
 
-The raw price is strongly right-skewed; the log is close to symmetric. The handout
-derives the log and then models the raw price anyway. I follow it, because the point
-of the exercise is GWR rather than the best hedonic specification, but I return to
-the consequence in section 11.
+For hexagon 1067 even the exit cost, from the road to the centre's door, is the same
+44 m for every centre. No road network produces that. These rows look like routing
+failures that were written out as if they were distances. I keep them through sections
+6 to 8, as the handout does, so that my results stay comparable with it, and measure
+what they do in section 9.5.
 
-### 6.2 The independent variables
+### 5.2 Tidying the distance matrix
+
+The file is in long format, one row per origin-destination pair. `ac()` needs a wide
+matrix with one row per origin and one column per destination. The handout uses
+`spread()` and recommends its replacement, `pivot_wider()`, which I use here.
 
 ```{r}
-#| fig-height: 7
-vars <- c("AREA_SQM", "AGE", "PROX_CBD", "PROX_CHILDCARE",
-          "PROX_ELDERLYCARE", "PROX_URA_GROWTH_AREA",
-          "PROX_HAWKER_MARKET", "PROX_KINDERGARTEN", "PROX_MRT",
-          "PROX_PARK", "PROX_PRIMARY_SCH", "PROX_TOP_PRIMARY_SCH")
-
-hists <- lapply(vars, function(v) {
-  ggplot(condo_resale.sf, aes(x = .data[[v]])) +
-    geom_histogram(bins = 20, color = "black", fill = "light blue") +
-    labs(x = v, y = NULL) +
-    theme(axis.title.x = element_text(size = 8))
-})
-ggarrange(plotlist = hists, ncol = 3, nrow = 4)
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  pivot_wider(names_from = destination_id,
+              values_from = total_cost)
 ```
 
-The handout builds these twelve histograms one assignment at a time. I build them in
-a loop over the variable names: same plots, and adding a variable is one word. Most
-proximity variables are right-skewed, as distances usually are: most condos are near
-a childcare centre or a bus stop and a few are far from everything.
-
-### 6.3 Where the prices are
+`ac()` has no idea which row is which hexagon. It pairs row *i* of the matrix with
+element *i* of the demand vector and column *j* with element *j* of the capacity vector,
+purely by position. So before dropping the identifier column, I check that the rows are
+in the same order as `hexagons` and the columns in the same order as `eldercare`.
 
 ```{r}
-tmap_mode("plot")
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill = "grey95", col = "grey75", lwd = 0.3) +
-tm_shape(condo_resale.sf) +
-  tm_dots(fill = "SELLING_PRICE",
-          fill_alpha = 0.7,
-          size = 0.25,
-          fill.scale = tm_scale_intervals(style = "quantile",
-                                          values = "brewer.yl_or_rd"),
-          fill.legend = tm_legend(title = "Selling price (S$)")) +
-  tm_layout(frame = FALSE)
+c(rows_match_hexagons = identical(distmat$origin_id,
+                                  as.numeric(hexagons$fid)),
+  cols_match_eldercare = identical(as.numeric(names(distmat)[-1]),
+                                   as.numeric(eldercare$fid)))
 ```
 
-The handout draws this as an interactive map. I draw it static so the page stays light,
-and keep one interactive map for section 9.5 where zooming genuinely helps. The
-pattern is clear without zooming: the most expensive class is almost entirely in the
-Central Region. Joining the points to URA regions, 40% of Central Region transactions
-fall in the top price quintile, against 5% or less in every other region.
-
-## 7. Hedonic Pricing with Ordinary Least Squares
-
-### 7.1 Simple linear regression
+Both are true, but it is worth knowing why. The eldercare `fid` values run from 1 to
+133 with gaps, and `pivot_wider()` orders columns by first appearance, not numerically.
+The match holds only because the CSV happens to be sorted the same way as the
+shapefiles. With constant capacity a misalignment would change nothing, which is
+exactly why it would go unnoticed. With real capacities it would silently assign each
+centre another centre's places.
 
 ```{r}
-condo.slr <- lm(SELLING_PRICE ~ AREA_SQM, data = condo_resale.sf)
-summary(condo.slr)
+distmat <- distmat %>%
+  select(-origin_id)
+
+distmat_km <- as.matrix(distmat / 1000)
 ```
 
+The handout presents the conversion to kilometres as a change of unit. For two of the
+three models it is more than that, as section 9.1 shows.
+
+## 6. Accessibility with Hansen's Method
+
+### 6.1 Computing Hansen's accessibility
+
 ```{r}
-#| fig-height: 3.5
-ggplot(condo_resale.sf, aes(x = AREA_SQM, y = SELLING_PRICE)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = lm)
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km,
+                            #d0 = 50,
+                            power = 2,
+                            family = "Hansen"))
+
+colnames(acc_Hansen) <- "accHansen"
+acc_Hansen <- as_tibble(acc_Hansen)
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
 ```
 
-Floor area alone explains 45% of the variance in price. Each extra square metre adds
-about S$14,700. The scatterplot shows why the fit is not better: a band of very
-expensive units sits far above the line at every size, which is location speaking.
-
-### 7.2 Checking for multicollinearity
+The handout then repeats the same steps in a single chunk, but with `power = 0.5`, and
+everything it maps afterwards uses that second result. I follow it, so my maps are
+comparable with the handout's, and compare the two settings in section 9.1.
 
 ```{r}
-#| fig-height: 7
-corrplot(cor(condo_resale[, 5:23]),
-         diag = FALSE,
-         order = "AOE",
-         tl.pos = "td",
-         tl.cex = 0.5,
-         method = "number",
-         type = "upper")
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km,
+                            #d0 = 50,
+                            power = 0.5,
+                            family = "Hansen"))
+
+colnames(acc_Hansen) <- "accHansen"
+acc_Hansen <- as_tibble(acc_Hansen)
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
+
+summary(hexagon_Hansen$accHansen)
 ```
 
-`FREEHOLD` and `LEASEHOLD_99YR` are strongly negatively correlated, which is close to
-true by definition: a unit that is not freehold is almost always on a 99-year lease.
-Keeping both would make their coefficients unstable, so `LEASEHOLD_99YR` is dropped.
-
-### 7.3 The full multiple regression
+### 6.2 Mapping Hansen's accessibility
 
 ```{r}
-condo.mlr <- lm(SELLING_PRICE ~ AREA_SQM + AGE +
-                  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-                  PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET +
-                  PROX_KINDERGARTEN + PROX_MRT + PROX_PARK +
-                  PROX_PRIMARY_SCH + PROX_TOP_PRIMARY_SCH +
-                  PROX_SHOPPING_MALL + PROX_SUPERMARKET +
-                  PROX_BUS_STOP + NO_Of_UNITS +
-                  FAMILY_FRIENDLY + FREEHOLD,
-                data = condo_resale.sf)
-summary(condo.mlr)
-```
-
-Four variables are not significant at 5%: `PROX_HAWKER_MARKET`, `PROX_KINDERGARTEN`,
-`PROX_TOP_PRIMARY_SCH` and `PROX_SUPERMARKET`.
-
-### 7.4 The revised model
-
-```{r}
-condo.mlr1 <- lm(SELLING_PRICE ~ AREA_SQM + AGE +
-                   PROX_CBD + PROX_CHILDCARE + PROX_MRT +
-                   PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA +
-                   PROX_PARK + PROX_PRIMARY_SCH +
-                   PROX_SHOPPING_MALL + PROX_BUS_STOP +
-                   NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-                 data = condo_resale.sf)
-
-tbl_regression(condo.mlr1, intercept = TRUE) %>%
-  add_glance_source_note(
-    label = list(sigma ~ "\U03C3"),
-    include = c(r.squared, adj.r.squared,
-                AIC, statistic, p.value, sigma))
-```
-
-Dropping the four costs almost nothing: adjusted R² moves from 0.6474 to 0.6472. Every
-remaining predictor is significant. Some signs are worth a second look rather than a
-nod. `PROX_PRIMARY_SCH` and `PROX_PARK` have positive coefficients, so price *rises*
-with distance from a primary school or a park, which runs against the family-buyer
-story. More likely those facilities are densest in the cheaper outer estates, while
-the most expensive condos sit in central districts with fewer of them. That is the
-first hint that one coefficient for the whole island is averaging over different
-markets.
-
-### 7.5 Regression diagnostics
-
-#### Multicollinearity
-
-```{r}
-check_collinearity(condo.mlr1)
+mapex <- st_bbox(hexagons)
 ```
 
 ```{r}
-#| fig-height: 4
-plot(check_collinearity(condo.mlr1))
+#| fig-width: 9
+#| fig-height: 6
+tm_shape(hexagon_Hansen,
+         bbox = mapex) +
+  tm_polygons(fill = "accHansen",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: Hansen method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
 ```
 
-Every VIF is below 3.3, far from the conventional warning level of 5 or 10. Globally,
-collinearity is not a problem. Section 11.2 shows why that reassurance does not carry
-over to GWR.
+The pattern follows the centres closely. Half of the 120 centres are in the Central
+region, and accessibility is highest in the older estates around the city centre:
+Kallang, Bukit Merah, Toa Payoh, Geylang and Bishan. It is lowest in Tuas, the
+Western Islands, Lim Chu Kang and Changi.
 
-#### Linearity
-
-```{r}
-#| fig-height: 4
-check_model(condo.mlr1, check = "linearity")
-```
-
-The residuals are centred on zero across most of the fitted range, with a fan at the
-expensive end. Linearity is acceptable; constant variance is not.
-
-#### Normality of residuals
+### 6.3 Comparing planning regions
 
 ```{r}
-check_normality(condo.mlr1)
-```
-
-```{r}
-#| fig-height: 4
-check_model(condo.mlr1, check = "normality")
-```
-
-The Shapiro-Wilk test rejects normality decisively. The handout reads the density plot
-as roughly normal, and it is in the middle. The tails are not: the Q-Q plot bends away
-at both ends, the signature of the long upper tail from section 6.1.
-
-### 7.6 Spatial autocorrelation in the residuals
-
-This is the test that motivates GWR. If the model has captured everything that
-matters, its errors should be spatially random. If location still matters, residuals
-will cluster.
-
-```{r}
-condo_resale.sf <- cbind(condo_resale.sf,
-                         condo.mlr1$residuals) %>%
-  rename(MLR_RES = condo.mlr1.residuals)
+hexagon_Hansen <- st_join(hexagon_Hansen, mpsz,
+                          join = st_intersects)
 ```
 
 ```{r}
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill = "grey95", col = "grey75", lwd = 0.3) +
-tm_shape(condo_resale.sf) +
-  tm_dots(fill = "MLR_RES",
-          size = 0.25,
-          fill.scale = tm_scale_intervals(
-            n = 10, style = "quantile",
-            values = rev(brewer.pal(11, "RdBu"))),
-          fill.legend = tm_legend(title = "OLS residual")) +
-  tm_title("OLS residuals (quantile classes)") +
-  tm_layout(frame = FALSE, legend.outside = TRUE)
-```
-
-Red points are under-predicted (they sold for more than the model says), blue
-over-predicted. They are not scattered at random. Counting by URA region, 80% of
-North Region residuals are positive and 68% of North-East Region residuals are
-negative: the global model systematically under-prices one area and over-prices
-another.
-
-```{r}
-condo_resale.sf <- condo_resale.sf %>%
-  mutate(nb = st_dist_band(st_geometry(geometry), upper = 1500),
-         wt = st_weights(nb, style = "W"),
-         .before = 1)
-
-set.seed(1234)
-global_moran_perm(condo_resale.sf$MLR_RES,
-                  nb = condo_resale.sf$nb,
-                  wt = condo_resale.sf$wt,
-                  alternative = "two.sided",
-                  nsim = 499)
-```
-
-Moran's I is 0.144 with every one of 499 permutations below it. The residuals are
-clustered. The global model has left location-specific structure in its errors, which
-is exactly the condition GWR is designed for.
-
-## 8. A Short Note on GWmodel
-
-`GWmodel` provides a family of geographically weighted methods: summary statistics,
-principal components, discriminant analysis, and several forms of GWR (basic, robust,
-generalised, mixed, and multiscale). This exercise uses the basic form, `gwr.basic()`,
-with its bandwidth selector `bw.gwr()`.
-
-## 9. Geographically Weighted Regression
-
-The bandwidth decides how many observations each local regression sees. Too wide and
-GWR collapses back to the global model; too narrow and each local fit is estimated
-from a handful of points and chases noise. `bw.gwr()` chooses it by cross-validation:
-leave each observation out, predict it from its neighbours, and pick the bandwidth
-that minimises the squared prediction error.
-
-There are two ways to define "neighbourhood". A **fixed** bandwidth uses the same
-distance everywhere. An **adaptive** bandwidth uses the same *number* of neighbours
-everywhere, so the radius stretches where condos are sparse and shrinks where they
-are dense.
-
-### 9.1 Fixed bandwidth
-
-```{r}
-#| results: hide
-bw.fixed <- bw.gwr(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE +
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
-    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY +
-    FREEHOLD,
-  data = condo_resale.sf,
-  approach = "CV",
-  kernel = "gaussian",
-  adaptive = FALSE,
-  longlat = FALSE)
-```
-
-```{r}
-bw.fixed
-```
-
-I hide the cross-validation trace, which prints dozens of lines of CV scores. The
-chosen bandwidth is about 971 m. My run lands on 971.34 m, which matches the handout's
-text; the handout's printed output shows 971.39 m. The difference is the stopping
-tolerance of the golden-section search, half a metre either way, and has no effect on
-anything below.
-
-```{r}
-gwr.fixed <- gwr.basic(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE +
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
-    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY +
-    FREEHOLD,
-  data = condo_resale.sf,
-  bw = bw.fixed,
-  kernel = "gaussian",
-  longlat = FALSE)
-gwr.fixed
-```
-
-### 9.2 Adaptive bandwidth
-
-```{r}
-#| results: hide
-bw.adaptive <- bw.gwr(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE +
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL +
-    PROX_BUS_STOP + NO_Of_UNITS +
-    FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_resale.sf,
-  approach = "CV",
-  kernel = "gaussian",
-  adaptive = TRUE,
-  longlat = FALSE)
-```
-
-```{r}
-bw.adaptive
-```
-
-```{r}
-gwr.adaptive <- gwr.basic(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE +
-    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
-    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
-    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_resale.sf,
-  bw = bw.adaptive,
-  kernel = "gaussian",
-  adaptive = TRUE,
-  longlat = FALSE)
-gwr.adaptive
-```
-
-### 9.3 Comparing the three models
-
-```{r}
-tibble(
-  model = c("OLS (global)", "GWR, fixed bandwidth", "GWR, adaptive bandwidth"),
-  bandwidth = c("-", paste(round(bw.fixed), "m"), paste(bw.adaptive, "neighbours")),
-  # AICc for OLS: AIC plus the small-sample correction, with k = 16
-  # (15 coefficients and the residual variance)
-  AICc = c(AIC(condo.mlr1) + 2 * 16 * 17 / (nrow(condo_resale.sf) - 16 - 1),
-           gwr.fixed$GW.diagnostic$AICc, gwr.adaptive$GW.diagnostic$AICc),
-  adj_R2 = c(summary(condo.mlr1)$adj.r.squared,
-             gwr.fixed$GW.diagnostic$gwR2.adj, gwr.adaptive$GW.diagnostic$gwR2.adj),
-  effective_parameters = c(15, gwr.fixed$GW.diagnostic$enp, gwr.adaptive$GW.diagnostic$enp)
-) %>% mutate(across(c(AICc, adj_R2, effective_parameters), \(x) round(x, 3)))
-```
-
-Both GWR models improve on the global model by a wide margin: AICc falls by about 700
-(fixed) and 985 (adaptive), and adjusted R² rises from 0.65 to 0.84 and 0.86. AICc
-penalises the extra effective parameters, so this is not just a more flexible model
-fitting better; it is a better model after paying for the flexibility.
-
-The adaptive model wins on every measure and uses fewer effective parameters (350
-against 438). That makes sense for Singapore condos, which are dense in the centre and
-sparse at the edges: a fixed 971 m window holds dozens of transactions in the core and
-only a few on the periphery, while 30 neighbours gives every local fit the same amount
-of evidence.
-
-### 9.4 Converting the output to sf
-
-```{r}
-condo_resale.sf.adaptive <- st_as_sf(gwr.adaptive$SDF) %>%
-  st_transform(crs = 3414)
-summary(gwr.adaptive$SDF$yhat)
-```
-
-The `SDF` holds, for every transaction, its local coefficients, their standard errors
-and t-values, the fitted value, the residual and a local R².
-
-### 9.5 Local R²
-
-```{r}
-tmap_mode("view")
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill_alpha = 0.1) +
-tm_shape(condo_resale.sf.adaptive) +
-  tm_dots(fill = "Local_R2",
-          size = 0.15,
-          fill.scale = tm_scale_intervals(style = "quantile",
-                                          values = "brewer.blues")) +
-  tm_view(set_zoom_limits = c(11, 14))
-tmap_mode("plot")
-```
-
-```{r}
-summary(condo_resale.sf.adaptive$Local_R2)
-```
-
-Local R² runs from 0.67 to 0.99, with a median of 0.91. The local models are weakest
-on the fringe of the central area, in Bishan, Toa Payoh, Bukit Merah and Novena
-(medians 0.73 to 0.82), where prime and mass-market condos sit within the same
-30-neighbour window. They are strongest in the North Region (median 0.99), where the
-market is more uniform.
-
-### 9.6 Mapping a coefficient: floor area
-
-```{r}
+#| fig-width: 8
 #| fig-height: 4.5
-AREA_SQM_SE <- tm_shape(mpsz_svy21) +
-  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
-tm_shape(condo_resale.sf.adaptive) +
-  tm_dots(fill = "AREA_SQM_SE", size = 0.15,
-          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.purples"),
-          fill.legend = tm_legend(title = "Std. error")) +
-  tm_title("Standard error of AREA_SQM") +
-  tm_layout(frame = FALSE)
-
-AREA_SQM_TV <- tm_shape(mpsz_svy21) +
-  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
-tm_shape(condo_resale.sf.adaptive) +
-  tm_dots(fill = "AREA_SQM_TV", size = 0.15,
-          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.purples"),
-          fill.legend = tm_legend(title = "t-value")) +
-  tm_title("t-value of AREA_SQM") +
-  tm_layout(frame = FALSE)
-
-tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, ncol = 2)
+ggplot(data = hexagon_Hansen,
+       aes(y = log(accHansen),
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary",
+             fun = "mean",
+             colour = "red",
+             size = 2)
 ```
 
-The handout maps the standard error and the t-value, but not the coefficient itself,
-which is the thing GWR exists to produce. I add it:
+The handout passes `fun.y = "mean"`, which ggplot2 deprecated in version 3.3; `fun` is
+the current name and gives the same red mean markers. The plot is on a log scale
+because Hansen values span six orders of magnitude.
+
+Central and North-East have the highest accessibility; West has the lowest and the
+widest spread. Section 9.2 shows that the join above distorts this plot.
+
+## 7. Accessibility with the KD2SFCA Method
+
+### 7.1 Computing KD2SFCA accessibility
 
 ```{r}
+acc_KD2SFCA <- data.frame(ac(hexagons$demand,
+                             eldercare$capacity,
+                             distmat_km,
+                             d0 = 5,
+                             power = 2,
+                             family = "KD2SFCA"))
+
+colnames(acc_KD2SFCA) <- "accKD2SFCA"
+acc_KD2SFCA <- as_tibble(acc_KD2SFCA)
+hexagon_KD2SFCA <- bind_cols(hexagons, acc_KD2SFCA)
+
+summary(hexagon_KD2SFCA$accKD2SFCA)
+```
+
+`d0 = 5` sets a 5 km catchment: a centre further away than that contributes nothing.
+The summary already shows the consequence. The first quartile is exactly zero.
+
+### 7.2 Mapping KD2SFCA accessibility
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+tm_shape(hexagon_KD2SFCA,
+         bbox = mapex) +
+  tm_polygons(fill = "accKD2SFCA",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: KD2SFCA method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
+```
+
+This map needs reading with care. With 41% of hexagons tied at exactly zero, the
+quantile breaks pile up at zero: the legend still lists ten classes, but the first five
+all span zero, and floating-point noise even gives four of them negative upper bounds.
+Every zero hexagon lands in the fifth class. So the part of the island with no centre
+within 5 km is drawn in uniform mid-blue, not in the palest colour, and at a glance
+looks better served than it is. Section 9.4 maps the same values as percentile ranks,
+which avoids the problem.
+
+### 7.3 Comparing planning regions
+
+```{r}
+hexagon_KD2SFCA <- st_join(hexagon_KD2SFCA, mpsz,
+                           join = st_intersects)
+```
+
+```{r}
+#| fig-width: 8
 #| fig-height: 4.5
-tm_shape(mpsz_svy21) +
-  tm_polygons(fill = "grey95", col = "grey80", lwd = 0.2) +
-tm_shape(condo_resale.sf.adaptive) +
-  tm_dots(fill = "AREA_SQM", size = 0.2,
-          fill.scale = tm_scale_intervals(style = "quantile", values = "brewer.yl_or_rd"),
-          fill.legend = tm_legend(title = "S$ per sq m")) +
-  tm_title("Local coefficient of AREA_SQM") +
-  tm_layout(frame = FALSE, legend.outside = TRUE)
+ggplot(data = hexagon_KD2SFCA,
+       aes(y = accKD2SFCA,
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary",
+             fun = "mean",
+             colour = "red",
+             size = 2)
+```
+
+On the raw scale the boxes are squashed against zero and the plot is mostly outliers.
+What it does show is that the highest values are all in the Central region, in Bukit
+Merah, Toa Payoh and Geylang. The top three hexagons each have three or more centres
+within a kilometre by road.
+
+## 8. Accessibility with the SAM Method
+
+### 8.1 Computing SAM accessibility
+
+```{r}
+acc_SAM <- data.frame(ac(hexagons$demand,
+                         eldercare$capacity,
+                         distmat_km,
+                         d0 = 5,
+                         power = 2,
+                         family = "SAM"))
+
+colnames(acc_SAM) <- "accSAM"
+acc_SAM <- as_tibble(acc_SAM)
+hexagon_SAM <- bind_cols(hexagons, acc_SAM)
+
+summary(hexagon_SAM$accSAM)
+```
+
+### 8.2 Mapping SAM accessibility
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6
+tm_shape(hexagon_SAM,
+         bbox = mapex) +
+  tm_polygons(fill = "accSAM",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 10,
+                values = "brewer.blues")) +
+tm_shape(eldercare) +
+  tm_dots(size = 0.3,
+          fill = "red",
+          col = "black") +
+  tm_title("Accessibility to eldercare: SAM method") +
+  tm_layout(frame = TRUE) +
+  tm_compass(type = "8star", size = 2) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
+```
+
+SAM has no zeros, because every centre contributes something however far away it is,
+so the map shades smoothly outwards from the centres. The geography is the same as
+Hansen's.
+
+### 8.3 Comparing planning regions
+
+```{r}
+hexagon_SAM <- st_join(hexagon_SAM, mpsz,
+                       join = st_intersects)
 ```
 
 ```{r}
-range(condo_resale.sf.adaptive$AREA_SQM)
-coef(condo.mlr1)["AREA_SQM"]
+#| fig-width: 8
+#| fig-height: 4.5
+ggplot(data = hexagon_SAM,
+       aes(y = accSAM,
+           x = REGION_N)) +
+  geom_boxplot() +
+  geom_point(stat = "summary",
+             fun = "mean",
+             colour = "red",
+             size = 2)
 ```
 
-This is the result the whole exercise has been building towards. The global model
-says an extra square metre adds S$12,800 everywhere. GWR says it adds between about
-S$3,300 and S$23,000 depending on where the condo is, a sevenfold range, and the
-highest values are in the prime central districts: the median local coefficient is
-about S$18,900 in Newton, S$16,800 in Novena and S$16,400 in Tanglin, against roughly
-S$5,300 to S$7,000 in the East, North, North-East and West regions. The global coefficient is an
-average over markets that price space very differently.
+The y-axis is stretched by a single hexagon in the Central region scoring far above
+the rest. Section 9.4 explains why.
 
-## 10. Do the Local Models Fix the Residuals?
+## 9. Checks the Handout Skips
 
-Section 7.6 established that the global model's residuals cluster. The natural test of
-GWR is to run the same test on its residuals, with the same weights and seed. The
-handout stops before doing this.
+### 9.1 What `power` and the distance unit actually do
+
+The three models share one argument name, `power`, but it means something different in
+each. Reading the source of `ac()` in `SpatialAcc` 0.1.6 gives the weight each model
+puts on a centre at distance *d*:
+
+- Hansen: `exp(-power * d)`, an exponential decay where `power` is a rate.
+- KD2SFCA: `exp(-d^power)`, a Gaussian-shaped kernel, cut to zero beyond `d0`.
+- SAM: `d^-power`, an inverse-power decay with no cut-off. `d0` is accepted but never
+  used, so the handout's `d0 = 5` has no effect.
 
 ```{r}
-set.seed(1234)
-global_moran_perm(condo_resale.sf.adaptive$residual,
-                  nb = condo_resale.sf$nb,
-                  wt = condo_resale.sf$wt,
-                  alternative = "two.sided",
-                  nsim = 499)
+d <- c(0.5, 1, 2, 3, 5)
+tibble(distance_km = d,
+       Hansen_power_2 = exp(-2 * d),
+       Hansen_power_0.5 = exp(-0.5 * d),
+       KD2SFCA_power_2 = exp(-d^2),
+       SAM_power_2 = d^-2) %>%
+  mutate(across(-distance_km, ~ signif(.x, 3)))
 ```
 
-::: {.callout-note}
-## GWR removes the clustering, and slightly overshoots
+Two things follow. First, KD2SFCA's 5 km catchment is mostly nominal: the kernel has
+already fallen below 0.02 at 2 km and to about one ten-thousandth at 3 km. The
+effective reach is about 2 km, and `d0` only decides where values become exactly zero
+rather than merely tiny.
 
-Moran's I on the residuals falls from **+0.144** under OLS to **−0.016** under adaptive
-GWR. The positive clustering is gone. What remains is small and *negative*, and at
-p = 0.024 it is still distinguishable from zero.
-
-A negative residual autocorrelation means neighbouring condos now tend to have errors
-of opposite sign. With a 30-neighbour kernel, each local fit is pulled hard towards
-its own neighbourhood, so it slightly over-explains local variation. That is a mild
-symptom of the bandwidth being on the small side, consistent with the 350 effective
-parameters for 1,436 observations. It is not a reason to reject the model, but it is
-a reason not to read the very highest local R² values as pure signal.
-:::
-
-## 11. Two Things the Handout's Diagnostics Do Not Catch
-
-### 11.1 How many local coefficients are actually significant?
+Second, `d` enters Hansen and KD2SFCA inside an exponential, so its unit is not
+cosmetic. The same models run on the matrix in metres:
 
 ```{r}
-tv <- condo_resale.sf.adaptive %>%
-  st_drop_geometry() %>%
-  select(ends_with("_TV"), -Intercept_TV)
+hansen_m <- ac(hexagons$demand, eldercare$capacity,
+               as.matrix(distmat), power = 0.5, family = "Hansen")
+kd2sfca_m <- ac(hexagons$demand, eldercare$capacity,
+                as.matrix(distmat), d0 = 5000, power = 2, family = "KD2SFCA")
 
-tibble(variable = sub("_TV$", "", names(tv)),
-       share_significant = round(colMeans(abs(tv) > 1.96), 2)) %>%
-  arrange(desc(share_significant))
-```
-
-In the global model every one of these fourteen predictors was significant. Locally,
-only floor area is significant almost everywhere (96% of locations). Most locational
-variables are significant at fewer than a third of locations. So the global result
-"proximity to a park matters" is better read as "proximity to a park matters in some
-neighbourhoods", which is more useful and less tidy.
-
-One caution on the column above: it applies an unadjusted |t| > 1.96 at 1,436
-overlapping locations, so it overstates significance rather than understates it.
-Corrections designed for GWR (da Silva and Fotheringham, 2016) would shrink these
-shares further.
-
-### 11.2 Local collinearity
-
-Section 7.5 found no collinearity problem in the global model: every VIF below 3.3.
-That check was done on the whole island. GWR does not fit on the whole island; it fits
-on 30 neighbours at a time, and variables that are independent across Singapore can be
-nearly redundant inside one neighbourhood. `GWmodel` provides a local diagnostic.
-
-```{r}
-xvars <- c("AREA_SQM", "AGE", "PROX_CBD", "PROX_CHILDCARE",
-           "PROX_ELDERLYCARE", "PROX_URA_GROWTH_AREA", "PROX_MRT",
-           "PROX_PARK", "PROX_PRIMARY_SCH", "PROX_SHOPPING_MALL",
-           "PROX_BUS_STOP", "NO_Of_UNITS", "FAMILY_FRIENDLY", "FREEHOLD")
-
-# Condition numbers depend on the units of the variables, so standardise
-# first; otherwise NO_Of_UNITS (hundreds) against distances (km) would
-# inflate the number for reasons that have nothing to do with collinearity.
-condo_z <- condo_resale.sf %>%
-  mutate(across(all_of(xvars), ~ as.numeric(scale(.x))))
-
-collin <- gwr.collin.diagno(
-  formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + PROX_CHILDCARE +
-    PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
-    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
-    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
-  data = condo_z,
-  bw = bw.adaptive,
-  kernel = "gaussian",
-  adaptive = TRUE,
-  longlat = FALSE)
-
-local_cn <- collin$SDF$local_CN
-c(over_30 = sum(local_cn > 30), n = length(local_cn),
-  median = round(median(local_cn), 1))
-```
-
-```{r}
-local_vif <- st_drop_geometry(st_as_sf(collin$SDF)) %>% select(ends_with("_VIF"))
-tibble(variable = sub("_VIF$", "", names(local_vif)),
-       median_local_VIF = round(apply(local_vif, 2, median), 1),
-       share_over_10 = round(colMeans(local_vif > 10), 2)) %>%
-  arrange(desc(share_over_10)) %>%
-  head(6)
+tibble(model = c("Hansen, power 0.5", "KD2SFCA, d0 5 km"),
+       max_in_km = c(max(hexagon_Hansen$accHansen), max(acc_KD2SFCA$accKD2SFCA)),
+       max_in_metres = c(max(hansen_m), max(kd2sfca_m, na.rm = TRUE)),
+       hexagons_above_1e6_in_metres = c(sum(hansen_m > 1e-6),
+                                        sum(kd2sfca_m > 1e-6, na.rm = TRUE)))
 ```
 
 ::: {.callout-important}
-## The global model was clean; the local models are not
+## The distance unit is a model parameter
 
-Even after standardising, the local condition number exceeds 30, the usual warning
-level, at **`r sum(local_cn > 30)` of `r length(local_cn)`** locations, with a median of
-**`r round(median(local_cn))`**. For comparison, the condition number of the global
-design matrix is about 4.
-
-The local VIFs say where it comes from. `PROX_CBD` has a local VIF above 10 in more
-than half of all neighbourhoods, and `PROX_URA_GROWTH_AREA` in about half. The reason
-is geometric. Across the whole island, distance to the CBD and distance to a growth
-area vary independently enough. Inside a cluster of 30 nearby condos, both are close
-to smooth linear functions of the same two coordinates, so the local regression
-cannot tell them apart.
-
-The practical consequence is that the local coefficient maps for `PROX_CBD` and
-`PROX_URA_GROWTH_AREA` should not be interpreted one at a time: their surfaces trade
-off against each other. The floor-area surface in section 9.6 is safe; its local VIF
-never exceeds 10. This is the kind of problem the handout's single global VIF check
-cannot see, and it is the reason the GWR literature recommends local diagnostics
-(Wheeler and Tiefelsdorf, 2005) or a multiscale GWR that lets each variable choose its
-own bandwidth.
+In metres, Hansen's accessibility is effectively zero for every hexagon and KD2SFCA's
+is exactly zero everywhere, because `exp(-0.5 × 2,000)` underflows to nothing. SAM
+is the only one of the three where the unit merely rescales the result (by a factor
+of a million, with an identical ranking). For Hansen and KD2SFCA, choosing kilometres
+is choosing the bandwidth. A Hansen rate of 0.5 per kilometre means a centre's weight
+halves every 1.4 km; the same number per metre would mean it halves every 1.4 m.
 :::
 
-## 12. What I Take From This Exercise
+The handout's two Hansen settings make the same point from the other side. At
+`power = 2` the weight halves every 350 m, so only the nearest centre matters. At
+`power = 0.5` centres several kilometres away still count. The rank correlation
+between the two is computed in section 9.4.
 
-**Stationarity is an assumption you can test, and here it fails.** The OLS residuals
-cluster (Moran's I 0.144), GWR removes that clustering, and AICc falls by almost a
-thousand after paying for the extra parameters. For condo prices in Singapore, one
-coefficient per variable is the wrong model.
+### 9.2 The region boxplots count some hexagons many times
 
-**The coefficient surface is the result.** The handout maps the standard error and
-t-value of floor area; the map that matters is the coefficient itself, which runs from
-about S$3,300 to S$23,000 per square metre across the island against a single global
-S$12,800. That spread is the thing a valuer or a developer would actually use.
+`st_join()` with `st_intersects` returns one row for every subzone a hexagon touches.
+Subzones are small in the Central region and large at the edges, so this is not a
+rounding issue:
 
-**The adaptive bandwidth is not just a better fit, it is the right shape for the
-data.** Condos are dense in the centre and sparse at the edge. A fixed radius gives
-some local regressions far more evidence than others; a fixed neighbour count does
-not. It wins on AICc with fewer effective parameters.
+```{r}
+tibble(hexagons = n_distinct(hexagon_Hansen$fid),
+       rows_after_join = nrow(hexagon_Hansen))
+```
 
-**A clean global diagnostic does not certify a local model.** This is the finding I
-will carry forward. Every VIF in the global model was under 3.3, and yet most local
-regressions are badly conditioned, because variables that are distinct across a
-country become near-duplicates within a neighbourhood. Local coefficients for
-location variables that are themselves smooth functions of position need local
-diagnostics before anyone reads them.
+```{r}
+hexagon_Hansen %>%
+  st_drop_geometry() %>%
+  count(fid, name = "subzones_touched") %>%
+  count(subzones_touched, name = "hexagons")
+```
 
-**What I would change.** Model log price rather than price, since section 6.1 showed
-the raw price has a thirteen-fold tail that dominates least squares, and try a
-multiscale GWR so that floor area, which seems to vary at a district scale, is not
-forced to share a 30-neighbour bandwidth with the proximity variables.
+Nearly half the hexagons appear more than once, one of them eight times. That would
+not matter if the repeats were random, but they are not. Hexagons that straddle many
+subzones tend to be closer to a centre, in every region:
+
+```{r}
+hexagon_Hansen %>%
+  st_drop_geometry() %>%
+  count(fid, REGION_N, name = "rows") %>%
+  left_join(tibble(fid = hexagons$fid,
+                   nearest_km = apply(distmat_km, 1, min)),
+            by = "fid") %>%
+  group_by(REGION_N) %>%
+  summarise(rank_corr_rows_vs_nearest = round(cor(rows, nearest_km,
+                                                  method = "spearman"), 2))
+```
+
+The fix is to give each hexagon exactly one subzone, the one it overlaps most, with
+`largest = TRUE`. I collect all three measures
+on that clean join for the rest of this section.
+
+```{r}
+nearest_km <- apply(distmat_km, 1, min)
+
+acc <- hexagons %>%
+  mutate(accHansen = acc_Hansen$accHansen,
+         accHansen_p2 = ac(demand, eldercare$capacity, distmat_km,
+                           power = 2, family = "Hansen"),
+         accKD2SFCA = acc_KD2SFCA$accKD2SFCA,
+         accSAM = acc_SAM$accSAM,
+         nearest_km = nearest_km) %>%
+  st_join(mpsz %>% select(REGION_N, PLN_AREA_N),
+          largest = TRUE)
+
+c(rows = nrow(acc), missing_region = sum(is.na(acc$REGION_N)))
+```
+
+```{r}
+region_compare <- left_join(
+  hexagon_Hansen %>%
+    st_drop_geometry() %>%
+    group_by(REGION_N) %>%
+    summarise(rows_handout = n(),
+              median_handout = median(accHansen)),
+  acc %>%
+    st_drop_geometry() %>%
+    group_by(REGION_N) %>%
+    summarise(hexagons = n(),
+              median_corrected = median(accHansen)),
+  by = "REGION_N") %>%
+  mutate(handout_over_corrected = round(median_handout / median_corrected, 2),
+         across(starts_with("median"), ~ round(.x, 1)))
+
+as.data.frame(region_compare)
+```
+
+```{r}
+#| echo: false
+west <- region_compare %>% filter(REGION_N == "WEST REGION")
+central <- region_compare %>% filter(REGION_N == "CENTRAL REGION")
+```
+
+::: {.callout-important}
+## The handout's boxplots overweight the best-served hexagons
+
+The join turns `r format(n_distinct(hexagon_Hansen$fid), big.mark = ",")` hexagons into
+`r format(nrow(hexagon_Hansen), big.mark = ",")` rows. The Central region's
+`r central$hexagons` hexagons become `r format(central$rows_handout, big.mark = ",")`
+rows, because its subzones are small and a hexagon often straddles several. Within each
+region, the hexagons counted several times are the ones nearer to centres, and the
+hexagons in large, empty subzones are counted once.
+
+The effect is largest where the contrast is largest. In the West, the median Hansen
+accessibility in the handout's plot is `r west$median_handout`, against
+`r west$median_corrected` when each hexagon is counted once: an overstatement of about
+`r round(west$handout_over_corrected, 1)` times. The ranking of regions survives, but
+the gap between the West and everywhere else is wider than the handout shows.
+:::
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+ggplot(acc %>% st_drop_geometry(),
+       aes(x = REGION_N, y = log(accHansen))) +
+  geom_boxplot() +
+  geom_point(stat = "summary", fun = "mean",
+             colour = "red", size = 2) +
+  labs(x = NULL, y = "log(Hansen accessibility)",
+       title = "Hansen accessibility by region, one row per hexagon")
+```
+
+### 9.3 Where the zeros are
+
+KD2SFCA gives exactly zero to every hexagon with no centre within 5 km.
+
+```{r}
+zero_by_area <- acc %>%
+  st_drop_geometry() %>%
+  filter(accKD2SFCA == 0) %>%
+  count(PLN_AREA_N, sort = TRUE, name = "zero_hexagons")
+
+c(zero_hexagons = sum(zero_by_area$zero_hexagons),
+  share_of_all = round(sum(zero_by_area$zero_hexagons) / nrow(acc), 3),
+  planning_areas = nrow(zero_by_area))
+
+head(zero_by_area, 10)
+```
+
+```{r}
+#| echo: false
+# The seven planning areas named in the paragraph below
+low_pop <- c("WESTERN WATER CATCHMENT", "CENTRAL WATER CATCHMENT", "TUAS",
+             "PIONEER", "CHANGI", "WESTERN ISLANDS", "LIM CHU KANG")
+n_low <- sum(zero_by_area$zero_hexagons[zero_by_area$PLN_AREA_N %in% low_pop])
+n_zero <- sum(zero_by_area$zero_hexagons)
+```
+
+`r round(100 * n_low / n_zero)`% of the zero hexagons fall in seven planning areas:
+the two water catchments, the Tuas and Pioneer industrial estates, Changi (most of it
+airport land), the Western Islands (mainly Jurong Island) and Lim Chu Kang. Few people
+live in any of them, and they explain most of the West's poor showing in every
+region plot above. Leaving them out moves the West from last to third:
+
+```{r}
+acc %>%
+  st_drop_geometry() %>%
+  filter(!PLN_AREA_N %in% low_pop) %>%
+  group_by(REGION_N) %>%
+  summarise(hexagons = n(),
+            median_Hansen = round(median(accHansen), 1),
+            share_KD2SFCA_zero = round(mean(accKD2SFCA == 0), 3))
+```
+
+The remaining `r n_zero - n_low` are spread across
+`r nrow(zero_by_area) - 7` other planning areas, including towns such as Yishun and
+Tampines. Whether those particular hexagons contain housing is something this
+dataset cannot tell, because every hexagon has the same demand. Section 9.5 shows that
+some of these zeros, including about a third of those in the Western Water Catchment, come
+from the defective distance rows found in section 5.1 rather than from real distance.
+
+The share of zeros depends almost entirely on the choice of `d0`:
+
+```{r}
+map_dfr(c(2, 3, 5, 10, 20), function(d0) {
+  k <- ac(hexagons$demand, eldercare$capacity, distmat_km,
+          d0 = d0, power = 2, family = "KD2SFCA")
+  tibble(d0_km = d0,
+         zero_hexagons = sum(k == 0),
+         share_zero = round(mean(k == 0), 3),
+         rank_corr_with_d0_5 = round(cor(k, acc$accKD2SFCA,
+                                         method = "spearman"), 3))
+})
+```
+
+Doubling the catchment to 10 km halves the number of zeros, yet the ranking of
+hexagons barely moves. Because the kernel is near zero beyond 2 to 3 km anyway, `d0`
+mostly decides which hexagons are reported as "no access" rather than "very little".
+That label matters for policy, so `d0` should be set from a real travel standard,
+not left at a round number.
+
+### 9.4 Do the three measures agree?
+
+```{r}
+acc %>%
+  st_drop_geometry() %>%
+  select(Hansen_p0.5 = accHansen, Hansen_p2 = accHansen_p2,
+         KD2SFCA = accKD2SFCA, SAM = accSAM, nearest_km) %>%
+  cor(method = "spearman") %>%
+  round(3)
+```
+
+::: {.callout-note}
+## With constant demand and capacity, all three measures mostly encode distance to the nearest centre
+
+Every pair of measures has a rank correlation above 0.9, and each is almost a mirror
+image of the plain distance to the nearest centre. For Hansen at `power = 2` the
+correlation with nearest distance is
+`r round(cor(acc$accHansen_p2, acc$nearest_km, method = "spearman"), 3)`: it is very
+nearly a ranking by nearest distance.
+
+That is a consequence of the inputs, not a failure of the models. Hansen never uses
+demand. SAM and KD2SFCA do, but with demand fixed at 100 in every hexagon, the
+competition they are designed to capture is competition between equal areas of land,
+not between people. A centre in a dense estate and a centre beside a reservoir face the
+same "demand" per hectare. The models only start to disagree in a useful way when real
+population and capacity go in.
+:::
+
+SAM's outlier from section 8.3 is the inverse-power kernel at work:
+
+```{r}
+acc %>%
+  st_drop_geometry() %>%
+  arrange(desc(accSAM)) %>%
+  select(PLN_AREA_N, accSAM, nearest_km) %>%
+  mutate(nearest_m = round(nearest_km * 1000)) %>%
+  select(-nearest_km) %>%
+  head(5)
+```
+
+The top hexagon is 37 m by road from a centre, so `d^-2` gives it about 730 from that
+centre alone, nine times the next highest hexagon. With no floor on distance, SAM
+rewards being very close far more than distance alone justifies. Clamping distances to a
+minimum, say the 250 m radius of the hexagon itself, would remove the spike.
+
+Putting the three on a common scale, each hexagon's percentile rank within its
+measure, shows how similar their geography is:
+
+```{r}
+#| fig-width: 10
+#| fig-height: 3.8
+acc %>%
+  select(fid, Hansen = accHansen, KD2SFCA = accKD2SFCA, SAM = accSAM) %>%
+  pivot_longer(c(Hansen, KD2SFCA, SAM),
+               names_to = "measure", values_to = "value") %>%
+  group_by(measure) %>%
+  mutate(percentile = percent_rank(value) * 100) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_sf(aes(fill = percentile), colour = NA) +
+  geom_sf(data = eldercare, size = 0.4, colour = "black") +
+  facet_wrap(~ measure, ncol = 3) +
+  scale_fill_distiller(palette = "Blues", direction = 1,
+                       name = "Percentile") +
+  theme_void() +
+  theme(legend.position = "bottom")
+```
+
+The maps are close to interchangeable. Apart from KD2SFCA's floor, where everything
+beyond 5 km ties at zero, the differences are systematic rather than random. Comparing
+each hexagon's percentile under KD2SFCA with its percentile under Hansen, among
+hexagons with some KD2SFCA access:
+
+```{r}
+rank_gap <- acc %>%
+  st_drop_geometry() %>%
+  mutate(gap = percent_rank(accKD2SFCA) - percent_rank(accHansen)) %>%
+  filter(accKD2SFCA > 0) %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(hexagons = n(), median_gap = round(median(gap), 3)) %>%
+  filter(hexagons >= 15)
+
+bind_rows(slice_min(rank_gap, median_gap, n = 5),
+          slice_max(rank_gap, median_gap, n = 5))
+```
+
+The gaps follow the kernels. Hansen at `power = 0.5` still credits centres 5 to 10 km
+away, so central areas surrounded by many centres, such as Tanglin, Serangoon and
+Novena, rank high under Hansen even where no centre is close, and drop under KD2SFCA.
+KD2SFCA's effective reach of about 2 km instead rewards outer towns with a centre of
+their own, such as Woodlands, Yishun and Punggol.
+
+### 9.5 159 hexagons have no real distances
+
+Section 5.1 found `r sum(od_check$spread_m == 0)` hexagons whose distance to every
+centre is the same number. To see what that does, I compare the repeated distance with
+the straight-line distance from each hexagon's centroid to its nearest centre.
+
+```{r}
+straight_km <- st_distance(st_centroid(hexagons), eldercare) %>%
+  units::drop_units() %>%
+  apply(1, min) / 1000
+
+acc <- acc %>%
+  mutate(straight_km = straight_km,
+         flat = od_check$spread_m[match(fid, od_check$origin_id)] == 0,
+         pct_Hansen = percent_rank(accHansen),
+         pct_SAM = percent_rank(accSAM))
+
+acc %>%
+  st_drop_geometry() %>%
+  group_by(rows = if_else(flat, "repeated", "normal")) %>%
+  summarise(hexagons = n(),
+            road_over_straight = round(median(nearest_km / straight_km), 2),
+            centre_within_5km_straight = sum(straight_km < 5),
+            KD2SFCA_zero = sum(accKD2SFCA == 0)) %>%
+  as.data.frame()
+```
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+ggplot(acc) +
+  geom_sf(aes(fill = flat), colour = NA) +
+  geom_sf(data = eldercare, size = 0.5, colour = "black") +
+  scale_fill_manual(values = c(`FALSE` = "grey88", `TRUE` = "#137C8B"),
+                    labels = c("normal row", "same distance to every centre"),
+                    name = NULL) +
+  theme_void() +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+acc %>%
+  st_drop_geometry() %>%
+  filter(flat) %>%
+  count(PLN_AREA_N, sort = TRUE, name = "hexagons") %>%
+  head(6)
+```
+
+```{r}
+acc %>%
+  st_drop_geometry() %>%
+  filter(flat) %>%
+  arrange(nearest_km) %>%
+  transmute(fid, PLN_AREA_N,
+            repeated_km = round(nearest_km, 2),
+            straight_km = round(straight_km, 2),
+            Hansen_percentile = round(100 * pct_Hansen),
+            SAM_percentile = round(100 * pct_SAM),
+            KD2SFCA = signif(accKD2SFCA, 2)) %>%
+  head(5) %>%
+  as.data.frame()
+```
+
+```{r}
+#| echo: false
+flat_tbl <- acc %>% st_drop_geometry() %>% filter(flat)
+h1067 <- acc %>% st_drop_geometry() %>% filter(fid == 1067)
+```
+
+::: {.callout-important}
+## Five per cent of the distance matrix is not distance
+
+On normal rows the road distance to the nearest centre is a median 1.8 times the
+straight-line distance, which is what a road network looks like. On the repeated rows
+it is `r round(median(flat_tbl$nearest_km / flat_tbl$straight_km), 1)` times, and
+`r sum(flat_tbl$straight_km < 5)` of the `r nrow(flat_tbl)` have a centre within 5 km
+in a straight line. Most of them are in the Western Water Catchment and on Sentosa and
+the Southern Islands.
+
+The defect pushes the measures in opposite directions. KD2SFCA sets
+`r sum(flat_tbl$accKD2SFCA == 0)` of these hexagons to exactly zero, because the one
+repeated distance is beyond 5 km. Hansen and SAM inflate them, because a hexagon that
+is "7 km from every centre" collects all 120 centres at 7 km instead of a few near
+ones and many 20 to 40 km away. Hexagon 1067 in Clementi is the extreme case: its
+real nearest centre is `r round(h1067$straight_km, 1)` km away in a straight line, it
+is recorded as `r round(h1067$nearest_km, 2)` km from all 120, and that puts it in the
+top `r round(100 * (1 - h1067$pct_Hansen), 1)`% of the island under Hansen.
+
+The handout's maps and boxplots include all of these rows. Most fall on land where
+few people live, so the island-wide picture survives, but any statement about the
+catchment areas, Sentosa or the individual hexagons in the table above would be wrong.
+The fix is to drop these rows, or better, to rerun the network routing for them.
+:::
+
+## 10. What I Take From This Exercise
+
+**Check the input matrix before trusting any accessibility model.** A three-line check
+in section 5.1 found that 159 hexagons, five per cent of the grid, have the same
+distance to every centre. The models accept those rows without complaint and return
+plausible-looking numbers: a hexagon in Clementi ranks near the top of the island
+under Hansen while KD2SFCA calls it unserved. Every accessibility measure is only as
+good as the travel-cost matrix underneath it, and a matrix should be checked against
+straight-line distance before it is used.
+
+**The three models are different arguments, not three readings of one thing.** Hansen
+asks how much capacity is nearby. KD2SFCA and SAM ask how much capacity is nearby per
+unit of demand. With demand and capacity both set to 100, that difference disappears
+and all three collapse onto distance to the nearest centre (rank correlation 0.94 to
+0.997). The exercise teaches the mechanics; it cannot show what the models are for
+until the placeholders are replaced.
+
+**Units and defaults are modelling decisions.** Converting metres to kilometres sets
+the bandwidth of Hansen and KD2SFCA, `power` means a decay rate in one family and an
+exponent in another, and SAM silently ignores `d0`. None of this is in the function's
+output; it is only visible by reading the source. I would not report an accessibility
+map without stating the unit, the kernel and the catchment.
+
+**Joins need the same care as models.** The region boxplots looked like routine
+plotting code, but `st_intersects` counted hexagons up to several times, weighted
+towards exactly the well-served ones, and overstated the West's median by a factor of
+about three. `largest = TRUE`, or a join on centroids, gives one row per hexagon.
+
+**Positional matching is a silent risk.** `ac()` pairs matrix rows and columns with
+demand and capacity by position. Here the orders agree, and with constant capacity a
+mismatch would be invisible anyway. That is the combination that lets a bug survive
+into a real analysis.
+
+**What I would change.** Use resident population aged 65 and over per hexagon as
+demand (apportioned from subzone counts) and licensed places per centre as capacity,
+drop hexagons with no residents from the region summaries rather than letting
+reservoirs and industrial land define the West, set `d0` from a stated travel
+standard, and put a floor under SAM's distances. Then compare KD2SFCA with Hansen
+directly: the places where they disagree are the places where a centre is close but
+oversubscribed, which is the finding an accessibility study exists to produce.
 
 ## References
 
-- Gollini, I., Lu, B., Charlton, M., Brunsdon, C. and Harris, P. (2015). GWmodel: An R package for exploring spatial heterogeneity using geographically weighted models. *Journal of Statistical Software*, 63(17).
-- da Silva, A. R. and Fotheringham, A. S. (2016). The multiple testing issue in geographically weighted regression. *Geographical Analysis*, 48(3), 233-247.
-- Wheeler, D. and Tiefelsdorf, M. (2005). Multicollinearity and correlation among local regression coefficients in geographically weighted regression. *Journal of Geographical Systems*, 7, 161-187.
-- Kam, T. S. *R for Geospatial Data Science and Analytics*, chapter 13.
+- Hansen, W. G. (1959). How accessibility shapes land use. *Journal of the American Institute of Planners*, 25(2), 73-76.
+- Luo, W. and Wang, F. (2003). Measures of spatial accessibility to health care in a GIS environment: synthesis and a case study in the Chicago region. *Environment and Planning B: Planning and Design*, 30(6), 865-884.
+- Luo, W. and Qi, Y. (2009). An enhanced two-step floating catchment area (E2SFCA) method for measuring spatial accessibility to primary care physicians. *Health & Place*, 15(4), 1100-1107.
+- Polzin, P., Borges, J. and Coelho, A. (2014). An extended kernel density two-step floating catchment area method to analyze access to health care. *Environment and Planning B: Planning and Design*, 41(4), 717-735.
+- Soukhov, A., Pereira, R. H., Higgins, C. D. and Páez, A. (2025). A family of accessibility measures derived from spatial interaction principles. *PLOS One*, 20(11), e0335951.
+- Kam, T. S. *R for Geospatial Data Science and Analytics*, chapter 17.

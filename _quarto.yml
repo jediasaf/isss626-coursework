@@ -64,12 +64,8 @@ website:
               href: Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.qmd
         - section: "Hands-on Exercise 7"
           contents:
-            - text: "Geographically Weighted Regression"
+            - text: "Geographical Accessibility"
               href: Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.qmd
-        - section: "Hands-on Exercise 8"
-          contents:
-            - text: "Geographically Weighted Predictive Models"
-              href: Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.qmd
     - id: takehome
       title: "Take-home"
       style: docked
