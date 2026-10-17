@@ -21,3 +21,6 @@ _freeze/
 *.geojson
 *.osm.pbf
 *.rds
+
+# Unpublished pages and their data
+_parked/
