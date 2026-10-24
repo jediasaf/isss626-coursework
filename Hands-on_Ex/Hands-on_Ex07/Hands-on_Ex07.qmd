@@ -62,8 +62,8 @@ centre's `fid`), `entry_cost` (from the origin to the nearest road), `network_co
 `total_cost`, the sum of the three.
 
 The hexagons, eldercare points and distance matrix were prepared by Prof. Kam for
-teaching use, and
-everything printed below matches the handout's own output. One thing to keep in mind:
+teaching use, and everything printed below matches the handout's own output. One thing
+to keep in mind:
 the eldercare shapefile's metadata is dated March 2017, so it describes eldercare
 services as they were then, not today.
 

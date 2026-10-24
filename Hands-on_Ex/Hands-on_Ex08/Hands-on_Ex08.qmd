@@ -69,8 +69,8 @@ code use `_TC`. The folder also ships a sixth file, `storeCD.csv`, which the han
 reads. It gives every store a capacity of 50, so it carries no more information than the
 constant store size used below.
 
-The data was prepared by Prof. Kam for teaching use. I checked it against the handout's own printed
-output: the feature counts, the `summary()` tables and the final correlation all match,
+The data was prepared by Prof. Kam for teaching use. I checked it against the handout's
+own printed output: the feature counts, the `summary()` tables and the final correlation all match,
 apart from one quartile of the sales summary that prints as 26,702 here and 26,703 in the
 handout, a rounding difference.
 
