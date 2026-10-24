@@ -2963,7 +2963,7 @@
     "href": "inclass.html",
     "title": "In-class Exercises",
     "section": "",
-    "text": "Exercises worked through during the weekly meet-up for ISSS626: Geospatial Analytics and Applications at Singapore Management University.\n\n\n07 In-class Exercise 7\n\n\nAccessibility to eldercare from 3,125 hexagons, on the same data as Hands-on Exercise 7, with the catchment package: 2SFCA, E2SFCA, KD2SFCA and 3SFCA, each computed with catchment_ratio() and mapped.\n\nExerciseFloating Catchment Accessibility with catchment→",
+    "text": "Exercises worked through during the weekly meet-up for ISSS626: Geospatial Analytics and Applications at Singapore Management University.\n\n\n07 In-class Exercise 7\n\n\nAccessibility to eldercare from 3,125 hexagons, on the same data as Hands-on Exercise 7, with the catchment package: 2SFCA, E2SFCA, KD2SFCA and 3SFCA, each computed with catchment_ratio() and mapped.\n\nExerciseFloating Catchment Accessibility with catchment→\n\n\n\n08 In-class Exercise 8\n\n\nThe Huff model for 28 fast-food stores in Taichung, on the same data as Hands-on Exercise 8, with the interaction matrix built from tidied store and village tables, and each village assigned to the store it is most likely to use to map every store’s trade area.\n\nExerciseIn-class Exercise 8→",
     "crumbs": [
       "In-class Exercise",
       "In-class Exercises"
@@ -3110,6 +3110,174 @@
     "crumbs": [
       "Hands-on",
       "Hands-on Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html",
+    "title": "In-class Exercise 8",
+    "section": "",
+    "text": "R MCI Huff model Trade area Taichung\npacman::p_load(sf, tidyverse, MCI, tmap, ggstatsplot)",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#importing-the-geospatial-data",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#importing-the-geospatial-data",
+    "title": "In-class Exercise 8",
+    "section": "1. Importing the geospatial data",
+    "text": "1. Importing the geospatial data\n\nstores &lt;- st_read(dsn = \"data/geospatial\", layer = \"STORES_TC\")\n\nReading layer `STORES_TC' from data source \n  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/In-class_Ex/In-class_Ex08/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 3 fields\nGeometry type: POINT\nDimension:     XY\nBounding box:  xmin: 202702.9 ymin: 2662196 xmax: 232773.2 ymax: 2693557\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\ntown &lt;- st_read(dsn = \"data/geospatial\", layer = \"TOWN_TC\")\n\nReading layer `TOWN_TC' from data source \n  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/In-class_Ex/In-class_Ex08/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 28 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121\n\n\n\nvillage &lt;- st_read(dsn = \"data/geospatial\", layer = \"VILLAGE_TC\")\n\nReading layer `VILLAGE_TC' from data source \n  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/In-class_Ex/In-class_Ex08/data/geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 622 features and 10 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838\nProjected CRS: TWD97 / TM2 zone 121",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#importing-the-aspatial-data",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#importing-the-aspatial-data",
+    "title": "In-class Exercise 8",
+    "section": "2. Importing the aspatial data",
+    "text": "2. Importing the aspatial data\n\npop2019 &lt;- read_csv(\"data/aspatial/pop2019.csv\")\nstore_sales &lt;- read_csv(\"data/aspatial/Store_sales_data.csv\")\n\n\nsummary(store_sales)\n\n  Store Code          POD code             Bills            Amount       \n Length:5499        Length:5499        Min.   :   1.0   Min.   :      0  \n Class :character   Class :character   1st Qu.:  37.0   1st Qu.:  26702  \n Mode  :character   Mode  :character   Median : 186.0   Median : 139643  \n                                       Mean   : 331.9   Mean   : 236787  \n                                       3rd Qu.: 457.0   3rd Qu.: 331952  \n                                       Max.   :7764.0   Max.   :6076060  \n    Ave Bill      \n Min.   :    0.0  \n 1st Qu.:  661.3  \n Median :  730.5  \n Mean   :  825.1  \n 3rd Qu.:  862.2  \n Max.   :24356.0",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#aggregating-store-sales",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#aggregating-store-sales",
+    "title": "In-class Exercise 8",
+    "section": "3. Aggregating store sales",
+    "text": "3. Aggregating store sales\n\nstore_sales_aggre &lt;- store_sales %&gt;%\n  group_by(`Store Code`) %&gt;%\n  summarise(\n    \"Total_Bill\" = sum(Bills, na.rm = TRUE),\n    \"Total_Sales\" = sum(Amount, na.rm = TRUE))",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#tidying-the-store-data",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#tidying-the-store-data",
+    "title": "In-class Exercise 8",
+    "section": "4. Tidying the store data",
+    "text": "4. Tidying the store data\n\nstores_tidied &lt;- stores %&gt;%\n  left_join(store_sales_aggre,\n            by = join_by(\n              Store_CD == `Store Code`)) %&gt;%\n  mutate(Store_size = 1) %&gt;%\n  st_drop_geometry()\n\nsummary(stores_tidied)\n\n  Store_Name         Store_Addr          Store_CD           Total_Bill   \n Length:28          Length:28          Length:28          Min.   : 1767  \n Class :character   Class :character   Class :character   1st Qu.: 5698  \n Mode  :character   Mode  :character   Mode  :character   Median : 8634  \n                                                          Mean   : 8021  \n                                                          3rd Qu.:10349  \n                                                          Max.   :14468  \n  Total_Sales        Store_size\n Min.   :1475963   Min.   :1   \n 1st Qu.:4044821   1st Qu.:1   \n Median :6116336   Median :1   \n Mean   :5542852   Mean   :1   \n 3rd Qu.:6959911   3rd Qu.:1   \n Max.   :8234234   Max.   :1",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#tidying-the-population-data",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#tidying-the-population-data",
+    "title": "In-class Exercise 8",
+    "section": "5. Tidying the population data",
+    "text": "5. Tidying the population data\n\npop2019 &lt;- pop2019 %&gt;%\n  mutate(V_ID = str_remove_all(\n    V_ID, \"-\"))\n\nvillage &lt;- village %&gt;%\n  left_join(pop2019,\n            by = join_by(\n              VILLCODE == V_ID))\n\n\nvillage &lt;- village %&gt;%\n  filter(!is.na(P_CNT))\n\nc(H_CNT = any(is.na(village$H_CNT)),\n  P_CNT = any(is.na(village$P_CNT)),\n  M_CNT = any(is.na(village$M_CNT)),\n  F_CNT = any(is.na(village$F_CNT)))\n\nH_CNT P_CNT M_CNT F_CNT \nFALSE FALSE FALSE FALSE",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#computing-the-distance-matrix",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#computing-the-distance-matrix",
+    "title": "In-class Exercise 8",
+    "section": "6. Computing the distance matrix",
+    "text": "6. Computing the distance matrix\n\nvillage_center &lt;- st_point_on_surface(village)\ndistmat &lt;- st_distance(village_center, stores)\n\n\nrownames(distmat) &lt;- village$VILLCODE\ncolnames(distmat) &lt;- stores$Store_CD\n\ndistmat_long &lt;- distmat %&gt;%\n  as.data.frame() %&gt;%\n  rownames_to_column(var = \"VILLCODE\") %&gt;%\n  pivot_longer(\n    cols = -VILLCODE,\n    names_to = \"Store_CD\",\n    values_to = \"distance\") %&gt;%\n  mutate(distance = as.numeric(distance))",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#building-the-interaction-matrix",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#building-the-interaction-matrix",
+    "title": "In-class Exercise 8",
+    "section": "7. Building the interaction matrix",
+    "text": "7. Building the interaction matrix\n\nijMatrix &lt;- distmat_long %&gt;%\n  left_join(\n    stores_tidied %&gt;%\n      select(Store_CD, Store_size),\n    by = \"Store_CD\") %&gt;%\n  relocate(\n    distance, .after = last_col())\n\n\nvillage_tidied &lt;- village %&gt;%\n  select(VILLCODE, H_CNT, P_CNT) %&gt;%\n  mutate(HH_SIZE = P_CNT / H_CNT) %&gt;%\n  st_drop_geometry()\n\n\nijMatrix &lt;- ijMatrix %&gt;%\n  left_join(\n    village_tidied,\n    by = \"VILLCODE\") %&gt;%\n  relocate(\n    HH_SIZE, .after = last_col())\n\nglimpse(ijMatrix)\n\nRows: 17,276\nColumns: 7\n$ VILLCODE   &lt;chr&gt; \"66000110029\", \"66000110029\", \"66000110029\", \"66000110029\",~\n$ Store_CD   &lt;chr&gt; \"TY\", \"DL\", \"BT\", \"JW\", \"DD\", \"LM\", \"FY\", \"SA\", \"GS\", \"TZ\",~\n$ Store_size &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,~\n$ distance   &lt;dbl&gt; 28066.502, 34344.784, 27046.407, 30238.546, 25079.795, 2820~\n$ H_CNT      &lt;dbl&gt; 481, 481, 481, 481, 481, 481, 481, 481, 481, 481, 481, 481,~\n$ P_CNT      &lt;dbl&gt; 1725, 1725, 1725, 1725, 1725, 1725, 1725, 1725, 1725, 1725,~\n$ HH_SIZE    &lt;dbl&gt; 3.586279, 3.586279, 3.586279, 3.586279, 3.586279, 3.586279,~",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#computing-the-huff-model",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#computing-the-huff-model",
+    "title": "In-class Exercise 8",
+    "section": "8. Computing the Huff model",
+    "text": "8. Computing the Huff model\n\nhuff_share &lt;- huff.shares(\n  ijMatrix, \"VILLCODE\", \"Store_CD\",\n  \"Store_size\", \"distance\")",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#trade-area-of-store-bt",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#trade-area-of-store-bt",
+    "title": "In-class Exercise 8",
+    "section": "9. Trade area of store BT",
+    "text": "9. Trade area of store BT\n\nmarket_share &lt;- huff_share %&gt;%\n  filter(Store_CD == \"BT\")\n\nTrade_area &lt;- village %&gt;%\n  left_join(market_share)\n\nselected_store &lt;- stores %&gt;%\n  filter(Store_CD == \"BT\")\n\n\ntm_shape(Trade_area) +\n  tm_polygons(fill = \"p_ij\",\n              fill.scale = tm_scale_intervals(\n                style = \"quantile\",\n                n = 10,\n                values = \"brewer.blues\"),\n              fill.legend = tm_legend(\n                title = \"Patronage Probability\")) +\n  tm_shape(selected_store) +\n    tm_dots(size = 0.3,\n            fill = \"red\",\n            col = \"black\") +\n  tm_title(\"Distribution of Patronage Probability of Store BT by village\") +\n  tm_layout(frame = TRUE) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#estimating-store-sales",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#estimating-store-sales",
+    "title": "In-class Exercise 8",
+    "section": "10. Estimating store sales",
+    "text": "10. Estimating store sales\n\nhuff_share_pp &lt;- huff_share %&gt;%\n  relocate(\n    distance, .after = last_col())\n\nhuff_total &lt;- shares.total(\n  huff_share_pp, \"VILLCODE\", \"Store_CD\",\n  \"p_ij\", \"P_CNT\")\n\n\nstore_sales_est &lt;- stores %&gt;%\n  left_join(store_sales_aggre,\n            by = join_by(Store_CD == `Store Code`)) %&gt;%\n  left_join(huff_total,\n            by = join_by(\n              \"Store_CD\" == \"suppliers_single\"))\n\n\nstore_sales_nongeom &lt;- store_sales_est %&gt;%\n  st_drop_geometry()\n\nggscatterstats(\n  store_sales_nongeom,\n  x = sum_E_j,\n  y = Total_Sales)",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#delineating-the-trade-areas",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#delineating-the-trade-areas",
+    "title": "In-class Exercise 8",
+    "section": "11. Delineating the trade areas",
+    "text": "11. Delineating the trade areas\n\nhuff_share_wider &lt;- huff_share %&gt;%\n  select(VILLCODE, Store_CD, p_ij) %&gt;%\n  pivot_wider(names_from = Store_CD,\n              values_from = p_ij)\n\n\nhuff_TA &lt;- huff_share_wider %&gt;%\n  mutate(\n    TA = names(pick(2:29))[\n      max.col(pick(2:29),\n              ties.method = \"first\")])\n\n\nhuff_TA_tidied &lt;- huff_TA %&gt;%\n  select(VILLCODE, TA)\n\nvillage_TA &lt;- village %&gt;%\n  left_join(huff_TA_tidied,\n            by = join_by(VILLCODE))",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#mapping-the-trade-areas",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#mapping-the-trade-areas",
+    "title": "In-class Exercise 8",
+    "section": "12. Mapping the trade areas",
+    "text": "12. Mapping the trade areas\n\ntm_shape(village_TA) +\n  tm_polygons(fill = \"TA\") +\n  tm_title(\"Trade Areas of stores\") +\n  tm_layout(frame = TRUE) +\n  tm_borders(fill_alpha = 0.5) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
+      "Market Area Analysis"
+    ]
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#trade-areas-with-one-colour-per-store",
+    "href": "In-class_Ex/In-class_Ex08/In-class_Ex08.html#trade-areas-with-one-colour-per-store",
+    "title": "In-class Exercise 8",
+    "section": "13. Trade areas with one colour per store",
+    "text": "13. Trade areas with one colour per store\n\ntm_shape(village_TA) +\n  tm_polygons(fill = \"TA\",\n              fill.scale = tm_scale_categorical(\n                values = \"poly.palette36\")) +\n  tm_shape(stores) +\n    tm_dots(size = 0.2,\n            fill = \"black\") +\n    tm_text(\"Store_CD\",\n            size = 0.6,\n            ymod = -0.6) +\n  tm_title(\"Trade Areas of stores\") +\n  tm_layout(frame = TRUE) +\n  tm_compass(type = \"8star\", size = 2) +\n  tm_scalebar() +\n  tm_grid(alpha = 0.2)",
+    "crumbs": [
+      "In-class Exercise",
+      "In-class Exercise 8",
       "Market Area Analysis"
     ]
   }

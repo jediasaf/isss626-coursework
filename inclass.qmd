@@ -21,3 +21,19 @@ mapped.</p>
 [<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Floating Catchment Accessibility with catchment</span><span class="exercise-row-arrow">→</span>](In-class_Ex/In-class_Ex07/In-class_Ex07.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">08</span>
+<span class="coursework-group-title">In-class Exercise 8</span>
+:::
+
+<p class="coursework-group-desc">The Huff model for 28 fast-food stores in Taichung, on the
+same data as Hands-on Exercise 8, with the interaction matrix built from tidied store
+and village tables, and each village assigned to the store it is most likely to use to
+map every store's trade area.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">In-class Exercise 8</span><span class="exercise-row-arrow">→</span>](In-class_Ex/In-class_Ex08/In-class_Ex08.qmd){.exercise-row}
+
+:::
