@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jedidiah Asaf Tallulembang">
+<meta name="dcterms.date" content="2026-10-24">
+
+<title>Market Area Analysis with the Huff Model – ISSS626</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html" rel="prev">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-8d35d25c058a660f3acb83b47bc45c83.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-0e2284caf1e23e1b7225925bd6748789.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-8d35d25c058a660f3acb83b47bc45c83.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-981fff69bf2bb404332acf5b2372c098.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-6d4489c898823dad07f04d0654e746f6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-981fff69bf2bb404332acf5b2372c098.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">ISSS626</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../../coursework.html" aria-current="page"> 
+<span class="menu-text">Hands-on</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../inclass.html"> 
+<span class="menu-text">In-class Exercise</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../takehome.html"> 
+<span class="menu-text">Take-home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/jediasaf/isss626-coursework"> <i class="bi bi-github" role="img" aria-label="GitHub repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">Hands-on Exercise 8</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">Market Area Analysis</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../coursework.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Coursework</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 1</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex01/Part01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 01: Geospatial Data Wrangling</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex01/Part02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 02: Choropleth Mapping</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 2</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex02/Part01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 01: First-order SPPA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex02/Part02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 02: Second-order SPPA</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 3</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Network Constrained SPPA</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 4</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Spatial Weights and Applications</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 5</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex05/Part01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 01: Global Measures</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex05/Part02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Part 02: Local Measures</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 6</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Geographical Segmentation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">Hands-on Exercise 7</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Geographical Accessibility</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">Hands-on Exercise 8</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Market Area Analysis</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">1. Overview</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data">2. The Data</a></li>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">3. Getting Started</a></li>
+  <li><a href="#importing-data" id="toc-importing-data" class="nav-link" data-scroll-target="#importing-data">4. Importing Data</a>
+  <ul class="collapse">
+  <li><a href="#importing-geospatial-data" id="toc-importing-geospatial-data" class="nav-link" data-scroll-target="#importing-geospatial-data">4.1 Importing geospatial data</a></li>
+  <li><a href="#importing-aspatial-data" id="toc-importing-aspatial-data" class="nav-link" data-scroll-target="#importing-aspatial-data">4.2 Importing aspatial data</a></li>
+  </ul></li>
+  <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link" data-scroll-target="#data-preparation">5. Data Preparation</a>
+  <ul class="collapse">
+  <li><a href="#aggregating-store-sales" id="toc-aggregating-store-sales" class="nav-link" data-scroll-target="#aggregating-store-sales">5.1 Aggregating store sales</a></li>
+  <li><a href="#relational-join" id="toc-relational-join" class="nav-link" data-scroll-target="#relational-join">5.2 Relational join</a></li>
+  <li><a href="#tidying-pop2019-data.frame" id="toc-tidying-pop2019-data.frame" class="nav-link" data-scroll-target="#tidying-pop2019-data.frame">5.3 Tidying pop2019 data.frame</a></li>
+  <li><a href="#checking-for-missing-values" id="toc-checking-for-missing-values" class="nav-link" data-scroll-target="#checking-for-missing-values">5.4 Checking for missing values</a></li>
+  </ul></li>
+  <li><a href="#computing-the-distance-matrix" id="toc-computing-the-distance-matrix" class="nav-link" data-scroll-target="#computing-the-distance-matrix">6. Computing the Distance Matrix</a></li>
+  <li><a href="#preparing-the-interaction-matrix" id="toc-preparing-the-interaction-matrix" class="nav-link" data-scroll-target="#preparing-the-interaction-matrix">7. Preparing the Interaction Matrix</a></li>
+  <li><a href="#computing-the-huff-model" id="toc-computing-the-huff-model" class="nav-link" data-scroll-target="#computing-the-huff-model">8. Computing the Huff Model</a>
+  <ul class="collapse">
+  <li><a href="#trade-area-analysis-for-a-single-store" id="toc-trade-area-analysis-for-a-single-store" class="nav-link" data-scroll-target="#trade-area-analysis-for-a-single-store">8.1 Trade area analysis for a single store</a></li>
+  <li><a href="#store-sales-analysis" id="toc-store-sales-analysis" class="nav-link" data-scroll-target="#store-sales-analysis">8.2 Store sales analysis</a></li>
+  </ul></li>
+  <li><a href="#checks-the-handout-skips" id="toc-checks-the-handout-skips" class="nav-link" data-scroll-target="#checks-the-handout-skips">9. Checks the Handout Skips</a>
+  <ul class="collapse">
+  <li><a href="#what-the-defaults-assume" id="toc-what-the-defaults-assume" class="nav-link" data-scroll-target="#what-the-defaults-assume">9.1 What the defaults assume</a></li>
+  <li><a href="#calibrating-the-distance-decay" id="toc-calibrating-the-distance-decay" class="nav-link" data-scroll-target="#calibrating-the-distance-decay">9.2 Calibrating the distance decay</a></li>
+  <li><a href="#which-stores-the-model-misses" id="toc-which-stores-the-model-misses" class="nav-link" data-scroll-target="#which-stores-the-model-misses">9.3 Which stores the model misses</a></li>
+  <li><a href="#how-contested-each-village-is" id="toc-how-contested-each-village-is" class="nav-link" data-scroll-target="#how-contested-each-village-is">9.4 How contested each village is</a></li>
+  <li><a href="#why-the-course-data-cannot-support-an-mci-fit" id="toc-why-the-course-data-cannot-support-an-mci-fit" class="nav-link" data-scroll-target="#why-the-course-data-cannot-support-an-mci-fit">9.5 Why the course data cannot support an MCI fit</a></li>
+  </ul></li>
+  <li><a href="#what-i-take-from-this-exercise" id="toc-what-i-take-from-this-exercise" class="nav-link" data-scroll-target="#what-i-take-from-this-exercise">10. What I Take From This Exercise</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">Hands-on Exercise 8</a></li><li class="breadcrumb-item"><a href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">Market Area Analysis</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Market Area Analysis with the Huff Model</h1>
+<p class="subtitle lead">HANDS-ON EXERCISE 8</p>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Jedidiah Asaf Tallulembang </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            ISSS626 Geospatial Analytics and Applications
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 24, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="pill-row">
+<p><span class="pill">R</span> <span class="pill">MCI</span> <span class="pill">Huff model</span> <span class="pill">Trade area</span> <span class="pill">Taichung</span></p>
+</div>
+<p>This exercise follows <a href="https://r4gdsa.netlify.app/chap18">Market Area Analysis for Retail and Service Locations using Huff model</a>, the hands-on notes for the Market Area Analysis lesson of the course.</p>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">1. Overview</h2>
+<p>Exercise 7 asked how easily people in one place can reach a service. This one asks the question from the store’s side: given where people live and where the stores are, how much of each neighbourhood’s custom does each store get?</p>
+<p>The setting is a fast-food franchise with 28 stores in Taichung City. The task is to delineate each store’s trade area, the area it draws customers from, and to estimate store sales from where the population lives.</p>
+<p>The Huff model (Huff, 1963) treats a shopper’s choice of store as a probability rather than a certainty. The probability that a resident of village <em>i</em> uses store <em>j</em> is</p>
+<p><span class="math display">\[
+P_{ij} = \frac{A_j^{\gamma} \, d_{ij}^{\lambda}}{\sum_{k} A_k^{\gamma} \, d_{ik}^{\lambda}}
+\]</span></p>
+<p>where <span class="math inline">\(A_j\)</span> is the store’s attractiveness (usually its size), <span class="math inline">\(d_{ij}\)</span> the distance, <span class="math inline">\(\gamma\)</span> the sensitivity to attractiveness and <span class="math inline">\(\lambda\)</span> a negative distance decay. The denominator runs over every store, so each village’s probabilities sum to one: a store gains share only by taking it from the others. Multiplying by each village’s population and summing over villages gives a store’s expected customers.</p>
+<p>The lesson also covers the MCI (multiplicative competitive interaction) model, which estimates <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\lambda\)</span> and further store attributes from observed market shares. The handout uses the <code>MCI</code> package for the Huff step only. Section 9.5 explains why the course data cannot support an MCI fit.</p>
+</section>
+<section id="the-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-data">2. The Data</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Dataset</th>
+<th>Description</th>
+<th>Format</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>STORES_TC</code></td>
+<td>28 store locations in Taichung City</td>
+<td>ESRI Shapefile (point)</td>
+</tr>
+<tr class="even">
+<td><code>TOWN_TC</code></td>
+<td>28 district boundaries</td>
+<td>ESRI Shapefile (polygon)</td>
+</tr>
+<tr class="odd">
+<td><code>VILLAGE_TC</code></td>
+<td>622 village (里) boundaries</td>
+<td>ESRI Shapefile (polygon)</td>
+</tr>
+<tr class="even">
+<td><code>pop2019.csv</code></td>
+<td>Households and population by village, December 2019</td>
+<td>CSV, 625 rows</td>
+</tr>
+<tr class="odd">
+<td><code>Store_sales_data.csv</code></td>
+<td>Bills and sales amount by store and <code>POD code</code></td>
+<td>CSV, 5,499 rows</td>
+</tr>
+</tbody>
+</table>
+<p><code>pop2019.csv</code> has households (<code>H_CNT</code>), total population (<code>P_CNT</code>), males (<code>M_CNT</code>) and females (<code>F_CNT</code>). Its <code>INFO_TIME</code> of <code>108Y12M</code> is December of year 108 in the Republic of China calendar, which is 2019.</p>
+<p>The handout’s data list names the layers <code>STORES_TN</code> and <code>VILLAGE_TN</code>; the files and the code use <code>_TC</code>. The folder also ships a sixth file, <code>storeCD.csv</code>, which the handout never reads. It gives every store a capacity of 50, so it carries no more information than the constant store size used below.</p>
+<p>The data was prepared by Prof.&nbsp;Kam for teaching use. I checked it against the handout’s own printed output: the feature counts, the <code>summary()</code> tables and the final correlation all match, apart from one quartile of the sales summary that prints as 26,702 here and 26,703 in the handout, a rounding difference.</p>
+</section>
+<section id="getting-started" class="level2">
+<h2 class="anchored" data-anchor-id="getting-started">3. Getting Started</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, tidyverse, MCI, tmap, ggstatsplot)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="importing-data" class="level2">
+<h2 class="anchored" data-anchor-id="importing-data">4. Importing Data</h2>
+<section id="importing-geospatial-data" class="level3">
+<h3 class="anchored" data-anchor-id="importing-geospatial-data">4.1 Importing geospatial data</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>stores <span class="ot">&lt;-</span> <span class="fu">st_read</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">dsn =</span> <span class="st">"data/geospatial"</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">layer =</span> <span class="st">"STORES_TC"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `STORES_TC' from data source 
+  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/Hands-on_Ex/Hands-on_Ex08/data/geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 28 features and 3 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 202702.9 ymin: 2662196 xmax: 232773.2 ymax: 2693557
+Projected CRS: TWD97 / TM2 zone 121</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>town <span class="ot">&lt;-</span> <span class="fu">st_read</span>(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">dsn =</span> <span class="st">"data/geospatial"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">layer =</span> <span class="st">"TOWN_TC"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `TOWN_TC' from data source 
+  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/Hands-on_Ex/Hands-on_Ex08/data/geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 28 features and 7 fields
+Geometry type: POLYGON
+Dimension:     XY
+Bounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838
+Projected CRS: TWD97 / TM2 zone 121</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>village <span class="ot">&lt;-</span> <span class="fu">st_read</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">dsn =</span> <span class="st">"data/geospatial"</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">layer =</span> <span class="st">"VILLAGE_TC"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `VILLAGE_TC' from data source 
+  `/Users/jedidiahasaf/Downloads/Projects/isss626-coursework/Hands-on_Ex/Hands-on_Ex08/data/geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 622 features and 10 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 194797.1 ymin: 2654887 xmax: 240450.2 ymax: 2703838
+Projected CRS: TWD97 / TM2 zone 121</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">stores =</span> <span class="fu">st_crs</span>(stores)<span class="sc">$</span>epsg,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">town =</span> <span class="fu">st_crs</span>(town)<span class="sc">$</span>epsg,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">village =</span> <span class="fu">st_crs</span>(village)<span class="sc">$</span>epsg)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> stores    town village 
+   3826    3826    3826 </code></pre>
+</div>
+</div>
+<p>All three layers are in TWD97 / TM2 zone 121 (EPSG 3826), a projected system in metres, so distances can be computed directly.</p>
+<p>The handout views the layers in interactive mode. I draw the same overlay as a static map, because the interactive version embeds all 622 village outlines in the page.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(town) <span class="sc">+</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(village) <span class="sc">+</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(stores) <span class="sc">+</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex08_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Most stores are in and around the city centre, and the rest are spread over the towns to the west and north. The large villages in the south-east have none.</p>
+</section>
+<section id="importing-aspatial-data" class="level3">
+<h3 class="anchored" data-anchor-id="importing-aspatial-data">4.2 Importing aspatial data</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>pop2019 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/aspatial/pop2019.csv"</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>store_sales <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/aspatial/Store_sales_data.csv"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(store_sales)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Store Code          POD code             Bills            Amount       
+ Length:5499        Length:5499        Min.   :   1.0   Min.   :      0  
+ Class :character   Class :character   1st Qu.:  37.0   1st Qu.:  26702  
+ Mode  :character   Mode  :character   Median : 186.0   Median : 139643  
+                                       Mean   : 331.9   Mean   : 236787  
+                                       3rd Qu.: 457.0   3rd Qu.: 331952  
+                                       Max.   :7764.0   Max.   :6076060  
+    Ave Bill      
+ Min.   :    0.0  
+ 1st Qu.:  661.3  
+ Median :  730.5  
+ Mean   :  825.1  
+ 3rd Qu.:  862.2  
+ Max.   :24356.0  </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="data-preparation" class="level2">
+<h2 class="anchored" data-anchor-id="data-preparation">5. Data Preparation</h2>
+<section id="aggregating-store-sales" class="level3">
+<h3 class="anchored" data-anchor-id="aggregating-store-sales">5.1 Aggregating store sales</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>store_sales_aggre <span class="ot">&lt;-</span> store_sales <span class="sc">%&gt;%</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Total_Bill"</span> <span class="ot">=</span> <span class="fu">sum</span>(Bills, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Total_Sales"</span> <span class="ot">=</span> <span class="fu">sum</span>(Amount, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The sales file covers far more than the 28 Taichung stores:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(<span class="at">store_codes =</span> <span class="fu">n_distinct</span>(store_sales<span class="sc">$</span><span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">rows_without_code =</span> <span class="fu">sum</span>(<span class="fu">is.na</span>(store_sales<span class="sc">$</span><span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>)),</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">taichung_stores_found =</span> <span class="fu">sum</span>(stores<span class="sc">$</span>Store_CD <span class="sc">%in%</span> store_sales<span class="sc">$</span><span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>),</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">taichung_share_of_amount =</span> <span class="fu">round</span>(</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>         <span class="fu">sum</span>(store_sales<span class="sc">$</span>Amount[store_sales<span class="sc">$</span><span class="st">`</span><span class="at">Store Code</span><span class="st">`</span> <span class="sc">%in%</span> stores<span class="sc">$</span>Store_CD]) <span class="sc">/</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>           <span class="fu">sum</span>(store_sales<span class="sc">$</span>Amount), <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+  store_codes rows_without_code taichung_stores_found taichung_share_of_amount
+        &lt;int&gt;             &lt;int&gt;                 &lt;int&gt;                    &lt;dbl&gt;
+1         233                29                    28                    0.119</code></pre>
+</div>
+</div>
+<p>The join below keeps only the 28 stores on the map, which is what the analysis needs. The other stores matter in one way: any of them near the city boundary would compete for the same border villages. The file gives no locations for them, so the model cannot include them.</p>
+</section>
+<section id="relational-join" class="level3">
+<h3 class="anchored" data-anchor-id="relational-join">5.2 Relational join</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>stores <span class="ot">&lt;-</span> stores <span class="sc">%&gt;%</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(store_sales_aggre,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">join_by</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>              Store_CD <span class="sc">==</span> <span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Store_size =</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(stores)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  Store_Name         Store_Addr          Store_CD           Total_Bill   
+ Length:28          Length:28          Length:28          Min.   : 1767  
+ Class :character   Class :character   Class :character   1st Qu.: 5698  
+ Mode  :character   Mode  :character   Mode  :character   Median : 8634  
+                                                          Mean   : 8021  
+                                                          3rd Qu.:10349  
+                                                          Max.   :14468  
+  Total_Sales               geometry    Store_size 
+ Min.   :1475963   POINT        :28   Min.   :100  
+ 1st Qu.:4044821   epsg:3826    : 0   1st Qu.:100  
+ Median :6116336   +proj=tmer...: 0   Median :100  
+ Mean   :5542852                      Mean   :100  
+ 3rd Qu.:6959911                      3rd Qu.:100  
+ Max.   :8234234                      Max.   :100  </code></pre>
+</div>
+</div>
+<p>Every store found a sales record. <code>Store_size</code> is set to 100 for all of them, a placeholder for real attractiveness such as floor area or seats. Section 9.1 shows what that placeholder does to the model.</p>
+</section>
+<section id="tidying-pop2019-data.frame" class="level3">
+<h3 class="anchored" data-anchor-id="tidying-pop2019-data.frame">5.3 Tidying pop2019 data.frame</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(pop2019)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 625
+Columns: 11
+$ COUNTY_ID &lt;dbl&gt; 66000, 66000, 66000, 66000, 66000, 66000, 66000, 66000, 6600…
+$ COUNTY    &lt;chr&gt; "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市…
+$ TOWN_ID   &lt;dbl&gt; 66000110, 66000110, 66000110, 66000110, 66000110, 66000110, …
+$ TOWN      &lt;chr&gt; "大甲區", "大甲區", "大甲區", "大甲區", "大甲區", "大甲區", "大甲區", "大甲區", "大甲區…
+$ V_ID      &lt;chr&gt; "66000110-002", "66000110-009", "66000110-021", "66000110-00…
+$ VILLAGE   &lt;chr&gt; "大甲里", "中山里", "太白里", "孔門里", "文曲里", "文武里", "日南里", "平安里", "江南里…
+$ H_CNT     &lt;dbl&gt; 454, 1781, 406, 383, 355, 2071, 2039, 785, 461, 559, 769, 80…
+$ P_CNT     &lt;dbl&gt; 1255, 5252, 1471, 1001, 1264, 6687, 6739, 2642, 1618, 1977, …
+$ M_CNT     &lt;dbl&gt; 626, 2533, 758, 538, 640, 3244, 3406, 1310, 838, 983, 1273, …
+$ F_CNT     &lt;dbl&gt; 629, 2719, 713, 463, 624, 3443, 3333, 1332, 780, 994, 1239, …
+$ INFO_TIME &lt;chr&gt; "108Y12M", "108Y12M", "108Y12M", "108Y12M", "108Y12M", "108Y…</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(village)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 622
+Columns: 11
+$ VILLCODE   &lt;chr&gt; "66000110029", "66000120001", "66000120002", "66000120003",…
+$ COUNTYNAME &lt;chr&gt; "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中市", "臺中…
+$ TOWNNAME   &lt;chr&gt; "大甲區", "清水區", "清水區", "清水區", "清水區", "清水區", "清水區", "清水區", "清水…
+$ VILLNAME   &lt;chr&gt; "建興里", "鰲峰里", "靈泉里", "清水里", "文昌里", "南寧里", "西寧里", "北寧里", "中興…
+$ VILLENG    &lt;chr&gt; "Jianxing Vil.", "Aofeng Vil.", "Lingquan Vil.", "Qingshui …
+$ COUNTYID   &lt;chr&gt; "B", "B", "B", "B", "B", "B", "B", "B", "B", "B", "B", "B",…
+$ COUNTYCODE &lt;chr&gt; "66000", "66000", "66000", "66000", "66000", "66000", "6600…
+$ TOWNID     &lt;chr&gt; "B11", "B12", "B12", "B12", "B12", "B12", "B12", "B12", "B1…
+$ TOWNCODE   &lt;chr&gt; "66000110", "66000120", "66000120", "66000120", "66000120",…
+$ NOTE       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((211953.9 27..., MULTIPOLYGON (…</code></pre>
+</div>
+</div>
+<p>The village identifier in <code>pop2019</code> (<code>V_ID</code>) has a dash that the village layer’s <code>VILLCODE</code> does not, so the dash is removed before joining.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>pop2019 <span class="ot">&lt;-</span> pop2019 <span class="sc">%&gt;%</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">V_ID =</span> <span class="fu">str_remove_all</span>(</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    V_ID, <span class="st">"-"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>village <span class="ot">&lt;-</span> village <span class="sc">%&gt;%</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(pop2019,</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">join_by</span>(</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>              VILLCODE <span class="sc">==</span> V_ID))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="checking-for-missing-values" class="level3">
+<h3 class="anchored" data-anchor-id="checking-for-missing-values">5.4 Checking for missing values</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(village)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   VILLCODE          COUNTYNAME          TOWNNAME           VILLNAME        
+ Length:622         Length:622         Length:622         Length:622        
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+   VILLENG            COUNTYID          COUNTYCODE           TOWNID         
+ Length:622         Length:622         Length:622         Length:622        
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+   TOWNCODE             NOTE             COUNTY_ID        COUNTY         
+ Length:622         Length:622         Min.   :66000   Length:622        
+ Class :character   Class :character   1st Qu.:66000   Class :character  
+ Mode  :character   Mode  :character   Median :66000   Mode  :character  
+                                       Mean   :66000                     
+                                       3rd Qu.:66000                     
+                                       Max.   :66000                     
+                                       NA's   :5                         
+    TOWN_ID            TOWN             VILLAGE              H_CNT     
+ Min.   :6.6e+07   Length:622         Length:622         Min.   : 180  
+ 1st Qu.:6.6e+07   Class :character   Class :character   1st Qu.: 724  
+ Median :6.6e+07   Mode  :character   Mode  :character   Median :1335  
+ Mean   :6.6e+07                                         Mean   :1592  
+ 3rd Qu.:6.6e+07                                         3rd Qu.:2195  
+ Max.   :6.6e+07                                         Max.   :7599  
+ NA's   :5                                               NA's   :5     
+     P_CNT           M_CNT          F_CNT       INFO_TIME        
+ Min.   :  487   Min.   : 257   Min.   : 230   Length:622        
+ 1st Qu.: 2139   1st Qu.:1095   1st Qu.:1053   Class :character  
+ Median : 3862   Median :1911   Median :1934   Mode  :character  
+ Mean   : 4545   Mean   :2234   Mean   :2311                     
+ 3rd Qu.: 6151   3rd Qu.:3022   3rd Qu.:3171                     
+ Max.   :18652   Max.   :8741   Max.   :9911                     
+ NA's   :5       NA's   :5      NA's   :5                        
+          geometry  
+ MULTIPOLYGON :622  
+ epsg:3826    :  0  
+ +proj=tmer...:  0  
+                    
+                    
+                    
+                    </code></pre>
+</div>
+</div>
+<p>Five villages have no population. The handout drops them without asking what they are:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>village <span class="sc">%&gt;%</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">is.na</span>(P_CNT)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">area_km2 =</span> <span class="fu">round</span>(<span class="fu">as.numeric</span>(<span class="fu">st_area</span>(geometry)) <span class="sc">/</span> <span class="fl">1e6</span>, <span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(VILLCODE, TOWNNAME, NOTE, area_km2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     VILLCODE TOWNNAME       NOTE area_km2
+1 66000120S01   清水區 未編定村里     1.52
+2 66000120S02   清水區 未編定村里     7.13
+3 66000140S01   梧棲區 未編定村里     8.75
+4 66000250S01   龍井區 未編定村里     1.12
+5 66000120S03   清水區 未編定村里     4.74</code></pre>
+</div>
+</div>
+<p>They are not missing data. All five have codes ending in <code>S01</code> to <code>S03</code> and the note 未編定村里, “unassigned village”: land in three coastal districts that belongs to no village and has no registered residents. Dropping them is right, and that is the reason.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>village <span class="ot">&lt;-</span> village <span class="sc">%&gt;%</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(P_CNT))</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">H_CNT =</span> <span class="fu">any</span>(<span class="fu">is.na</span>(village<span class="sc">$</span>H_CNT)),</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">P_CNT =</span> <span class="fu">any</span>(<span class="fu">is.na</span>(village<span class="sc">$</span>P_CNT)),</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">M_CNT =</span> <span class="fu">any</span>(<span class="fu">is.na</span>(village<span class="sc">$</span>M_CNT)),</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">F_CNT =</span> <span class="fu">any</span>(<span class="fu">is.na</span>(village<span class="sc">$</span>F_CNT)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>H_CNT P_CNT M_CNT F_CNT 
+FALSE FALSE FALSE FALSE </code></pre>
+</div>
+</div>
+<p>A join can also fail the other way, and <code>summary(village)</code> cannot show it, because a left join keeps every village row but silently discards population rows that match no village:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>pop_unmatched <span class="ot">&lt;-</span> pop2019 <span class="sc">%&gt;%</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">anti_join</span>(village <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>(),</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">join_by</span>(V_ID <span class="sc">==</span> VILLCODE))</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>pop_unmatched <span class="sc">%&gt;%</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(TOWN_ID, TOWN) <span class="sc">%&gt;%</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">villages =</span> <span class="fu">n</span>(), <span class="at">residents =</span> <span class="fu">sum</span>(P_CNT), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 4
+   TOWN_ID TOWN   villages residents
+     &lt;dbl&gt; &lt;chr&gt;     &lt;int&gt;     &lt;dbl&gt;
+1 66000290 和平區        8     10902</code></pre>
+</div>
+</div>
+<p>8 population rows match no polygon, all of them in Heping District (和平區, town code 66000290). Heping is in neither <code>TOWN_TC</code> nor <code>VILLAGE_TC</code>: the layers cover 28 of Taichung’s 29 districts. It is the mountainous district on the city’s eastern side, and its 10,902 residents are 0.4% of the city’s population, so leaving it out barely changes the results. It does mean the eastern edge of every map below is the edge of the data, not of the city.</p>
+</section>
+</section>
+<section id="computing-the-distance-matrix" class="level2">
+<h2 class="anchored" data-anchor-id="computing-the-distance-matrix">6. Computing the Distance Matrix</h2>
+<p>The handout says it uses each village’s centroid, but its code uses <code>st_point_on_surface()</code>. That is the better choice: a centroid can fall outside an irregular polygon, while a point on surface is always inside it. The distances are straight lines, in metres.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>village_center <span class="ot">&lt;-</span> <span class="fu">st_point_on_surface</span>(village)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>distmat <span class="ot">&lt;-</span> <span class="fu">st_distance</span>(village_center, stores)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(distmat) <span class="ot">&lt;-</span> village<span class="sc">$</span><span class="st">`</span><span class="at">VILLCODE</span><span class="st">`</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(distmat) <span class="ot">&lt;-</span> stores<span class="sc">$</span><span class="st">`</span><span class="at">Store_CD</span><span class="st">`</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>distmat_long <span class="ot">&lt;-</span> distmat <span class="sc">%&gt;%</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">"VILLCODE"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="sc">-</span>VILLCODE,</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">"Store_CD"</span>,</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">"distance"</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">distance =</span> <span class="fu">as.numeric</span>(distance))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="preparing-the-interaction-matrix" class="level2">
+<h2 class="anchored" data-anchor-id="preparing-the-interaction-matrix">7. Preparing the Interaction Matrix</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>interaction_matrix <span class="ot">&lt;-</span> distmat_long <span class="sc">%&gt;%</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    stores <span class="sc">%&gt;%</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(Store_CD, Store_size),</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">"Store_CD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    distance, <span class="at">.after =</span> <span class="fu">last_col</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(interaction_matrix)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   VILLCODE           Store_CD           Store_size     distance      
+ Length:17276       Length:17276       Min.   :100   Min.   :  108.5  
+ Class :character   Class :character   1st Qu.:100   1st Qu.: 6678.7  
+ Mode  :character   Mode  :character   Median :100   Median :11965.3  
+                                       Mean   :100   Mean   :12762.7  
+                                       3rd Qu.:100   3rd Qu.:18122.3  
+                                       Max.   :100   Max.   :41395.4  </code></pre>
+</div>
+</div>
+<p>That is 617 villages times 28 stores, 17,276 pairs. The closest pair is 108 m apart and the furthest 41 km.</p>
+</section>
+<section id="computing-the-huff-model" class="level2">
+<h2 class="anchored" data-anchor-id="computing-the-huff-model">8. Computing the Huff Model</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>huff_share <span class="ot">&lt;-</span> <span class="fu">huff.shares</span>(</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  interaction_matrix, <span class="st">"VILLCODE"</span>, <span class="st">"Store_CD"</span>,</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Store_size"</span>, <span class="st">"distance"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<section id="trade-area-analysis-for-a-single-store" class="level3">
+<h3 class="anchored" data-anchor-id="trade-area-analysis-for-a-single-store">8.1 Trade area analysis for a single store</h3>
+<p>The handout’s text says it selects store TG, but its code and its map use BT. I follow the code.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>market_share <span class="ot">&lt;-</span> huff_share <span class="sc">%&gt;%</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Store_CD <span class="sc">==</span> <span class="st">"BT"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>Trade_area <span class="ot">&lt;-</span> village <span class="sc">%&gt;%</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(market_share)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>selected_store <span class="ot">&lt;-</span> stores <span class="sc">%&gt;%</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Store_CD <span class="sc">==</span> <span class="st">"BT"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(Trade_area) <span class="sc">+</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">fill =</span> <span class="st">"p_ij"</span>,</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.scale =</span> <span class="fu">tm_scale_intervals</span>(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">n =</span> <span class="dv">10</span>,</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">values =</span> <span class="st">"brewer.blues"</span>),</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.legend =</span> <span class="fu">tm_legend</span>(</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">title =</span> <span class="st">"Patronage Probability"</span>)) <span class="sc">+</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(selected_store) <span class="sc">+</span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.3</span>,</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">fill =</span> <span class="st">"red"</span>,</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">col =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_title</span>(<span class="st">"Distribution of Patronage Probability of Store BT by village"</span>) <span class="sc">+</span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">fill_alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_compass</span>(<span class="at">type =</span> <span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_scalebar</span>() <span class="sc">+</span></span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_grid</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex08_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>BT’s share is highest in the central villages around it and falls away with distance. Two things on this map are easy to misread. First, the quantile classes compress the top of the range: the darkest class runs from under 0.07 to 0.94, so a village where BT is one option among many is coloured the same as one where it is nearly the only option.</p>
+<p>Second, the large villages in the south-east come out in the second-darkest class, although they are not BT’s territory. In the 31 villages in that corner of the map (east of 224,000 m and south of 2,682,000 m), BT is a median 13.7 km away and typically only the 7th-nearest store. These villages have no store of their own and every store lies to their west, so their custom is spread thinly over many stores: the leading store’s median share there is only 0.19. BT’s slice of 0.042 is above the 1/28 = 0.036 of an even split, and that is enough to rank in the top fifth of a quantile scale. Section 9.4 maps the leading store’s share on fixed breaks, which shows this directly.</p>
+</section>
+<section id="store-sales-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="store-sales-analysis">8.2 Store sales analysis</h3>
+<p>The model can also estimate each store’s sales from village population.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>huff_share_pp <span class="ot">&lt;-</span> huff_share <span class="sc">%&gt;%</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(village <span class="sc">%&gt;%</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>      <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(VILLCODE, P_CNT),</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">"VILLCODE"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">relocate</span>(</span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>    distance, <span class="at">.after =</span> <span class="fu">last_col</span>())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>huff_total <span class="ot">&lt;-</span> <span class="fu">shares.total</span>(</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>  huff_share_pp, <span class="st">"VILLCODE"</span>, <span class="st">"Store_CD"</span>,</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"p_ij"</span>, <span class="st">"P_CNT"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>store_sales_est <span class="ot">&lt;-</span> stores <span class="sc">%&gt;%</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(huff_total,</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">join_by</span>(</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>              <span class="st">"Store_CD"</span> <span class="sc">==</span> <span class="st">"suppliers_single"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>store_sales_nongeom <span class="ot">&lt;-</span> store_sales_est <span class="sc">%&gt;%</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>()</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="fu">ggscatterstats</span>(</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  store_sales_nongeom,</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">x =</span> sum_E_j,</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">y =</span> Total_Sales)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex08_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This matches the handout: r = 0.58, with a 95% confidence interval of 0.26 to 0.78. Population allocated by distance alone accounts for about a third of the variation in sales across the 28 stores (r² = 0.33).</p>
+<p>The handout ends by reshaping the shares to one row per village and one column per store, the form to join back to the village layer or export:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>huff_share_wider <span class="ot">&lt;-</span> huff_share <span class="sc">%&gt;%</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(VILLCODE, Store_CD, p_ij) <span class="sc">%&gt;%</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> Store_CD,</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">values_from =</span> p_ij)</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(huff_share_wider)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 617  29</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="checks-the-handout-skips" class="level2">
+<h2 class="anchored" data-anchor-id="checks-the-handout-skips">9. Checks the Handout Skips</h2>
+<section id="what-the-defaults-assume" class="level3">
+<h3 class="anchored" data-anchor-id="what-the-defaults-assume">9.1 What the defaults assume</h3>
+<p>The handout calls <code>huff.shares()</code> with no model parameters, so everything rests on its defaults:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">args</span>(huff.shares)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>function (huffdataset, origins, locations, attrac, dist, gamma = 1, 
+    lambda = -2, atype = "pow", dtype = "pow", gamma2 = NULL, 
+    lambda2 = NULL, check_df = TRUE) 
+NULL</code></pre>
+</div>
+</div>
+<p><code>gamma = 1</code>, <code>lambda = -2</code>, and power functions for both attractiveness and distance. Three consequences follow.</p>
+<ul>
+<li><strong>Distance is the only input.</strong> Every store has <code>Store_size</code> 100, so <span class="math inline">\(A_j^{\gamma}\)</span> is the same for all stores and cancels between the numerator and the denominator. The model knows nothing about the stores except where they are, and <code>gamma</code> has no effect.</li>
+<li><strong>The decay is assumed, not estimated.</strong> <span class="math inline">\(\lambda = -2\)</span> is the inverse-square law of the gravity-model tradition and the package default. Section 9.2 tests it against the sales.</li>
+<li><strong>The “estimated sales” are residents.</strong> Each village’s population is shared out among the stores, so the estimates add up to the population exactly:</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">sum_E_j =</span> <span class="fu">sum</span>(huff_total<span class="sc">$</span>sum_E_j),</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">population =</span> <span class="fu">sum</span>(village<span class="sc">$</span>P_CNT))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   sum_E_j population 
+   2804359    2804359 </code></pre>
+</div>
+</div>
+<p>The scatter plot in section 8.2 therefore compares residents with a sales amount. Only the correlation is meaningful. To predict sales, the estimates need converting, for example by giving each store its share of the 28 stores’ combined sales.</p>
+<p>One contrast with Exercise 7 is worth recording. There, converting metres to kilometres changed Hansen and KD2SFCA, because distance sat inside an exponential. Here it does not:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>interaction_matrix_km <span class="ot">&lt;-</span> interaction_matrix <span class="sc">%&gt;%</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">distance =</span> distance <span class="sc">/</span> <span class="dv">1000</span>)</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>huff_share_km <span class="ot">&lt;-</span> <span class="fu">huff.shares</span>(</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  interaction_matrix_km, <span class="st">"VILLCODE"</span>, <span class="st">"Store_CD"</span>,</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Store_size"</span>, <span class="st">"distance"</span>)</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a><span class="fu">max</span>(<span class="fu">abs</span>(huff_share_km<span class="sc">$</span>p_ij <span class="sc">-</span> huff_share<span class="sc">$</span>p_ij))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 7.771561e-16</code></pre>
+</div>
+</div>
+<p><code>huff.shares()</code> has to be given a named data frame, because its input check looks the argument up by name; passing a piped expression fails.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>With a power decay, the distance unit really is cosmetic
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Rescaling every distance by a constant <em>c</em> multiplies every term by <span class="math inline">\(c^{\lambda}\)</span>, which cancels between the numerator and the denominator. The shares in metres and in kilometres differ only by floating-point error. That holds for <code>dtype = "pow"</code> only; an exponential decay (<code>dtype = "exp"</code>) would make the unit part of the model again.</p>
+</div>
+</div>
+</section>
+<section id="calibrating-the-distance-decay" class="level3">
+<h3 class="anchored" data-anchor-id="calibrating-the-distance-decay">9.2 Calibrating the distance decay</h3>
+<p>The lesson outline lists calibrating the Huff model; the handout uses the defaults. The sales data allows a direct test of <span class="math inline">\(\lambda\)</span>. For each candidate value I compute expected customers per store, convert them to predicted sales by giving each store its share of the 28 stores’ combined sales, and measure the mean absolute percentage error (MAPE) against actual sales.</p>
+<p>Two baselines frame the result. An even split predicts every store at the average. At the other extreme, allocating each village wholly to its nearest store is the limit of a very steep decay (<span class="math inline">\(\lambda \to -\infty\)</span>).</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>village_pop <span class="ot">&lt;-</span> village <span class="sc">%&gt;%</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(VILLCODE, P_CNT)</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>actual <span class="ot">&lt;-</span> stores <span class="sc">%&gt;%</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Store_CD, Total_Sales)</span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>huff_sales <span class="ot">&lt;-</span> <span class="cf">function</span>(lambda) {</span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">huff.shares</span>(interaction_matrix, <span class="st">"VILLCODE"</span>, <span class="st">"Store_CD"</span>,</span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a>              <span class="st">"Store_size"</span>, <span class="st">"distance"</span>, <span class="at">lambda =</span> lambda) <span class="sc">%&gt;%</span></span>
+<span id="cb56-12"><a href="#cb56-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(village_pop, <span class="at">by =</span> <span class="st">"VILLCODE"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb56-13"><a href="#cb56-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Store_CD) <span class="sc">%&gt;%</span></span>
+<span id="cb56-14"><a href="#cb56-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">E_j =</span> <span class="fu">sum</span>(p_ij <span class="sc">*</span> P_CNT)) <span class="sc">%&gt;%</span></span>
+<span id="cb56-15"><a href="#cb56-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(actual, <span class="at">by =</span> <span class="st">"Store_CD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb56-16"><a href="#cb56-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">predicted =</span> E_j <span class="sc">/</span> <span class="fu">sum</span>(E_j) <span class="sc">*</span> <span class="fu">sum</span>(Total_Sales))</span>
+<span id="cb56-17"><a href="#cb56-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb56-18"><a href="#cb56-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-19"><a href="#cb56-19" aria-hidden="true" tabindex="-1"></a>mape <span class="ot">&lt;-</span> <span class="cf">function</span>(predicted, actual) <span class="fu">mean</span>(<span class="fu">abs</span>(predicted <span class="sc">-</span> actual) <span class="sc">/</span> actual)</span>
+<span id="cb56-20"><a href="#cb56-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>lambdas <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">0.25</span>, <span class="sc">-</span><span class="dv">4</span>, <span class="at">by =</span> <span class="sc">-</span><span class="fl">0.25</span>)</span>
+<span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>fits <span class="ot">&lt;-</span> <span class="fu">map</span>(lambdas, huff_sales)</span>
+<span id="cb56-23"><a href="#cb56-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-24"><a href="#cb56-24" aria-hidden="true" tabindex="-1"></a>calibration <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb56-25"><a href="#cb56-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">lambda =</span> lambdas,</span>
+<span id="cb56-26"><a href="#cb56-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">r =</span> <span class="fu">map_dbl</span>(fits, <span class="sc">~</span> <span class="fu">cor</span>(.x<span class="sc">$</span>E_j, .x<span class="sc">$</span>Total_Sales)),</span>
+<span id="cb56-27"><a href="#cb56-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">MAPE =</span> <span class="fu">map_dbl</span>(fits, <span class="sc">~</span> <span class="fu">mape</span>(.x<span class="sc">$</span>predicted, .x<span class="sc">$</span>Total_Sales)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>nearest_alloc <span class="ot">&lt;-</span> interaction_matrix <span class="sc">%&gt;%</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE) <span class="sc">%&gt;%</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_min</span>(distance, <span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(village_pop, <span class="at">by =</span> <span class="st">"VILLCODE"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Store_CD) <span class="sc">%&gt;%</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">E_j =</span> <span class="fu">sum</span>(P_CNT)) <span class="sc">%&gt;%</span></span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(actual, <span class="at">by =</span> <span class="st">"Store_CD"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">E_j =</span> <span class="fu">replace_na</span>(E_j, <span class="dv">0</span>),</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">predicted =</span> E_j <span class="sc">/</span> <span class="fu">sum</span>(E_j) <span class="sc">*</span> <span class="fu">sum</span>(Total_Sales))</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>baselines <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">model =</span> <span class="fu">c</span>(<span class="st">"Even split"</span>, <span class="st">"Nearest store only"</span>, <span class="st">"Huff, lambda = -2"</span>),</span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">r =</span> <span class="fu">c</span>(<span class="cn">NA</span>, <span class="fu">cor</span>(nearest_alloc<span class="sc">$</span>E_j, nearest_alloc<span class="sc">$</span>Total_Sales),</span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a>        calibration<span class="sc">$</span>r[calibration<span class="sc">$</span>lambda <span class="sc">==</span> <span class="sc">-</span><span class="dv">2</span>]),</span>
+<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">MAPE =</span> <span class="fu">c</span>(<span class="fu">mape</span>(<span class="fu">mean</span>(actual<span class="sc">$</span>Total_Sales), actual<span class="sc">$</span>Total_Sales),</span>
+<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a>           <span class="fu">mape</span>(nearest_alloc<span class="sc">$</span>predicted, nearest_alloc<span class="sc">$</span>Total_Sales),</span>
+<span id="cb57-18"><a href="#cb57-18" aria-hidden="true" tabindex="-1"></a>           calibration<span class="sc">$</span>MAPE[calibration<span class="sc">$</span>lambda <span class="sc">==</span> <span class="sc">-</span><span class="dv">2</span>]))</span>
+<span id="cb57-19"><a href="#cb57-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-20"><a href="#cb57-20" aria-hidden="true" tabindex="-1"></a>baselines <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(r, MAPE), <span class="sc">~</span> <span class="fu">round</span>(.x, <span class="dv">3</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 3
+  model                   r  MAPE
+  &lt;chr&gt;               &lt;dbl&gt; &lt;dbl&gt;
+1 Even split         NA     0.486
+2 Nearest store only  0.217 0.49 
+3 Huff, lambda = -2   0.576 0.376</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> calibration <span class="sc">%&gt;%</span> <span class="fu">slice_min</span>(MAPE, <span class="at">n =</span> <span class="dv">1</span>)</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(calibration, <span class="fu">aes</span>(lambda, MAPE)) <span class="sc">+</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> baselines<span class="sc">$</span>MAPE[<span class="dv">1</span>], <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">colour =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> baselines<span class="sc">$</span>MAPE[<span class="dv">2</span>], <span class="at">linetype =</span> <span class="st">"dotted"</span>, <span class="at">colour =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="sc">-</span><span class="fl">3.9</span>, <span class="at">y =</span> baselines<span class="sc">$</span>MAPE[<span class="dv">1</span>], <span class="at">label =</span> <span class="st">"even split"</span>,</span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>           <span class="at">vjust =</span> <span class="fl">1.5</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="fl">3.2</span>, <span class="at">colour =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="sc">-</span><span class="fl">3.9</span>, <span class="at">y =</span> baselines<span class="sc">$</span>MAPE[<span class="dv">2</span>], <span class="at">label =</span> <span class="st">"nearest store only"</span>,</span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a>           <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.6</span>, <span class="at">hjust =</span> <span class="dv">0</span>, <span class="at">size =</span> <span class="fl">3.2</span>, <span class="at">colour =</span> <span class="st">"grey40"</span>) <span class="sc">+</span></span>
+<span id="cb59-10"><a href="#cb59-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">colour =</span> <span class="st">"#137C8B"</span>) <span class="sc">+</span></span>
+<span id="cb59-11"><a href="#cb59-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">colour =</span> <span class="st">"#137C8B"</span>) <span class="sc">+</span></span>
+<span id="cb59-12"><a href="#cb59-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">data =</span> <span class="fu">filter</span>(calibration, lambda <span class="sc">==</span> <span class="sc">-</span><span class="dv">2</span>), <span class="at">colour =</span> <span class="st">"red"</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb59-13"><a href="#cb59-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent) <span class="sc">+</span></span>
+<span id="cb59-14"><a href="#cb59-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Distance decay (lambda)"</span>, <span class="at">y =</span> <span class="st">"MAPE of predicted store sales"</span>,</span>
+<span id="cb59-15"><a href="#cb59-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"The handout's lambda = -2 (red) is steeper than the sales support"</span>) <span class="sc">+</span></span>
+<span id="cb59-16"><a href="#cb59-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex08_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The error is lowest at <span class="math inline">\(\lambda\)</span> = -1, a much gentler decay than the default. To see how firmly 28 stores support that, I resample the stores with replacement and find the best <span class="math inline">\(\lambda\)</span> in each resample:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">626</span>)</span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>best_lambda <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2000</span>, <span class="cf">function</span>(b) {</span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>  idx <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">28</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>  errors <span class="ot">&lt;-</span> <span class="fu">map_dbl</span>(fits, <span class="sc">~</span> <span class="fu">mape</span>(.x<span class="sc">$</span>predicted[idx], .x<span class="sc">$</span>Total_Sales[idx]))</span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>  lambdas[<span class="fu">which.min</span>(errors)]</span>
+<span id="cb60-6"><a href="#cb60-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb60-7"><a href="#cb60-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb60-8"><a href="#cb60-8" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">share_best_at_minus_2 =</span> <span class="fu">mean</span>(best_lambda <span class="sc">==</span> <span class="sc">-</span><span class="dv">2</span>),</span>
+<span id="cb60-9"><a href="#cb60-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">share_weaker_than_minus_2 =</span> <span class="fu">mean</span>(best_lambda <span class="sc">&gt;</span> <span class="sc">-</span><span class="dv">2</span>),</span>
+<span id="cb60-10"><a href="#cb60-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">quantile</span>(best_lambda, <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.5</span>, <span class="fl">0.95</span>)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    share_best_at_minus_2 share_weaker_than_minus_2                        5% 
+                    0.002                     0.961                    -1.500 
+                      50%                       95% 
+                   -1.000                    -0.750 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>fit_m2 <span class="ot">&lt;-</span> fits[[<span class="fu">which</span>(lambdas <span class="sc">==</span> <span class="sc">-</span><span class="dv">2</span>)]]</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>fit_best <span class="ot">&lt;-</span> fits[[<span class="fu">which</span>(lambdas <span class="sc">==</span> best<span class="sc">$</span>lambda)]]</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>ape_m2 <span class="ot">&lt;-</span> <span class="fu">abs</span>(fit_m2<span class="sc">$</span>predicted <span class="sc">-</span> fit_m2<span class="sc">$</span>Total_Sales) <span class="sc">/</span> fit_m2<span class="sc">$</span>Total_Sales</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>ape_best <span class="ot">&lt;-</span> <span class="fu">abs</span>(fit_best<span class="sc">$</span>predicted <span class="sc">-</span> fit_best<span class="sc">$</span>Total_Sales) <span class="sc">/</span> fit_best<span class="sc">$</span>Total_Sales</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a><span class="fu">c</span>(<span class="at">stores_improved =</span> <span class="fu">sum</span>(ape_best <span class="sc">&lt;</span> ape_m2),</span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">paired_wilcoxon_p =</span> <span class="fu">round</span>(<span class="fu">wilcox.test</span>(ape_m2, ape_best, <span class="at">paired =</span> <span class="cn">TRUE</span>)<span class="sc">$</span>p.value, <span class="dv">3</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  stores_improved paired_wilcoxon_p 
+            17.00              0.09 </code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>lambda = -2 is a default, not an estimate
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Against actual sales, the handout’s setting predicts with a MAPE of 37.6%, better than an even split (48.6%). At <span class="math inline">\(\lambda\)</span> = -1 the error falls to 33.6%. In bootstrap resamples of the stores, <span class="math inline">\(\lambda = -2\)</span> was the best value 0.2% of the time and a weaker decay 96% of the time, with the middle 90% of best values between -1.5 and -0.75.</p>
+<p>The evidence is directional rather than precise. Only 17 of the 28 stores individually improve, and a paired test of the two error sets gives p = 0.09. Twenty-eight stores can rule out treating <span class="math inline">\(-2\)</span> as given; they cannot pin <span class="math inline">\(\lambda\)</span> down to one decimal place.</p>
+<p>The probabilistic part of the model earns its keep, though. Allocating each village wholly to its nearest store correlates with sales at only r = 0.22 and predicts no better than an even split (MAPE 49%). Customers spread across several stores, as Huff assumed.</p>
+</div>
+</div>
+<p>Because <span class="math inline">\(\lambda\)</span> is chosen and scored on the same 28 stores, the in-sample error is a little optimistic. With a single parameter the optimism is small, and the bootstrap above shows how much the choice itself moves.</p>
+</section>
+<section id="which-stores-the-model-misses" class="level3">
+<h3 class="anchored" data-anchor-id="which-stores-the-model-misses">9.3 Which stores the model misses</h3>
+<p>With every store equally attractive, the gap between a store’s actual and predicted sales absorbs everything the model leaves out. At the calibrated <span class="math inline">\(\lambda\)</span>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a>gaps <span class="ot">&lt;-</span> fit_best <span class="sc">%&gt;%</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">actual_over_predicted =</span> <span class="fu">round</span>(Total_Sales <span class="sc">/</span> predicted, <span class="dv">2</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(actual_over_predicted) <span class="sc">%&gt;%</span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(Store_CD, Total_Sales, predicted, actual_over_predicted) <span class="sc">%&gt;%</span></span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(Total_Sales, predicted), <span class="sc">~</span> <span class="fu">round</span>(.x <span class="sc">/</span> <span class="fl">1e6</span>, <span class="dv">2</span>)))</span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a><span class="fu">bind_rows</span>(<span class="fu">head</span>(gaps, <span class="dv">5</span>), <span class="fu">tail</span>(gaps, <span class="dv">5</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 4
+   Store_CD Total_Sales predicted actual_over_predicted
+   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;                 &lt;dbl&gt;
+ 1 QH              2.97      6.71                  0.44
+ 2 TG              1.75      4.02                  0.44
+ 3 EH              1.48      3.19                  0.46
+ 4 SQ              2.36      5.05                  0.47
+ 5 ZS              2.77      5.7                   0.49
+ 6 ZK              6.75      5.32                  1.27
+ 7 JW              8.13      6.33                  1.28
+ 8 WF              5.09      3.95                  1.29
+ 9 DD              6.86      4.76                  1.44
+10 SA              6.74      4.65                  1.45</code></pre>
+</div>
+</div>
+<p>Sales are in millions. The five stores at the top of the table sell about half of what their location predicts, and the stores at the bottom up to half as much again. The model cannot say why. The gap combines store size, seating, drive-through, parking, competing brands nearby and whether the store traded for the whole period. The sales file has no dates, so a store that opened partway through would look exactly like an underperformer. This gap is where real attractiveness data, or the MCI model, would go to work.</p>
+</section>
+<section id="how-contested-each-village-is" class="level3">
+<h3 class="anchored" data-anchor-id="how-contested-each-village-is">9.4 How contested each village is</h3>
+<p>A single-store map shows one store’s share. The question a trade-area analysis usually needs answering is how much any store dominates each village. For every village I take the highest probability across all 28 stores, under the handout’s settings:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a>top_share <span class="ot">&lt;-</span> huff_share <span class="sc">%&gt;%</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(VILLCODE) <span class="sc">%&gt;%</span></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">top_p =</span> <span class="fu">max</span>(p_ij),</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">top_store =</span> Store_CD[<span class="fu">which.max</span>(p_ij)],</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">nearest_m =</span> <span class="fu">min</span>(distance))</span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>contested <span class="ot">&lt;-</span> village <span class="sc">%&gt;%</span></span>
+<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(VILLCODE, P_CNT) <span class="sc">%&gt;%</span></span>
+<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(top_share, <span class="at">by =</span> <span class="st">"VILLCODE"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(contested) <span class="sc">+</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">fill =</span> <span class="st">"top_p"</span>,</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.scale =</span> <span class="fu">tm_scale_intervals</span>(</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">breaks =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="dv">1</span>),</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">values =</span> <span class="st">"brewer.blues"</span>),</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>              <span class="at">fill.legend =</span> <span class="fu">tm_legend</span>(</span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>                <span class="at">title =</span> <span class="st">"Highest store share"</span>),</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>              <span class="at">col_alpha =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(stores) <span class="sc">+</span></span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.3</span>,</span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">fill =</span> <span class="st">"red"</span>,</span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">col =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_title</span>(<span class="st">"How much the leading store dominates each village"</span>) <span class="sc">+</span></span>
+<span id="cb67-14"><a href="#cb67-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb67-15"><a href="#cb67-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_compass</span>(<span class="at">type =</span> <span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb67-16"><a href="#cb67-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_scalebar</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Hands-on_Ex08_files/figure-html/unnamed-chunk-50-1.png" class="img-fluid figure-img" width="864"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Each store holds a small dark core of villages. Two kinds of village are contested: the outer villages, far from every store, and the city centre itself, where several stores sit close enough together that none of them dominates.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>contested <span class="sc">%&gt;%</span></span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nearest_store =</span> <span class="fu">cut</span>(nearest_m, <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">500</span>, <span class="dv">1000</span>, <span class="dv">2000</span>, <span class="dv">5000</span>, <span class="cn">Inf</span>),</span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"under 0.5 km"</span>, <span class="st">"0.5 to 1 km"</span>, <span class="st">"1 to 2 km"</span>,</span>
+<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a>                                        <span class="st">"2 to 5 km"</span>, <span class="st">"over 5 km"</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(nearest_store) <span class="sc">%&gt;%</span></span>
+<span id="cb68-7"><a href="#cb68-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">villages =</span> <span class="fu">n</span>(),</span>
+<span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">median_top_share =</span> <span class="fu">round</span>(<span class="fu">median</span>(top_p), <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 3
+  nearest_store villages median_top_share
+  &lt;fct&gt;            &lt;int&gt;            &lt;dbl&gt;
+1 under 0.5 km        56             0.93
+2 0.5 to 1 km        132             0.65
+3 1 to 2 km          186             0.38
+4 2 to 5 km          164             0.31
+5 over 5 km           79             0.18</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Most residents do not belong to any one store’s trade area
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>59% of residents live in villages where no store has even half of the expected custom. A village within 500 m of a store gives that store a median share of 0.93; beyond 5 km the leading store’s median share is 0.18. Huff trade areas are overlapping gradients, not territories. Drawing one boundary per store, for example nearest-store polygons, would throw away the overlap the model exists to measure, and section 9.2 shows that the overlap is what makes the sales predictions work.</p>
+</div>
+</div>
+</section>
+<section id="why-the-course-data-cannot-support-an-mci-fit" class="level3">
+<h3 class="anchored" data-anchor-id="why-the-course-data-cannot-support-an-mci-fit">9.5 Why the course data cannot support an MCI fit</h3>
+<p>The MCI model estimates <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\lambda\)</span> and the effect of other store attributes from observed market shares: how much of each origin’s spending goes to each store. <code>mci.fit()</code> in the <code>MCI</code> package needs exactly that table. The sales file has a field that might provide it, because every store’s sales are broken down by <code>POD code</code>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>store_sales <span class="sc">%&gt;%</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="st">`</span><span class="at">Store Code</span><span class="st">`</span> <span class="sc">%in%</span> stores<span class="sc">$</span>Store_CD) <span class="sc">%&gt;%</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(<span class="st">`</span><span class="at">Store Code</span><span class="st">`</span>, <span class="st">`</span><span class="at">POD code</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(<span class="st">`</span><span class="at">POD code</span><span class="st">`</span>, <span class="at">name =</span> <span class="st">"stores_using_code"</span>, <span class="at">sort =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>(<span class="dv">8</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 2
+  `POD code` stores_using_code
+  &lt;chr&gt;                  &lt;int&gt;
+1 Others                    28
+2 X-98                      28
+3 99                        26
+4 X-99                      24
+5 E-05                      20
+6 G-05                      20
+7 E-04                      19
+8 F-04                      18</code></pre>
+</div>
+</div>
+<p>The same code appears under as many as 20 of the 28 stores, which are up to 32 km apart, alongside catch-all codes such as <code>Others</code> and <code>X-98</code> under nearly all of them. So the codes are not one shared set of zones, the handout does not document them, and without a key or boundaries they cannot be placed on the map, which leaves no origin to measure distance from. With a boundary layer for the codes, <code>mci.fit()</code> could estimate the decay and each store’s attractiveness from what customers actually did, instead of assuming both.</p>
+</section>
+</section>
+<section id="what-i-take-from-this-exercise" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-take-from-this-exercise">10. What I Take From This Exercise</h2>
+<p><strong>The defaults are the model.</strong> With equal store sizes and <span class="math inline">\(\lambda = -2\)</span>, the Huff model here is a distance-only allocation with an inverse-square decay. Neither choice was estimated, and neither appears in the output. Before reading a trade-area map I would want to know the attractiveness measure and the decay it assumes.</p>
+<p><strong>Test the decay against outcomes when they exist.</strong> The sales file allows a one-parameter calibration in a few lines, and it says the default decay is too steep for these stores: MAPE falls from 37.6% to 33.6%, and <span class="math inline">\(-2\)</span> was the best value in fewer than 1% of resamples. Twenty-eight stores cannot fix <span class="math inline">\(\lambda\)</span> precisely, but they are enough to stop treating <span class="math inline">\(-2\)</span> as given.</p>
+<p><strong>Check joins in both directions.</strong> <code>summary()</code> after a left join shows polygons without data, never data without polygons. An <code>anti_join()</code> found a whole district, Heping, missing from the map. Here it holds 0.4% of the population; in another city the same silent drop could remove a market.</p>
+<p><strong>Trade areas overlap, and the maps should show it.</strong> Most residents live in villages that no single store dominates. Quantile classes on one store’s share hide that; fixed breaks on the leading store’s share show it.</p>
+<p><strong>What I would change.</strong> Use real attractiveness (floor area, seats, drive-through) so that <span class="math inline">\(\gamma\)</span> means something, road or travel-time distance instead of straight lines, and the competing stores just outside the city boundary. Calibrate <span class="math inline">\(\lambda\)</span>, and <span class="math inline">\(\gamma\)</span> once attractiveness varies, against sales. If the POD codes can be located, fit the MCI model to observed shares and compare its estimates with the calibrated Huff model.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<ul>
+<li>Huff, D. L. (1963). A probabilistic analysis of shopping center trade areas. <em>Land Economics</em>, 39(1), 81-90.</li>
+<li>Nakanishi, M. and Cooper, L. G. (1982). Simplified estimation procedures for MCI models. <em>Marketing Science</em>, 1(3), 314-322.</li>
+<li>Wieland, T. (2017). Market area analysis for retail and service locations with MCI. <em>The R Journal</em>, 9(1), 298-323.</li>
+<li>Kam, T. S. <em>R for Geospatial Data Science and Analytics</em>, chapter 18.</li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/isss626-coursework\.vercel\.app");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html" class="pagination-link" aria-label="Geographical Accessibility">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Geographical Accessibility</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p><strong>ISSS626</strong><br>
+Geospatial Analytics and Applications</p>
+</div>   
+    <div class="nav-footer-center">
+<p>By Jedidiah Asaf Tallulembang<br>
+Singapore Management University</p>
+</div>
+    <div class="nav-footer-right">
+<p>Coursework Portfolio · 2026</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

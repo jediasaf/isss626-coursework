@@ -119,3 +119,19 @@ five per cent of the course's road-distance matrix turns out not to be distance.
 
 :::
 
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">08</span>
+<span class="coursework-group-title">Hands-on Exercise 8</span>
+:::
+
+<p class="coursework-group-desc">Trade areas for 28 fast-food stores in Taichung with the
+Huff model in <code>MCI</code>. With equal store sizes the model allocates residents by
+distance alone; calibrating its decay against actual sales shows the default of −2 is
+too steep, and most residents live in villages no single store dominates.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Market Area Analysis with the Huff Model</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.qmd){.exercise-row}
+
+:::
+

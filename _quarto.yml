@@ -68,6 +68,10 @@ website:
           contents:
             - text: "Geographical Accessibility"
               href: Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.qmd
+        - section: "Hands-on Exercise 8"
+          contents:
+            - text: "Market Area Analysis"
+              href: Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.qmd
     - id: inclass
       title: "In-class Exercise"
       style: docked
