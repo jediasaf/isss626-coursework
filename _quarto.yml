@@ -72,6 +72,10 @@ website:
           contents:
             - text: "Market Area Analysis"
               href: Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.qmd
+        - section: "Hands-on Exercise 9"
+          contents:
+            - text: "Geographically Weighted Regression"
+              href: Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.qmd
     - id: inclass
       title: "In-class Exercise"
       style: docked

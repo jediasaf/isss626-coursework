@@ -135,3 +135,19 @@ too steep, and most residents live in villages no single store dominates.</p>
 
 :::
 
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">09</span>
+<span class="coursework-group-title">Hands-on Exercise 9</span>
+:::
+
+<p class="coursework-group-desc">A hedonic price model for 1,436 condominium resales in
+2015, fitted once for the whole island and then locally with <code>GWmodel</code>. The
+global residuals cluster, GWR removes the clustering, and floor area turns out to be worth
+anywhere from about S$3,300 to S$23,000 a square metre depending on where the unit is.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Hedonic Pricing with Geographically Weighted Regression</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.qmd){.exercise-row}
+
+:::
+
