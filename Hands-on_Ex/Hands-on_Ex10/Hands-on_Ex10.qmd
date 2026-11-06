@@ -1,6 +1,6 @@
 ---
 title: "Geographically Weighted Predictive Models"
-subtitle: "HANDS-ON EXERCISE 8"
+subtitle: "HANDS-ON EXERCISE 10"
 author:
   - name: Jedidiah Asaf Tallulembang
     affiliation: "ISSS626 Geospatial Analytics and Applications"
@@ -19,12 +19,14 @@ execute:
 :::
 
 This exercise follows [Geographically Weighted Predictive
-Models](https://r4gdsa.netlify.app/chap14.html), the reading for the Geographically
-Weighted Predictive Modelling block of the course.
+Models](https://r4gdsa.netlify.app/chap14.html), the Hands-on Exercise 10 handout for
+Lesson 10. It was checked against the handout as revised on 19 October 2026, which added
+an overlapping-points check and a spatial jitter step (section 4.2) and predicts the GWR
+test set with a bandwidth of 200 (section 7.3).
 
 ## 1. Overview
 
-Exercise 7 used geographically weighted regression to *explain* condo prices: which
+Exercise 9 used geographically weighted regression to *explain* condo prices: which
 drivers matter, and where. This exercise turns the same idea towards *prediction*:
 given a flat's attributes and location, how accurately can its resale price be
 estimated, and does letting the model vary over space help?
@@ -59,9 +61,8 @@ pacman::p_load(sf, spdep, GWmodel, SpatialML, ranger,
                tmap, rsample, Metrics, corrplot, tidyverse)
 ```
 
-The handout calls `corrplot::corrplot()` and `ranger()` without loading either. `ranger`
-happens to be attached by `SpatialML`; I load both explicitly so the page does not
-depend on that.
+The handout calls `corrplot::corrplot()` without loading `corrplot`; I load it
+explicitly so the page does not depend on it already being attached.
 
 ### A note on how this page is computed
 
@@ -88,7 +89,46 @@ st_crs(mdata)$epsg
 summary(mdata$resale_price)
 ```
 
-### 4.2 Training and test sets
+### 4.2 Overlapping points and spatial jitter
+
+The handout warns that GWmodel should not be given overlapping point features, checks
+for them, and moves every point by up to 1 m with `st_jitter()`:
+
+```{r}
+overlapping_points <- mdata %>%
+  mutate(overlap = lengths(st_equals(., .)) > 1)
+sum(overlapping_points$overlap)
+nrow(distinct(as_tibble(st_coordinates(mdata))))
+```
+
+```{r}
+set.seed(1234)
+mdata_jittered <- mdata %>%
+  st_jitter(amount = 1)
+sum(lengths(st_equals(mdata_jittered, mdata_jittered)) > 1)
+```
+
+The handout prints neither count. They are worth seeing: **14,314 of the 15,901 flats
+(90%) share their coordinates with at least one other flat**, because the 15,901 sales
+sit at only 5,056 distinct locations. Every flat in a block has the block's address.
+After the jitter none overlap, and no point has moved more than 1.4 m.
+
+The handout's next chunk then splits `mdata_jittered` with `prop = 7.5/10`. That chunk
+does not run as written, and it does not match the rest of the handout:
+
+- its jitter chunk writes the result back into `mdata`, so `mdata_jittered` never
+  exists and the split stops with an "object not found" error;
+- its text says the split is 65/35, not 75/25;
+- its printed results come from 10,335 training flats, which is 65% of 15,901.
+
+I keep the 65/35 split that the handout's results come from, saved once and read back
+(section 4.3). My split is of the unjittered points. That turns out not to matter: my
+GWR fit in section 7.2 and the handout's agree to four significant figures (effective
+parameters 1,730.10 against 1,730.09, R² 0.96766 against 0.96765). Whatever the
+small gap comes from, a 1 m jitter or a package version, the results do not hinge on
+it. What the jitter does *not* fix is the subject of section 11.
+
+### 4.3 Training and test sets
 
 ```{r}
 #| eval: false
@@ -125,7 +165,7 @@ corrplot::corrplot(cor(mdata_nogeo[, 2:17]),
 ```
 
 No pair of predictors is correlated above 0.8, so there is no case for dropping any of
-them. As Exercise 7 showed, that global check says nothing about collinearity inside
+them. As Exercise 9 showed, that global check says nothing about collinearity inside
 a GWR neighbourhood, but for prediction rather than interpretation it matters less: a
 collinear local model can still predict well even when its individual coefficients
 cannot be trusted.
@@ -232,7 +272,7 @@ gwr_pred <- gwr.predict(
     WITHIN_1KM_PRISCH,
   data = train_data,
   predictdata = test_data,
-  bw = 40,
+  bw = 200,
   kernel = "gaussian",
   adaptive = TRUE,
   longlat = FALSE)
@@ -259,7 +299,9 @@ floating-point operations. On this machine it ran for over an hour without finis
 **What I do instead.** A GWR prediction is the local coefficients at the test
 location, calibrated on the training flats, multiplied by the test flat's attributes.
 `gwr.basic()` with `regression.points` returns exactly those coefficients and skips
-the variance, so the whole step takes about 30 seconds:
+the variance, so the whole step takes about 30 seconds. I predict at `bw = 40`, the
+bandwidth that cross-validation chose in section 7.1 and that calibrated the model in
+section 7.2. Section 7.4 looks at the handout's 200.
 :::
 
 ```{r}
@@ -296,10 +338,30 @@ read_rds("data/model/gwr_predict_check.rds")
 The two sets of predictions are identical. The only thing given up is the
 prediction variance, which the handout does not use.
 
-The handout also computes a separate adaptive bandwidth on the *test* data and saves
-it, then predicts with a hard-coded `bw = 40`. That bandwidth is never used, and it
-should not be: choosing a bandwidth on the test set would let the test data shape the
-model it is meant to judge. I leave it out.
+### 7.4 Which bandwidth to predict with
+
+The handout calibrates GWR at the cross-validated 40 neighbours. It then computes a
+second adaptive bandwidth on the *test* data, saves it, never uses it, and predicts
+with a hard-coded `bw = 200`.
+
+I leave the test-set bandwidth out. Choosing a bandwidth on the test set would let the
+test data shape the model it is meant to judge.
+
+The hard-coded 200 is a different matter: it is a different model from the one
+calibrated in section 7.2. So I score both on the same test set
+(`R/handout_changes.R`):
+
+```{r}
+read_rds("data/model/handout_changes.rds")$bandwidth %>%
+  mutate(across(c(RMSE, MAE), round), MAPE_pct = round(MAPE_pct, 2))
+```
+
+At 200 neighbours the test RMSE rises from S$24,800 to S$31,000, 25% higher. Each
+local regression now spreads its weight over five times as many flats, which smooths
+over the block-to-block price differences that make GWR accurate on this split. The
+bandwidth that cross-validation picked for left-out training flats also predicts the
+test flats best. Section 10 uses `bw = 40`. At the handout's 200, GWR would fall from
+the best of the four models to third, behind both forests.
 
 ## 8. Random Forest
 
@@ -471,6 +533,10 @@ observations is a weak learner, and a weighted mix of local and global (for exam
 So "machine learning beats regression" is not the lesson. "Letting the model vary
 over space beats not letting it" is, and the linear form, once it is local, is
 competitive with the forest.
+
+**The ranking depends on the bandwidth.** All of this is at the cross-validated
+`bw = 40`. At the handout's `bw = 200` (section 7.4), GWR's RMSE is S$31,000 and it
+comes third, behind both forests.
 :::
 
 ## 11. What the Random Split Hides
@@ -493,6 +559,20 @@ exactly the same coordinates, and `r round(100 * H$leak$within_100m)`% have one 
 model only has to recognise the block and read off what similar flats in it sold for.
 That is a legitimate task, valuing a flat in a block that has recent sales, but it is
 not the same as predicting a price where the model has no local evidence.
+
+The handout's jitter step (section 4.2) does not change this. It separates flats that
+share an address by a metre or so, which keeps GWmodel away from duplicate points, but a
+twin 1 m away is still a twin. Jittering the training and test sets the same way
+(`R/handout_changes.R`):
+
+```{r}
+read_rds("data/model/handout_changes.rds")$twins %>% round(3)
+```
+
+After jitter no test flat shares exact coordinates with a training flat, yet
+`r round(100 * read_rds("data/model/handout_changes.rds")$twins$within_3m)`% still have
+one within 3 m, the same share as before. Removing overlapping points is a numerical
+fix, not a validation fix.
 
 ### 11.2 A spatially blocked holdout
 
@@ -540,7 +620,7 @@ extrapolation in space. It is the local regression being badly conditioned: when
 40 nearest training flats come from one or two blocks, their locational variables are
 nearly identical, the local coefficients become enormous and unstable, and a test flat
 whose values differ even slightly is extrapolated wildly. It is the local
-collinearity of Exercise 7, showing up as prediction error. A random forest cannot
+collinearity of Exercise 9, showing up as prediction error. A random forest cannot
 fail this way, because its predictions are averages of observed prices.
 
 **What the comparison in section 10 actually measured.** On the random split, the
@@ -575,6 +655,12 @@ ill-conditioned local regressions. A random forest's prediction is bounded by th
 prices it has seen; a local linear model's is not. Anyone deploying GWR for prediction
 should clip predictions or check local condition numbers first.
 
+**The handout's October revisions cut different ways.** The jitter step is harmless.
+It deals with GWmodel's concern about duplicate points but does nothing about the
+twins. The hard-coded `bw = 200` raises GWR's test error by 25% and costs it first
+place. Its new split chunk does not run, because it names an object the handout never
+creates.
+
 **Two package changes broke the handout as written, silently or not.** `gwr.predict()`
 fails for more than 5,000 training points in GWmodel 2.4.1, and its workaround is
 computationally impractical because of a prediction variance the exercise never
@@ -582,7 +668,7 @@ uses. `predict.grf()` is no longer exported by SpatialML 1.8.2. Neither is a
 statistical problem, but both are the kind of thing that makes a reproducible pipeline
 stop being reproducible a year later.
 
-**Connecting back to Exercise 7.** There, local collinearity was a reason not to
+**Connecting back to Exercise 9.** There, local collinearity was a reason not to
 interpret individual GWR coefficients. Here it turns out to matter for prediction
 too, but only when the model is asked to predict away from the evidence it was fitted
 on, which is exactly when a prediction is most useful.

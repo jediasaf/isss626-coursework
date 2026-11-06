@@ -1,9 +1,9 @@
 # ---------------------------------------------------------------------------
-# fit_models.R - every slow step of Hands-on Exercise 8, cached to data/model/
+# fit_models.R - every slow step of Hands-on Exercise 10, cached to data/model/
 #
 # The page shows these chunks with eval: false and reads the cached objects,
 # the same pattern the handout uses. Each step is skipped if its file exists.
-# Run from Hands-on_Ex/Hands-on_Ex08/:  Rscript R/fit_models.R
+# Run from Hands-on_Ex/Hands-on_Ex10/:  Rscript R/fit_models.R
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({
   library(sf); library(GWmodel); library(SpatialML); library(ranger)
@@ -86,6 +86,6 @@ if (!file.exists(p("GRF_pred.rds"))) tick("predict.grf", {
 })
 
 # The handout also computes a bandwidth on the test data. It is never used
-# (prediction is fixed at bw = 40), and choosing a bandwidth on the test set
+# (prediction is hard-coded at bw = 200), and choosing a bandwidth on the test set
 # would let the test data shape the model it judges, so it is not computed.
 cat("done\n")

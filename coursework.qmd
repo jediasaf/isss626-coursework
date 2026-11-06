@@ -151,3 +151,20 @@ anywhere from about S$3,300 to S$23,000 a square metre depending on where the un
 
 :::
 
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">10</span>
+<span class="coursework-group-title">Hands-on Exercise 10</span>
+:::
+
+<p class="coursework-group-desc">Four models predict the resale prices of 5,566 HDB flats
+from 10,335 others: linear regression, GWR, a random forest and a geographically weighted
+random forest. GWR is the most accurate on the handout's random split, but 82% of test
+flats have a training flat at the same address. Holding out whole 2 km areas instead
+roughly doubles the error of every flexible model.</p>
+
+[<span class="exercise-row-label">Exercise</span><span class="exercise-row-title">Geographically Weighted Predictive Models</span><span class="exercise-row-arrow">→</span>](Hands-on_Ex/Hands-on_Ex10/Hands-on_Ex10.qmd){.exercise-row}
+
+:::
+
