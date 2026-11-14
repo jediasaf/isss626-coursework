@@ -44,3 +44,22 @@ tests whether violence spreads from a township to its neighbours.</p>
 [<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex02/slides.qmd){.exercise-row}
 
 :::
+
+::: {.coursework-group}
+
+::: {.coursework-group-header}
+<span class="coursework-number">03</span>
+<span class="coursework-group-title">Take-home Exercise 3</span>
+:::
+
+<p class="coursework-group-desc">A Huff model of where Singapore's HDB residents board
+the train in the weekday morning peak, calibrated on three months of LTA tap-ins and the
+dwelling units of 10,817 HDB blocks, then used to predict boardings at the Jurong Region
+Line and Cross Island Line phase 1 stations and the riders they take from stations
+already open.</p>
+
+[<span class="exercise-row-label">Report</span><span class="exercise-row-title">Geospatial Analytics for Urban Sustainability</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex03/index.qmd){.exercise-row}
+
+[<span class="exercise-row-label">Slides</span><span class="exercise-row-title">Executive Summary, 10 slides</span><span class="exercise-row-arrow">→</span>](Take-home_Ex/Take-home_Ex03/slides.qmd){.exercise-row}
+
+:::
