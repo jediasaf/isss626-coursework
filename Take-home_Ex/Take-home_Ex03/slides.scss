@@ -144,3 +144,28 @@ $code-block-bg: #3A1D18;
 @media (prefers-reduced-motion: reduce) {
   .reveal * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Conclusion-led titles are full sentences, so they run smaller and wider than
+   section headings would. The claim is the title; the evidence is the visual. */
+.reveal h2 { font-size: 1.22em; max-width: 36ch; line-height: 1.12; }
+
+/* A short line under the title naming exactly what the figure shows. */
+.reveal .what {
+  color: var(--muted); font-size: 0.5em; letter-spacing: 0.02em; margin: -0.2em 0 0.5em;
+}
+
+/* The one qualification a slide must not be read without. */
+.reveal .caveat {
+  display: block; font-size: 0.9em; color: var(--muted); font-style: italic;
+  margin-top: 0.7em; padding-top: 0.5em; border-top: 1px solid var(--rule);
+}
+
+/* Closing slide: four planning questions, each read the same way
+   (supported / suggested / still needed), so the eye can compare across them. */
+.grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.6rem 2.4rem; font-size: 0.68em; margin-top: 0.4em; }
+.grid4 > div { min-width: 0; }
+.grid4 .qh { display: block; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 1.35em;
+             color: var(--ink); margin: 0 0 0.35em; }
+.grid4 p { margin: 0 0 0.3em; line-height: 1.42; color: var(--ink); }
+.grid4 .k { display: inline-block; width: 6.2em; font-family: Inter, sans-serif; font-size: 0.78em;
+            font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-dk); }

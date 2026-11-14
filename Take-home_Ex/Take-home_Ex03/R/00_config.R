@@ -21,6 +21,9 @@ F_LTA_STN  <- file.path(RAW, "TrainStation_Sep2026.zip")
 F_LTA_EXIT <- file.path(RAW, "TrainStationExit.zip")
 F_BUSSTOP  <- file.path(RAW, "BusStopLocation_Sep2026.zip")
 F_POI      <- file.path(DER, "osm_poi_sg.gpkg")
+# Official opening schedules for every planned station, with sources: hand
+# compiled from LTA publications (see the file header) and committed with the code.
+F_SCHEDULE <- "future_station_schedule.csv"
 PV_GLOB    <- "transport_node_train_*.zip"
 OD_GLOB    <- "origin_destination_train_*.zip"
 
@@ -65,6 +68,10 @@ POI_GROUPS <- c("retail", "food", "office", "education", "health", "civic")
 # The brief's 2030 scenario: the Jurong Region Line (JE, JS and JW codes) and
 # the Cross Island Line phase 1 (CR2 Aviation Park to CR13 Bright Hill).
 JRL_PREFIX <- c("JE", "JS", "JW")
+# The brief's JRL is LTA's 24 stations in stages 1 to 3. JS2A, an infill
+# station between JS2 and JS3 announced in March 2026, opens separately in the
+# mid-2030s (future_station_schedule.csv), so it is not part of that network.
+JRL_LATER  <- "JS2A"
 CRL1_CODES <- paste0("CR", 2:13)
 
 ## --- Line colours (official LTA line colours, used only to mark lines) ----------

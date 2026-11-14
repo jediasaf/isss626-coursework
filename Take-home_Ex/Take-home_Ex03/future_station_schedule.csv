@@ -1,0 +1,79 @@
+# Planned opening of every station in future_stations.csv, as officially stated on 14 Nov 2026.
+# planned_opening is the year used to build the end-2030 network; it is blank where no official year exists.
+# Sources (all opened 14 Nov 2026):
+#   LTA_JRL   https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/jurong_region_line.html (updated 17 Mar 2026)
+#   LTA_RAIL26 https://www.lta.gov.sg/content/ltagov/en/newsroom/2026/3/news-releases/next-phase-of-rail-development.html (4 Mar 2026)
+#   LTA_CRL   https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/cross_island_line.html (updated 4 Aug 2026)
+#   LTA_TEL5  https://www.lta.gov.sg/content/ltagov/en/newsroom/2026/11/news-releases/tel5-dtl3e-passenger-service-26-dec-2026.html (4 Nov 2026)
+#   LTA_CCL6  https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/circle_line_6.html (updated 3 Sep 2026)
+#   LTA_TEL   https://www.lta.gov.sg/content/ltagov/en/upcoming_projects/rail_expansion/thomson_east_coast_line.html (updated 7 Jul 2026)
+#   FM_2025   https://www.foundersmemorial.gov.sg/milestones/project-citizens-showcase-event (18 Jun 2025)
+#   LTA_TELE  https://www.lta.gov.sg/content/ltagov/en/newsroom/2025/7/news-releases/TELe_and_CRL_changi_airport_to_city_centre.html (25 Jul 2025)
+#   LTA_NS3A  https://www.lta.gov.sg/content/ltagov/en/newsroom/2023/7/news-releases/new-brickland-station-to-enhance-rail-connectivity-in-western-si.html (28 Jul 2023)
+#   LTA_SK    https://www.lta.gov.sg/content/ltagov/en/newsroom/2025/1/news-releases/three_new_stations_to_connect.html (6 Jan 2025)
+station_code,station_name,line,stage,planned_opening,opening_as_stated,source
+JS1,Choa Chu Kang,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS2,Choa Chu Kang West,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS3,Tengah,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS4,Hong Kah,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS5,Corporation,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS6,Jurong West,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS7,Bahar Junction,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JS8,Boon Lay,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JW1,Gek Poh,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JW2,Tawas,JRL,JRL Stage 1,2028,mid-2028,LTA_JRL; LTA_RAIL26
+JE1,Tengah Plantation,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE2,Tengah Park,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE3,Bukit Batok West,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE4,Toh Guan,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE5,Jurong East,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE6,Jurong Town Hall,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JE7,Pandan Reservoir,JRL,JRL Stage 2,2028,2028 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JS9,Enterprise,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JS10,Tukang,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JS11,Jurong Hill,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JS12,Jurong Pier,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JW3,Nanyang Gateway,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JW4,Nanyang Crescent,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JW5,Peng Kang Hill,JRL,JRL Stage 3,2029,2029 (provisional; LTA to update),LTA_JRL; LTA_RAIL26
+JS2A,Forest Hill,JRL,JRL infill (JS2A),,"mid-2030s, with surrounding development; no official name",LTA_RAIL26
+CR2,Aviation Park,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR3,Loyang,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR4,Pasir Ris East,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR5,Pasir Ris,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR6,Tampines North,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR7,Defu,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR8,Hougang,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR9,Serangoon North,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR10,Tavistock,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR11,Ang Mo Kio,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR12,Teck Ghee,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR13,Bright Hill,CRL,CRL Phase 1,2030,by 2030,LTA_CRL
+CR14,Turf City,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CR15,King Albert Park,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CR16,Maju,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CR17,Clementi,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CR18,West Coast,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CR19,Jurong Lake District,CRL,CRL Phase 2,2032,2032,LTA_CRL
+CP1,Pasir Ris,CRL,CRL Punggol Extension,2032,2032,LTA_CRL
+CP2,Elias,CRL,CRL Punggol Extension,2032,2032,LTA_CRL
+CP3,Riviera,CRL,CRL Punggol Extension,2032,2032,LTA_CRL
+CP4,Punggol,CRL,CRL Punggol Extension,2032,2032,LTA_CRL
+CR1,Changi Terminal 5,CRL,CRL Changi spur,,mid-2030s (with Changi Terminal 5),LTA_TELE
+TE32,Changi Terminal 5,TEL,TEL extension to Changi,,mid-2030s (with Changi Terminal 5),LTA_TELE
+TE30,Bedok South,TEL,TEL Stage 5,2026,26 Dec 2026,LTA_TEL5
+TE31,Sungei Bedok,TEL,TEL Stage 5,2026,26 Dec 2026,LTA_TEL5
+DT36,Xilin,DTL,DTL3 extension,2026,26 Dec 2026,LTA_TEL5
+DT37,Sungei Bedok,DTL,DTL3 extension,2026,26 Dec 2026,LTA_TEL5
+TE22A,Founders' Memorial,TEL,TEL infill,2028,"with the Founders' Memorial (due end-2028); year inferred, not stated by LTA",LTA_TEL; FM_2025
+CC30,Keppel,CCL,CCL Stage 6,2026,opened 12 Jul 2026,LTA_CCL6
+CC31,Cantonment,CCL,CCL Stage 6,2026,opened 12 Jul 2026,LTA_CCL6
+CC32,Prince Edward Road,CCL,CCL Stage 6,2026,opened 12 Jul 2026,LTA_CCL6
+NS3A,Brickland,NSL,NSL infill,2034,2034,LTA_NS3A
+DE1,Yew Tee Village,DTL,DTL2 extension,2035,by 2035,LTA_SK
+DE2,Sungei Kadut,DTL,DTL2 extension,2035,by 2035,LTA_SK
+NS6,Sungei Kadut,NSL,NSL infill,2035,by 2035,LTA_SK
+TE10,Mount Pleasant,TEL,TEL shell station,,"with surrounding development; date to be advised",LTA_TEL
+TE21,Marina South,TEL,TEL shell station,,"with surrounding development; date to be advised",LTA_TEL
+CC18,Bukit Brown,CCL,CCL shell station,,no official date found,
+TE4A,Tagore,TEL,TEL infill,,no official date found,

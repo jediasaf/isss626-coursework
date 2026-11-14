@@ -1,6 +1,6 @@
 ---
 title: "Take-home Exercise 3: Geospatial Analytics for Urban Sustainability"
-subtitle: "Where HDB residents board the train in the morning, and how the Jurong Region Line and Cross Island Line will move them. A Huff model, 10,817 blocks, 184 stations today and 30 more by 2030."
+subtitle: "Where HDB residents board the train on weekday mornings, and how the Jurong Region Line and Cross Island Line phase 1 would change that. A Huff model of 10,817 HDB blocks and 184 stations."
 format:
   revealjs:
     theme: [dark, slides.scss]
@@ -42,21 +42,25 @@ invisible(Sys.setlocale("LC_CTYPE", "en_US.UTF-8"))  # R runs in the C locale he
 # the deck to the dark palette without touching a plot definition.
 PAL <- modifyList(PAL, list(
   ink = "#F4E7DF", ground = "#2B1512", rule = "#593029", muted = "#C3A79B",
-  land = "#4A2822", land_line = "#2B1512", null = "#4A2A24",
+  land = "#4A2822", land_line = "#2B1512", null = "#5A3A33",
   accent = "#5FB3BC", accent_lt = "#2F6E75", loss = "#F0864B", loss_lt = "#9E4A40",
   div = c("#F0864B", "#D08A6C", "#A98C82", "#8C8580", "#7FA3A6", "#5FB3BC", "#A9DCE0")))
 
+# Every number on these slides is read from the pipeline's outputs.
 origins  <- read_rds(file.path(DER, "origins.rds"))
 stations <- read_rds(file.path(DER, "stations.rds"))
 cal      <- read_rds(file.path(DER, "calibration.rds"))
 scn      <- read_rds(file.path(DER, "scenario.rds"))
 va       <- read_rds(file.path(DER, "value_added.rds"))
 r5       <- read_rds(file.path(DER, "scenario_r5.rds"))
+sens     <- read_rds(file.path(DER, "sensitivity.rds"))
+D        <- read_rds(file.path(DER, "diagnostics.rds"))
+taps_m   <- read_rds(file.path(DER, "taps_by_month.rds"))
 subzone  <- st_read(F_SUBZONE, quiet = TRUE) |> st_transform(STUDY_CRS) |>
   st_make_valid() |> select(SUBZONE_N, PLN_AREA_N, REGION_N)
-stn <- cal$stn; th <- cal$fits[[cal$best]]$theta; res <- scn$res
-ex <- filter(stations, existing); n_fit <- length(cal$cal_idx)
-cv_of <- function(m, col) cal$cv[[col]][cal$cv$model == m]
+stn <- cal$stn; th <- cal$fits[[cal$best]]$theta; res <- scn$res; ci <- cal$cal_idx
+ex <- filter(stations, existing); n_fit <- length(ci); newS <- filter(stations, new)
+cmp <- sens$comparison; m_of <- function(m, col) cmp[[col]][cmp$model == m]
 pct <- function(x) percent(x, accuracy = 1); num <- function(x, a = 1) comma(x, accuracy = a)
 lines_sf <- function(s) s |> mutate(kind = case_when(new & str_detect(lines_2030, "JRL") ~ "Jurong Region Line",
                                                      new & str_detect(lines_2030, "CRL") ~ "Cross Island Line",
@@ -70,36 +74,41 @@ kf <- function(...) {
   cat('</div>')
 }
 nn <- res |> filter(new) |> arrange(-pred_2030)
-q10 <- quantile(stn$tap_am[cal$cal_idx], 0.1)
+q10 <- quantile(stn$tap_am[ci], 0.1)
 low <- nn |> filter(pred_2030 < q10)
+mon_cor <- taps_m |> select(YEAR_MONTH, pt_code, tap_am) |> pivot_wider(names_from = YEAR_MONTH, values_from = tap_am) |>
+  select(-pt_code) |> log() |> cor(use = "complete.obs")
+lr <- va$lambda_region |> mutate(region = str_to_title(sub(" REGION", "", region)))
+lrv <- function(r) sprintf("%.1f", lr$lambda[lr$region == r])
+src <- "Source: LTA DataMall Passenger Volume by Train Stations, Aug to Oct 2026; HDB (data.gov.sg); own Huff model."
 ```
 
 ## Contents {.smaller}
 
 ::: {.subhead}
-One question in three parts: where HDB residents board the train in the morning,
-what makes a station draw them, and how the new lines will move them.
+One question: where do HDB residents board the train on weekday mornings, and how would
+the planned Jurong Region Line (JRL) and Cross Island Line phase 1 (CRL) change that?
 :::
 
-1. The question, the place and the data
-2. Clearing the land mines
-3. The model
-4. What makes a station attractive
-5. Where the model misses
-6. Ridership at the new stations
-7. Who the new lines take riders from
-8. Market areas in the west
-9. Does distance decay differ across the island?
-10. What this means for planning, and what it cannot say
+1. Why station demand is needed before a station opens
+2. The data, and how far they can be trusted
+3. How the model shares out each block's residents
+4. What makes a station attract riders
+5. How accurate the model is
+6. Which new stations have the most HDB residents nearby
+7. Where boardings move when the new lines open
+8. How catchments change in the west
+9. Whether distance matters equally everywhere
+10. What planners can and cannot take from this
 
-## 1. The question, the place and the data
+## Planners need an estimate of station demand before anyone has used the station
 
 ```{r}
 #| output: asis
-kf(list(num(nrow(origins)), "HDB residential blocks"),
+kf(list(num(nrow(origins)), "HDB blocks"),
    list(paste0(round(sum(origins$du) / 1e6, 2), "M"), "dwelling units"),
    list(sum(stations$existing), "stations today"),
-   list(sum(stations$new), "new by 2030"))
+   list(sum(stations$new), "new JRL and CRL stations"))
 ```
 
 ::: {.split}
@@ -118,221 +127,252 @@ ggplot() + base_land(subzone) +
 ```
 :::
 ::: {.note}
-**How many people will board at each new JRL and CRL station, and which stations
-will they come from?** Stations open late when their riders are not there yet: Hume
-waited ten years, Buangkok three.
+Stations open late when their riders are not there: Hume waited ten years, Buangkok
+and Woodleigh stayed shut when their line opened.
 
-**What is modelled.** Weekday tap-ins from 06:00 to 09:00, August to October 2026,
-from LTA DataMall. In the morning most trips start at home, so a station's
-boardings come from the housing around it.
+**The question.** Where do HDB residents board on weekday mornings (06:00 to 09:00),
+and how would the JRL and CRL phase 1 change that? LTA currently schedules both by 2030.
 
-**Market potential.** Dwelling units in every HDB block, the housing of about four
-in five residents.
+**Why mornings, why HDB.** Morning trips mostly start at home, so boardings can be
+traced to nearby homes. HDB flats house about four in five residents and are the only
+homes counted block by block.
 
-*Grey dots are HDB blocks, sized by dwelling units; teal and green are the new lines.*
+*Grey dots: HDB blocks, sized by flats. Teal and green: the new stations.*
 :::
 :::
 
-## 2. Clearing the land mines
-
-::: {.split .even .roomy}
-::: {.col}
-[What the data hid]{.colhead}
-
-**The two HDB files share no key.** One street code per street made it possible: one
-block per street geocoded with OneMap gave a crosswalk that places all 10,817
-residential blocks.
-
-**LTA's station layer includes ghost stations.** Bukit Brown, Mount Pleasant, Marina
-South and Founders' Memorial are built and board nobody. The passenger data, not the
-station layer, decides what exists.
-
-**Circle Line stage 6 is already open.** Keppel, Cantonment and Prince Edward Road
-are listed as planned but carry passengers; they join today's network.
-:::
-::: {.note}
-[What the model can be judged on]{.colhead}
-
-**`r sum(ex$du_1km < CAL_MIN_DU_1KM)` stations have almost no HDB housing within 1 km:**
-private estates (Newton, Stevens), industry (Tuas), the airport and the central area.
-Newton and Kranji board over 200,000 people a month in the morning with no HDB block
-within a kilometre.
-
-They stay in every choice set, competing for riders, but the model is fitted on the
-other **`r n_fit`**. The data agree: the fitted stations board
-`r round(with(st_drop_geometry(stn)[cal$cal_idx, ], sum(tap_am) / sum(tapout_am)), 1)` morning tap-ins per
-tap-out, the excluded ones `r round(with(st_drop_geometry(stn)[-cal$cal_idx, ], sum(tap_am) / sum(tapout_am)), 1)`.
-:::
-:::
-
-## 3. The model
+## The data were usable only after four traps were cleared
 
 ::: {.split}
 ::: {.col}
-$$
-P_{ij} = \frac{A_j\, d_{ij}^{\lambda}}{\sum_{l \in C_i} A_l\, d_{il}^{\lambda}}
-\qquad
-\hat T_j = k \sum_i DU_i\, P_{ij}
-$$
-
-A resident of block $i$ boards at station $j$ with a probability that rises with the
-station's attractiveness $A_j$ and falls with distance. Each station's predicted
-boardings are the dwelling units it draws, times one trip rate $k$.
-
-$A_j$ is multiplicative in lines served, bus stops and points of interest within
-400 m, and whether the station is LRT-only, as in an MCI model.
+```{r sl-inout}
+#| fig-height: 4.5
+#| fig-width: 6.6
+d <- ex |> st_drop_geometry() |> mutate(in_fit = du_1km >= CAL_MIN_DU_1KM)
+lab <- d |> filter(name %in% c("Yishun", "Woodlands", "Raffles Place", "Newton", "Kranji", "Tuas Link", "Punggol"))
+ggplot(d, aes(tapout_am, tap_am)) +
+  geom_abline(colour = PAL$muted, linewidth = 0.3, linetype = 2) +
+  geom_point(aes(colour = in_fit), size = 2, alpha = 0.9) +
+  geom_text_repel(data = lab, aes(label = name), size = 3.4, colour = PAL$ink, seed = 1, min.segment.length = 0) +
+  scale_x_log10(labels = label_comma()) + scale_y_log10(labels = label_comma()) +
+  scale_colour_manual(values = c(`TRUE` = PAL$accent, `FALSE` = PAL$loss),
+                      labels = c(`TRUE` = "HDB homes nearby: used to fit", `FALSE` = "Few HDB homes: not used"), name = NULL) +
+  labs(x = "Morning tap-outs per month", y = "Morning tap-ins per month") +
+  theme_ex03(13, grid = "both")
+```
 :::
 ::: {.note}
-**Choice set.** Every station within 3 km of a block, and at least its three
-nearest.
+**No shared key** between HDB's flat counts and its building outlines: one OneMap
+lookup per street linked all 10,817 blocks.
 
-**Calibration.** Parameters minimise the squared error of *log* boardings, so a 20%
-miss costs the same at a small station as a large one.
+**LTA's station layer holds unopened shells** (Bukit Brown, Mount Pleasant, Marina
+South). The passenger data, not the layer, decides what operates.
 
-**Validation.** 10-fold cross-validation over stations: hidden stations stay in
-every choice set and only their ridership is withheld, which is the position of a
-new station.
+**Circle Line stage 6 opened on 12 July 2026**, though listed as planned: moved to
+today's network.
 
-**Checked** against `MCI::huff.shares()`: the shares agree to the 15th decimal place.
+**JS2A is not one of the JRL's 24 stations**: LTA plans it for the mid-2030s.
+
+The counts are steady (month-to-month correlation `r round(mon_cor[1, 3], 2)`).
+Below the dashed line, a station receives more people than it sends out in the morning.
+`r with(st_drop_geometry(ex), sum(du_1km < CAL_MIN_DU_1KM & tap_am < tapout_am))` of the
+`r sum(ex$du_1km < CAL_MIN_DU_1KM)` stations with few HDB homes nearby sit there, so they are
+kept as competitors but not used to fit the model.
 :::
 :::
 
-## 4. What makes a station attractive
+## The model shares each block's residents among nearby stations by distance and pull
 
-```{r}
-#| output: asis
-kf(list(pct(cv_of("M0", "R2_log")), "textbook Huff, cross-validated R²"),
-   list(pct(cv_of("M3", "R2_log")), "full model, cross-validated R²"),
-   list(sprintf("%.2f", cv_of("M3", "spearman")), "rank correlation"),
-   list(paste0(round(cv_of("M3", "MdAPE_pct")), "%"), "median miss"))
+::: {.split}
+::: {.col}
+```{r sl-example}
+#| fig-height: 3.9
+#| fig-width: 6.8
+eg <- "220A | TENGAH GDN WALK"
+d <- bind_rows(scn$sh_now |> filter(origin_id == eg) |> mutate(network = "Today"),
+               scn$sh_30 |> filter(origin_id == eg) |> mutate(network = "With JRL and CRL")) |>
+  group_by(network) |> slice_max(p, n = 4) |> ungroup() |> mutate(new = name %in% newS$name)
+ggplot(d, aes(p, reorder(name, p), fill = new)) +
+  geom_col(width = 0.62) +
+  geom_text(aes(label = pct(p)), hjust = -0.15, size = 4, colour = PAL$ink) +
+  facet_wrap(~network, scales = "free_y", ncol = 1) +
+  scale_fill_manual(values = c(`FALSE` = PAL$accent_lt, `TRUE` = LINE_COLS[["JRL"]]), guide = "none") +
+  scale_x_continuous(labels = label_percent(), expand = expansion(mult = c(0, 0.3))) +
+  labs(x = "Share of the block's residents", y = NULL) + theme_ex03(13, grid = "x")
 ```
+:::
+::: {.note}
+$$
+P_{ij} = \frac{A_j\, d_{ij}^{\lambda}}{\sum_{l} A_l\, d_{il}^{\lambda}}
+$$
+
+**One block in Tengah (220A Tengah Garden Walk).** Today its residents are spread over
+four stations, none of them near. With the JRL, two new stations take most of them.
+
+Each station within 3 km scores higher the closer it is (distance $d$) and the more it
+offers (attractiveness $A$). Residents are shared in proportion to the scores, and each
+station's boardings are the homes it draws times one trip rate.
+
+**Fitted** to the 148 stations with HDB homes nearby; the shares match the course's
+`MCI` package to 15 decimal places.
+:::
+:::
+
+## Stations with more lines and more around them draw more riders; LRT-only stops far fewer
 
 ::: {.split}
 ::: {.col}
 ```{r sl-params}
-#| fig-height: 3.2
-#| fig-width: 6.4
-lab_terms <- c(lambda = "Distance exponent", n_lines = "Lines served", bus_stops = "Bus stops",
-               poi = "Points of interest", lrt_only = "LRT-only")
+#| fig-height: 3.5
+#| fig-width: 6.6
+lab_terms <- c(lambda = "Distance (exponent)", n_lines = "Lines served", bus_stops = "Bus stops nearby",
+               poi = "Shops and services nearby", lrt_only = "LRT-only station")
 p <- tibble(term = names(th), estimate = th) |> left_join(cal$ci, by = "term") |>
   mutate(term = factor(lab_terms[term], rev(lab_terms)))
 ggplot(p, aes(estimate, term)) +
   geom_vline(xintercept = 0, colour = PAL$muted, linewidth = 0.3) +
-  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0, colour = PAL$accent, linewidth = 0.9) +
-  geom_point(colour = PAL$accent, size = 2.6) +
-  labs(x = "Estimate with 95% bootstrap interval", y = NULL) + theme_ex03(13, grid = "x")
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0, colour = PAL$accent, linewidth = 1) +
+  geom_point(colour = PAL$accent, size = 3) +
+  geom_text(aes(label = sprintf("%.2f", estimate)), vjust = -1, size = 3.8, colour = PAL$ink) +
+  labs(x = "Estimate with 95% bootstrap interval (right of zero: more attractive)", y = NULL) +
+  theme_ex03(13, grid = "x")
 ```
 :::
 ::: {.note}
-**A second line multiplies a station's pull by `r round((3/2)^th[["n_lines"]], 1)`.** People
-walk further to an interchange because it saves a transfer later.
+Holding the rest fixed, the model estimates:
 
-**Ten times the shops and services: ×`r round(10^th[["poi"]], 1)`.** Activity adds a smaller pull.
+**A second line: ×`r round((3/2)^th[["n_lines"]], 1)`** the pull of a one-line station.
 
-**An LRT-only station has `r pct(exp(th[["lrt_only"]]))` of the pull** of an equivalent
-MRT station.
+**Ten times the shops and services: ×`r round(10^th[["poi"]], 1)`.**
 
-**Distance decays with exponent `r round(th[["lambda"]], 2)`:** doubling the distance cuts the pull by
-×`r round(2^-th[["lambda"]], 1)`. Bus stops add nothing once the rest is in.
+**LRT-only: `r pct(exp(th[["lrt_only"]]))`** of the pull of a similar MRT station.
+
+**Twice as far: ÷`r round(2^-th[["lambda"]], 1)`.** Bus stops add nothing once the
+rest is known.
+
+[These are associations, not proven causes: saving a transfer is a plausible reason
+interchanges draw more, but the model cannot show it. The distance and LRT estimates
+trade off against each other (LRT stops sit close to their blocks), so only their
+combined effect is firm.]{.caveat}
 :::
 :::
 
-## 5. Where the model misses
+## The model ranks stations well but misses any one station by about a third
+
+```{r}
+#| output: asis
+kf(list(pct(m_of("M0", "R2_log")), "textbook Huff, R² on hidden stations"),
+   list(pct(m_of("M3", "R2_log")), "this model, R² on hidden stations"),
+   list(sprintf("%.2f", m_of("M3", "spearman")), "rank correlation"),
+   list(paste0(round(m_of("M3", "MdAPE_pct")), "%"), "typical miss, one station"))
+```
 
 ::: {.split}
 ::: {.col}
-```{r sl-resid}
-#| fig-height: 4.8
-#| fig-width: 7.2
-d <- stn[cal$cal_idx, ]
-ggplot() + base_land(subzone) +
-  geom_sf(data = d, aes(fill = pmax(pmin(resid_log, 1.2), -1.2)), shape = 21, size = 3.4, colour = PAL$ground, stroke = 0.3) +
-  scale_fill_gradientn(colours = PAL$div, limits = c(-1.2, 1.2), name = "log(observed / predicted)") +
-  mapt(11)
+```{r sl-obs}
+#| fig-height: 4
+#| fig-width: 6.6
+d <- st_drop_geometry(stn)[ci, ] |> mutate(cv = cal$cv_pred[[cal$best]][ci], err = log(tap_am / cv))
+lab <- d |> slice_max(abs(err), n = 6)
+ggplot(d, aes(cv, tap_am)) +
+  geom_abline(colour = PAL$muted, linewidth = 0.4, linetype = 2) +
+  geom_abline(intercept = log10(2), colour = PAL$muted, linewidth = 0.25, linetype = 3) +
+  geom_abline(intercept = -log10(2), colour = PAL$muted, linewidth = 0.25, linetype = 3) +
+  geom_point(colour = PAL$accent, size = 1.9, alpha = 0.85) +
+  geom_text_repel(data = lab, aes(label = name), size = 3.3, colour = PAL$ink, seed = 2, min.segment.length = 0) +
+  scale_x_log10(labels = label_comma()) + scale_y_log10(labels = label_comma()) +
+  labs(x = "Predicted with its own ridership hidden", y = "Observed morning tap-ins per month") +
+  theme_ex03(13, grid = "both")
 ```
 :::
 ::: {.note}
-**The misses cluster.** Moran's I of the residuals is
-`r round(cal$moran_resid$estimate[1], 2)` (p < 0.001).
+Each station was predicted with its own ridership hidden (10-fold cross-validation),
+the closest available test of predicting a new station.
 
-**Under-predicted (teal):** city-fringe stations that mix HDB with private housing,
-such as Novena, Great World, Katong Park and Beauty World. The extra riders live in
-homes the model cannot see.
+**Rank:** nearly right. **One station:** typically `r round(m_of("M3", "MdAPE_pct"))`% off;
+the dotted lines mark a factor of two.
 
-**Over-predicted (orange):** stations opened recently (Keppel, 2026) and stations
-whose blocks mostly walk to a stronger neighbour (Bendemeer, Labrador Park).
+**Misses cluster in space** (Moran's I `r round(D$moran_perm$statistic, 2)`, permutation
+p = `r D$moran_perm$p.value`): too low beside private housing the model cannot see, too
+high at recently opened Keppel.
 
-One distance exponent for the whole island is the obvious suspect; slide 9 tests it.
+[A high score on existing stations is not proof for new ones. No real opening could be
+tested: DataMall keeps only three months of data.]{.caveat}
 :::
 :::
 
-## 6. Ridership at the new stations
+## Tengah Plantation, Serangoon North and Pasir Ris East have the most HDB residents nearby
 
 ::: {.split}
 ::: {.col}
 ```{r sl-new}
-#| fig-height: 5.4
+#| fig-height: 5.5
 #| fig-width: 6.6
 d <- nn |> mutate(name = reorder(name, pred_2030), line = ifelse(line_new == "JRL", "JRL", "CRL"))
 ggplot(d, aes(pred_2030, name)) +
-  annotate("rect", xmin = q10, xmax = quantile(stn$tap_am[cal$cal_idx], 0.5), ymin = -Inf, ymax = Inf, fill = PAL$land) +
-  geom_errorbarh(aes(xmin = pred_2030_lo, xmax = pred_2030_hi, colour = line), height = 0, linewidth = 0.7) +
-  geom_point(aes(colour = line), size = 2) +
+  annotate("rect", xmin = q10, xmax = quantile(stn$tap_am[ci], 0.5), ymin = -Inf, ymax = Inf, fill = PAL$land) +
+  geom_errorbarh(aes(xmin = pred_2030_lo, xmax = pred_2030_hi, colour = line), height = 0, linewidth = 0.8) +
+  geom_point(aes(colour = line), size = 2.2) +
   scale_x_log10(labels = label_comma()) +
   scale_colour_manual(values = c(JRL = LINE_COLS[["JRL"]], CRL = LINE_COLS[["CRL"]]), name = NULL) +
-  labs(x = "Predicted morning boardings per month (log scale)", y = NULL) +
-  theme_ex03(12, grid = "x")
+  labs(x = "Modelled morning boardings per month from HDB homes (log scale)", y = NULL) +
+  theme_ex03(11.5, grid = "x")
 ```
 :::
 ::: {.note}
-**The strong stations sit in housing with no station today.** Tengah Plantation
+**Top:** stations placed among HDB blocks with no station today. Tengah Plantation
 (`r num(nn$pred_2030[nn$name == "Tengah Plantation"], 1000)` a month), Serangoon North
 (`r num(nn$pred_2030[nn$name == "Serangoon North"], 1000)`) and Pasir Ris East
 (`r num(nn$pred_2030[nn$name == "Pasir Ris East"], 1000)`).
 
-**`r nrow(low)` fall below today's 10th percentile:** `r paste(low$name, collapse = ", ")`.
-Few homes surround them. In a home-based model they are the ghost-station risk; their
-case rests on jobs and campuses this model cannot see.
+**Bottom:** `r nrow(low)` stations below today's 10th percentile, in industrial,
+university and airport areas. That means few HDB homes are near them, **not** that they
+will be little used: their riders are workers, students and travellers, whom this model
+does not count.
 
-*Shaded: today's fitted stations, 10th to 50th percentile. Bars: 95% bootstrap intervals.*
+*Shaded band: today's stations, 10th to 50th percentile.*
+
+[Bars show parameter uncertainty only, not the range of real ridership. Homes and
+surroundings are held at today's.]{.caveat}
 :::
 :::
 
-## 7. Who the new lines take riders from
+## The new lines move boardings between stations; they do not add them
 
 ::: {.split}
 ::: {.col}
-```{r sl-impact}
-#| fig-height: 4.8
-#| fig-width: 7.2
-d <- stations |> select(name) |> left_join(res, by = "name")
-ggplot() + base_land(subzone) +
-  geom_sf(data = filter(d, existing, !is.na(change_pct)),
-          aes(fill = pmax(change_pct, -0.6), size = pred_now), shape = 21, colour = PAL$ground, stroke = 0.25) +
-  geom_sf(data = filter(d, new), aes(colour = line_new), shape = 18, size = 2.6) +
-  scale_fill_gradientn(colours = c(PAL$loss, "#D9926E", "#A8796C", "#8C8079"), limits = c(-0.6, 0.05),
-                       labels = label_percent(), name = "Change") +
-  scale_colour_manual(values = c(JRL = LINE_COLS[["JRL"]], CRL = LINE_COLS[["CRL"]]), name = NULL) +
-  scale_size_area(max_size = 6, guide = "none") + mapt(11)
+```{r sl-bars}
+#| fig-height: 5
+#| fig-width: 6.6
+d <- res |> filter(existing, !is.na(change)) |> filter(rank(change) <= 12 | change > 0) |>
+  mutate(name = reorder(name, change), dir = ifelse(change > 0, "gain", "loss"))
+ggplot(d, aes(change, name, fill = dir)) +
+  geom_col(width = 0.7) +
+  geom_text(aes(label = pct(change_pct), hjust = ifelse(change > 0, -0.15, 1.15)), size = 3.6, colour = PAL$ink) +
+  geom_vline(xintercept = 0, colour = PAL$ink, linewidth = 0.3) +
+  scale_fill_manual(values = c(gain = PAL$accent, loss = PAL$loss), guide = "none") +
+  scale_x_continuous(labels = label_comma(), expand = expansion(mult = c(0.2, 0.22))) +
+  labs(x = "Change in modelled morning boardings per month", y = NULL) +
+  theme_ex03(12, grid = "x")
 ```
 :::
 ::: {.note}
-```{r}
-#| output: asis
-top <- res |> filter(existing) |> arrange(change) |> head(5)
-cat(paste0("**", top$name, "** ", pct(top$change_pct), " (", num(top$change, 1000), " a month)", collapse = "<br>"))
-```
+The model keeps the number of homes and trips fixed, so total morning boardings are
+exactly the same before and after. Only where people board changes.
 
-The losses fall where the new lines run *between* existing stations. The JRL's
-Jurong West branch takes the estates that walk to Chinese Garden, Lakeside and
-Pioneer today; the Tengah stations take riders from Bukit Batok and Bukit Gombak.
+**Largest losses:** stations that the new lines run between. Chinese Garden, Lakeside
+and Pioneer lose blocks to the JRL's Jurong West branch, Kovan to Serangoon North and
+Tavistock.
 
-For the operator this is relief: these are among the busiest morning stations on the
-East-West and North-South lines.
+**Only gains:** the four stations that become Cross Island Line interchanges (Hougang,
+Bright Hill, Ang Mo Kio, Pasir Ris).
+
+[Fewer people entering a station does not mean emptier trains: many JRL riders will
+still change to the East-West Line. Train loads need a routing model.]{.caveat}
 :::
 :::
 
-## 8. Market areas in the west
+## Tengah and Jurong West gain stations of their own
 
 ```{r sl-market}
 #| fig-height: 4.7
@@ -351,8 +391,8 @@ p_now <- ggplot() +
   geom_sf(data = o_w, aes(colour = ifelse(station_now %in% top, station_now, "other")), size = 0.8) +
   geom_sf(data = filter(stn_w, existing), shape = 21, size = 1.8, colour = PAL$ink, fill = PAL$ground) +
   scale_colour_manual(values = c(pal_st, other = PAL$null), guide = "none") +
-  labs(title = "Today") + mapt(12, crop = FALSE) +
-  theme(plot.background = element_rect(fill = NA, colour = NA), plot.title = element_text(colour = PAL$ink))
+  labs(title = "Today: each block coloured by its main station") + mapt(12, crop = FALSE) +
+  theme(plot.background = element_rect(fill = NA, colour = NA), plot.title = element_text(colour = PAL$ink, size = 12))
 p_30 <- ggplot() +
   geom_sf(data = st_crop(subzone, west), fill = PAL$land, colour = PAL$land_line, linewidth = 0.15) +
   geom_sf(data = o_w, aes(colour = change), size = 0.8) +
@@ -363,88 +403,103 @@ p_30 <- ggplot() +
                                  "Keeps its station" = PAL$null), name = NULL) +
   scale_fill_manual(values = c("Jurong Region Line" = LINE_COLS[["JRL"]], "Cross Island Line" = LINE_COLS[["CRL"]]), guide = "none") +
   guides(colour = guide_legend(nrow = 2, override.aes = list(size = 3))) +
-  labs(title = "2030, with the JRL") + mapt(12, crop = FALSE) +
-  theme(plot.background = element_rect(fill = NA, colour = NA), plot.title = element_text(colour = PAL$ink))
+  labs(title = "With the JRL: blocks that change station") + mapt(12, crop = FALSE) +
+  theme(plot.background = element_rect(fill = NA, colour = NA), plot.title = element_text(colour = PAL$ink, size = 12))
 (p_now + p_30) & theme(plot.background = element_rect(fill = NA, colour = NA))
 ```
 
 ::: {.subhead}
-Left: each HDB block coloured by the station that draws most of its residents today.
-Right: the blocks whose main station changes in 2030. `r num(sum(scn$dom$switched))` blocks change
-across the island, `r num(sum(scn$dom$to_new))` of them to a new station. Tengah, today on the edge of
-Bukit Batok's and Choa Chu Kang's catchments, gets stations of its own.
+Same area and projection in both panels; circles are today's stations, diamonds the new
+JRL stations. Across Singapore `r num(sum(scn$dom$switched))` of 10,817 blocks change their
+main station, `r num(sum(scn$dom$to_new))` of them to a new one. Tengah's blocks, today at the
+edge of several catchments, become the core of their own.
 :::
 
-## 9. Does distance decay differ across the island?
+## Distance matters about twice as much in the North-East and West as in the centre
 
 ::: {.split}
 ::: {.col}
 ```{r sl-va}
-#| fig-height: 3.6
-#| fig-width: 6.4
-{
-  lr <- va$lambda_region |> mutate(region = str_to_title(sub(" REGION", "", region)))
-  ggplot(lr, aes(lambda, reorder(region, lambda))) +
-    geom_vline(xintercept = th[["lambda"]], linetype = 2, colour = PAL$muted, linewidth = 0.3) +
-    geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0, colour = PAL$accent, linewidth = 0.9) +
-    geom_point(colour = PAL$accent, size = 2.6) +
-    labs(x = "Distance exponent by region of the home block", y = NULL) + theme_ex03(13, grid = "x")
-}
+#| fig-height: 3.7
+#| fig-width: 6.6
+ggplot(lr, aes(lambda, reorder(region, lambda))) +
+  geom_vline(xintercept = th[["lambda"]], linetype = 2, colour = PAL$muted, linewidth = 0.3) +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0, colour = PAL$accent, linewidth = 1) +
+  geom_point(colour = PAL$accent, size = 3) +
+  labs(x = "Distance exponent by region of the home block\n(more negative: distance matters more; dashed: one value for all)", y = NULL) +
+  theme_ex03(12, grid = "x")
 ```
 :::
 ::: {.note}
-```{r}
-#| include: false
-lr5 <- va$lambda_region |> mutate(region = str_to_title(sub(" REGION", "", region)))
-lrv <- function(r, col = "lambda") round(lr5[[col]][lr5$region == r], 1)
-```
+**Value-added.** Letting the effect of distance differ by region, a geographically
+varying version of the model:
 
-**One exponent per region of the home block.** North-East (`r lrv("North-East")`) and
-West (`r lrv("West")`) residents are about twice as distance-sensitive as Central ones
-(`r lrv("Central")`). Newer towns are built around their own stop; central residents can
-choose among several stations.
+**North-East `r lrv("North-East")` and West `r lrv("West")`** against **Central `r lrv("Central")`.**
+Newer towns are laid out around their own stop; central residents have several stations
+to choose from. (The model shows the difference, not the reason.)
 
-**It predicts held-out stations better:** R² `r round(va$cv$R2_log[va$cv$model == "R5"], 2)` against
-`r round(cv_of("M3", "R2_log"), 2)`. Exponential decay does worse (`r round(va$cv$R2_log[va$cv$model == "EXP"], 2)`).
+**It predicts hidden stations better:** R² `r round(m_of("R5", "R2_log"), 2)` against
+`r round(m_of("M3", "R2_log"), 2)`; bias in the total `r round(m_of("R5", "bias_pct"))`% against
+`r round(m_of("M3", "bias_pct"))`%.
 
-**The 2030 conclusions hold.** New stations rank the same (ρ = `r round(r5$summ$rho_new, 2)`).
+**The conclusions hold:** new stations rank the same (`r round(r5$summ$rho_new, 2)`).
 Only the western interchanges change: Jurong East loses
 `r pct(-r5$cmp$change_pct_r5[r5$cmp$name == "Jurong East"])` instead of
 `r pct(-r5$cmp$change_pct[r5$cmp$name == "Jurong East"])`.
 
-*East and North intervals are too wide to read.*
+[North and East estimates are too uncertain to read: too few stations there to tell
+distance from attractiveness.]{.caveat}
 :::
 :::
 
-## 10. What this means for planning, and what it cannot say
+## What the model supports, what it suggests, and what evidence is still missing
 
-::: {.split .even .roomy}
-::: {.col}
-[For planners and operators]{.colhead}
+::: {.grid4}
+::: {.q4}
+[Residential demand]{.qh}
 
-**Open the residential JRL stations with the line.** Tengah Plantation, Choa Chu
-Kang West and the Jurong West branch will board like today's busy heartland
-stations.
+[Supports]{.k} A ranking of new stations by nearby HDB residents: Tengah Plantation,
+Serangoon North, Pasir Ris East, Choa Chu Kang West on top.
 
-**Judge the destination stations on jobs, not homes.** Aviation Park, Jurong Pier,
-Jurong Hill and Loyang will look empty in a home-based morning model; time their
-opening to the employment around them.
+[Suggests]{.k} These will be busy morning boarding points from opening.
 
-**Redraw the Jurong West and Bukit Batok feeder buses** towards the new stations.
+[Needs]{.k} Private housing and new blocks; ridership at comparable new stations.
 :::
-::: {.note}
-[What it cannot say]{.colhead}
+::: {.q4}
+[Jobs, campuses, airport]{.qh}
 
-**Private housing is invisible** to it, which is why private-estate stations were
-left out of the fit.
+[Supports]{.k} Few HDB residents live near Aviation Park, Jurong Pier, Jurong Hill,
+Loyang, Tukang and the Nanyang stations.
 
-**It predicts home-based morning boardings,** not total ridership; destination
-stations need a model with employment as the attraction.
+[Suggests]{.k} Nothing about their total use, or about opening dates.
 
-**Straight-line distance** stands in for the walk and the feeder bus, and new
-stations are measured on today's surroundings, so their predictions are a floor.
-
-*The brief's "public-safety" and "peace-keeping" implications are a carry-over from
-Take-home 2 and do not apply to rail ridership.*
+[Needs]{.k} A model of morning arrivals with jobs and student numbers, and the
+origin-destination data.
 :::
+::: {.q4}
+[Existing stations]{.qh}
+
+[Supports]{.k} Large shifts of HDB morning boardings away from Chinese Garden, Lakeside,
+Pioneer, Bukit Batok and Kovan.
+
+[Suggests]{.k} Lighter entry and access demand at those stations.
+
+[Needs]{.k} Train routing and capacity before any claim about crowding; a bus-network
+study before any feeder change.
+:::
+::: {.q4}
+[Further validation]{.qh}
+
+[Supports]{.k} The model ranks today's stations well (`r sprintf("%.2f", m_of("M3", "spearman"))`)
+and its conclusions survive the sensitivity checks.
+
+[Suggests]{.k} The regional model is the better guide in the West and North-East.
+
+[Needs]{.k} A before-and-after test at a real opening; walking-network distances
+instead of straight lines.
+:::
+:::
+
+::: {.footer-note}
+`r src` The brief's "public-safety" and "peace-keeping" implications are carry-overs from Take-home 2 and do not apply here.
 :::

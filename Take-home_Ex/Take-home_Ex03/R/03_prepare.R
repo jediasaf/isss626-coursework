@@ -11,7 +11,7 @@
 # Run from Take-home_Ex/Take-home_Ex03/ after 00 to 02:  Rscript R/03_prepare.R
 # ---------------------------------------------------------------------------
 suppressPackageStartupMessages({ library(sf); library(tidyverse) })
-source("R/00_config.R")
+source("R/00_config.R"); source("R/prep_functions.R")
 sf_use_s2(FALSE)
 
 subzone <- st_read(F_SUBZONE, quiet = TRUE) |> st_transform(STUDY_CRS) |> st_make_valid() |>
@@ -69,13 +69,6 @@ taps <- taps_month |> group_by(pt_code) |>
 # 3. Station complexes -------------------------------------------------------------
 # One destination per physical station: an interchange is one place to a rider
 # walking from home, whatever the number of lines. Codes are grouped by name.
-line_of <- function(code) {
-  p <- str_extract(code, "^[A-Z]+")
-  case_when(p %in% c("EW", "CG") ~ "EW", p %in% c("CC", "CE") ~ "CC",
-            p == "BP" ~ "BPLRT", p %in% c("SE", "SW", "STC") ~ "SKLRT",
-            p %in% c("PE", "PW", "PTC") ~ "PGLRT", p %in% JRL_PREFIX ~ "JRL",
-            p %in% c("CR", "CP") ~ "CRL", TRUE ~ p)
-}
 op  <- read_csv(F_STN_OP, show_col_types = FALSE) |> mutate(status = "operational")
 fut <- read_csv(F_STN_FUT, show_col_types = FALSE) |> mutate(status = "planned")
 od_codes <- unique(unlist(strsplit(taps$pt_code, "/")))
@@ -95,17 +88,10 @@ codes_all <- bind_rows(op, extra, filter(fut, station_code %in% now_open) |> mut
                        filter(fut, !station_code %in% now_open) |> mutate(status = "planned")) |>
   mutate(line = line_of(station_code),
          scenario = case_when(status == "operational" ~ "existing",
+                              station_code %in% JRL_LATER ~ "later",
                               str_extract(station_code, "^[A-Z]+") %in% JRL_PREFIX ~ "JRL",
                               station_code %in% CRL1_CODES ~ "CRL1", TRUE ~ "later"))
 
-complex_of <- function(df) df |>
-  group_by(name = station_name) |>
-  summarise(codes = paste(sort(station_code), collapse = "/"),
-            lines = paste(sort(unique(line)), collapse = "+"),
-            n_lines = n_distinct(line),
-            lrt_only = all(str_detect(line, "LRT")),
-            lon = mean(lon), lat = mean(lat), .groups = "drop") |>
-  st_as_sf(coords = c("lon", "lat"), crs = 4326) |> st_transform(STUDY_CRS)
 
 stn_now  <- complex_of(filter(codes_all, scenario == "existing")) |> mutate(new = FALSE)
 stn_2030 <- complex_of(filter(codes_all, scenario %in% c("existing", "JRL", "CRL1"))) |>
@@ -127,6 +113,7 @@ ridership <- taps |> mutate(name = map_chr(pt_code, first_known)) |>
             .groups = "drop") |>
   mutate(month = od_month)
 write_rds(ridership, file.path(DER, "ridership.rds"))
+write_rds(codes_all, file.path(DER, "station_codes.rds"))
 
 # 4. Attraction variables -----------------------------------------------------------
 poi_sf <- st_read(F_POI, quiet = TRUE) |> st_transform(STUDY_CRS) |> filter(group %in% POI_GROUPS)
@@ -136,17 +123,6 @@ busstop <- if (file.exists(F_BUSSTOP)) {
 } else {
   warning("LTA bus stop file missing: using OpenStreetMap bus stops")
   st_read(file.path(DER, "osm_busstops_sg.gpkg"), quiet = TRUE) |> st_transform(STUDY_CRS)
-}
-count_within <- function(stn, x, d) lengths(st_is_within_distance(stn, x, d))
-du_within <- function(stn, d) sapply(st_is_within_distance(stn, origins, d), \(i) sum(origins$du[i]))
-add_attrac <- function(stn) {
-  stn |> mutate(
-    du_1km = du_within(stn, 1000),
-    bus_stops = count_within(stn, busstop, CATCH_M),
-    poi = count_within(stn, poi_sf, CATCH_M),
-    poi_office = count_within(stn, filter(poi_sf, group == "office"), CATCH_M),
-    poi_retail_food = count_within(stn, filter(poi_sf, group %in% c("retail", "food")), CATCH_M)) |>
-    st_join(subzone, join = st_nearest_feature)
 }
 # Line counts differ between today and 2030 at interchanges the new lines
 # reach (Jurong East, Choa Chu Kang, Boon Lay, Pasir Ris, Hougang, Ang Mo Kio,
@@ -164,15 +140,6 @@ write_rds(stations, file.path(DER, "stations.rds"))
 # 5. Spatial interaction data frames -------------------------------------------------
 # One row per origin and candidate station: the stations within CHOICE_RADIUS_M,
 # topped up to the K_MIN nearest.
-si_frame <- function(orig, stn) {
-  D <- st_distance(orig, stn) |> units::drop_units()
-  keep <- D <= CHOICE_RADIUS_M
-  r <- t(apply(D, 1, rank, ties.method = "first")) <= K_MIN
-  idx <- which(keep | r, arr.ind = TRUE)
-  tibble(origin_id = orig$origin_id[idx[, 1]], name = stn$name[idx[, 2]],
-         dist = pmax(D[idx], MIN_DIST_M)) |>
-    left_join(st_drop_geometry(select(orig, origin_id, du)), by = "origin_id")
-}
 write_rds(si_frame(origins, filter(stations, existing)), file.path(DER, "si_existing.rds"))
 write_rds(si_frame(origins, stations), file.path(DER, "si_2030.rds"))
 message("done: ", sum(stations$existing), " existing and ", sum(stations$new), " new station complexes")
